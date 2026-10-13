@@ -346,7 +346,15 @@ void main(){
     float patchy=smoothstep(.38+.24*pop,.58+.24*pop,pa+.22*exp(-max(fy,0.)/2.5));
     float bandF=exp(-max(fy,0.)/mix(5.5,8.,pop))*patchy*(.55+.45*walls);
     float trail=exp(-max(fy,0.)/14.)*smoothstep(.66,.84,st)*smoothstep(.45,.65,pa)*.35*up;
-    foam=(max(tip,bandF)+trail*(.6+.4*walls))*edge*strength;
+    vec2 lp=vec2(p.x,fy*1.3)/5.+seed*.3+vec2(0.,flow*1.2);
+    lp+=.9*(vec2(noise2(lp*.8+3.1),noise2(lp*.8+8.4))-.5);
+    float ridgeA=1.-abs(2.*noise2(lp)-1.);
+    float ridgeB=1.-abs(2.*noise2(lp*2.3+5.7)-1.);
+    float thinL=.012+px/14.;
+    float lace=max(smoothstep(.93-thinL*4.,.985,ridgeA),.7*smoothstep(.94-thinL*6.,.99,ridgeB));
+    lace*=smoothstep(.3+.3*pop,.6+.3*pop,fbm2(vec2(p.x,fy)/8.+seed.yx+3.));
+    float laceAmt=exp(-max(fy,0.)/mix(10.,16.,pop))*smoothstep(1.,6.,fy+4.*pop)*mix(.5,.8,1.-up);
+    foam=(max(tip,bandF)+trail*(.6+.4*walls)+laceAmt*lace*(.7+.3*walls))*edge*strength;
     foam=clamp(foam,0.,1.);
     float hw=pow(max(dist,0.),2.)/(9.*GRAV*max(sWave*sWave,.01));
     float deep=max(-hs,0.);
@@ -375,7 +383,7 @@ void main(){
     col=mix(col,seen,wcover);
     col=mix(col,lin(uFoam),foam*uGain.z);
   }
-  float drainGlint=3.*sheen*(1.-sheen)+.06;
+  float drainGlint=3.*sheen*(1.-sheen);
   col+=lin(uGlint)*sparkleOf(p.xy,pxw)*drainGlint*uGain.y*.7*(1.-paleA)*(1.-wcover)*(1.-foam);
   col=mix(col,bandCol,band);
   vec3 outc=pow(max(col,0.),vec3(1./2.2));
