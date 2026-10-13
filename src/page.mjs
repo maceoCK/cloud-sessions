@@ -129,7 +129,8 @@ a:hover{text-decoration-color:var(--ink)}
 .cover-bar nav{display:flex;gap:24px}
 .cover-bar nav a{text-decoration:none;color:var(--anatomy-text)}
 .cover-bar nav a:hover{color:var(--ink)}
-.theme{display:inline-flex;gap:14px;margin-left:auto}
+.theme{display:inline-flex;gap:14px;margin-left:auto;visibility:hidden}
+.js .theme{visibility:visible}
 .theme button{all:unset;cursor:pointer;font:12px/1 var(--mono);color:var(--anatomy-muted);padding:4px 0;border-bottom:1px solid transparent}
 .theme button[aria-pressed="true"]{color:var(--ink);border-bottom-color:currentColor}
 .theme button:focus-visible{outline:1px solid var(--anatomy-muted);outline-offset:4px}
@@ -242,8 +243,7 @@ a:hover{text-decoration-color:var(--ink)}
 `;
 
 // Restore an explicit theme choice before first paint; otherwise follow the system.
-const THEME_INIT = `(()=>{let t;try{t=localStorage.getItem("theme")}catch(e){}if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)})()`;
-
+const THEME_INIT = `(()=>{const r=document.documentElement;r.classList.add("js");let t;try{t=localStorage.getItem("theme")}catch(e){}if(t==="light"||t==="dark")r.setAttribute("data-theme",t)})()`;
 
 function entryHtml(rendered, index, flip, wide) {
   const fig = rendered.fig;
