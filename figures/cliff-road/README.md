@@ -40,10 +40,10 @@ The mountain is a heightfield. It's built from a slope that falls toward the sea
 |---|---|
 | back SVG | plinth, pace knob, bedrock, terraces below sea level, the glass sea sections |
 | sea canvas | chop, swell, shoaling whitewater, the reflected crest, moon glints, waves on the glass |
-| terrain SVG | the terraces with the road pieces between them: asphalt, paint, studs, verges, retaining faces, tyre marks, grass |
+| terrain SVG | the terraces with the road pieces between them: asphalt, paint, studs, verges, cast retaining walls under the edges, tyre marks, grass |
 | light canvas | headlight pool, tail-light glow, the nearest road studs, at the car's height; at night, the tail lamps' streaks as a long exposure would catch them |
-| front SVG | both portals with their bores, the forest, delineators, chevrons, bend signs, the trig pillar, the car (sorted and clipped each frame) |
-| fx canvas | spray, tyre smoke, sea mist, beams in the mist, light on the portal walls and down the bores, sodium glow |
+| front SVG | the three portals with their bores, the forest, delineators, curve mirrors, chevrons, bend signs, the trig pillar, the car (sorted and clipped each frame) |
+| fx canvas | spray, tyre smoke, sea mist, beams in the mist, light on the rock face and down the bores, sodium glow in all three tunnel mouths |
 | detail SVG | Detail A: the car at 3:1 on a local copy of the terraces, with its path, its nose, the drift angle and the gap to the edge; a ring and leader mark the car in the main view. Hidden on phones |
 
 ## Checked
