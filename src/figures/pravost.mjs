@@ -108,6 +108,7 @@ function scale() {
   const ticks = [];
   const major = [];
   for (let d = -12; d <= 12; d += 2) {
+    if (Math.abs(d) === 12) continue;
     const a = d * deg;
     const len = d % 6 === 0 ? 4.4 : 2.4;
     const p0 = [Math.sin(a) * (NEEDLE + 4), zc - Math.cos(a) * (NEEDLE + 4)];
