@@ -494,8 +494,12 @@ function advance(dt) {
       }
     }
   }
+  sweep();
+}
+
+function sweep() {
   if (state.wave && !waveBusy()) {
-    const keep = state.prints.filter((print) => erosionAt(print) < 0.999 || print.born > state.wave.at);
+    const keep = state.prints.filter((print) => erosionAt(print) < 0.999);
     if (keep.length !== state.prints.length) state.prints = keep;
   }
 }
@@ -639,7 +643,7 @@ function planeAt(clientX, clientY) {
 
 function stepAt(x, y, at = state.clock) {
   const foot = footAt(x - FOOT.length / 2, y, 0, state.side, Math.random());
-  press(foot, still.matches ? at - 9 : at);
+  press(foot, at);
 }
 
 stage.addEventListener("pointerdown", (event) => {
@@ -656,7 +660,11 @@ stage.addEventListener("keydown", (event) => {
   if (event.key === " " || event.key === "Enter") {
     event.preventDefault();
     hold();
-    if (!waveBusy()) launchWave(still.matches ? state.clock - 12 : state.clock);
+    if (still.matches) {
+      state.clock += 7;
+      launchWave(state.clock - 6.5);
+      sweep();
+    } else if (!waveBusy()) launchWave(state.clock);
     run();
     return;
   }

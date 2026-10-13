@@ -321,7 +321,16 @@ const frontSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="iso-svg fp-laye
 const stage = `<div class="fp-stage" tabindex="0" role="group" aria-roledescription="beach strip" aria-label="Footprints in wet sand. Tap or click the sand to press a footprint there; press the right arrow key to take the next step, and Space or Enter to send a wave up the beach."><span class="fp-said" aria-live="polite"></span>${backSvg}<canvas class="fp-layer fp-gl" aria-hidden="true"></canvas>${frontSvg}</div>`;
 
 const wave = M.waveOf(0, 0);
-const caption = `A strip of the swash zone, ${M.metres(L)} m along the shore and ${M.metres(D)} m up it, cut from a beach that rises 1 in 12. Someone walks across at ${((M.GAIT.step / 100) / M.GAIT.gap).toFixed(2)} m/s, ${M.metres(M.GAIT.step)} m a step, and each bare heel sinks ${(M.GAIT.depth * 10).toFixed(0)} mm. While the foot is down the sand around it turns pale: shearing makes the packed grains dilate, and the water drains down into the new pore space (Reynolds' dilatancy). When the foot lifts, the water comes back and pools in the heel and the ball. Then a bore collapses ${M.metres(-M.SWASH.from)} m seaward of the strip and its swash runs up the slope at ${(wave.u0 / 100).toFixed(1)} m/s, slowing at g·sin β = ${(M.DOWNHILL / 100).toFixed(2)} m/s². It stops about ${M.metres(wave.reach)} m up the strip after ${M.turnOf(wave, L / 2).toFixed(1)} s and drains back the same way (Shen and Meyer's ballistic swash). The sheet is never more than about 6 mm deep, but it smooths each print away within a second or two of covering it. The film it leaves sinks into the sand, and the sheen fades.`;
+const tops = [];
+for (let index = 0; index < 200; index++) {
+  const each = M.waveOf(0, index);
+  for (let x = 0; x <= L; x += 3) tops.push(M.topOf(each, x));
+}
+const meanTop = tops.reduce((sum, top) => sum + top, 0) / tops.length;
+let deepest = 0;
+for (let s = 0.5; s < 5; s += 0.02) for (let y = 0; y < D; y += 2) deepest = Math.max(deepest, M.depthAt(wave, L / 2, y, s));
+const entry = M.speedAt(wave, L / 2, M.timesAt(wave, L / 2, 0)[0]);
+const caption = `A strip of the swash zone, ${M.metres(L)} m along the shore and ${M.metres(D)} m up it, cut from a beach that rises 1 in 12. Someone walks across at ${((M.GAIT.step / 100) / M.GAIT.gap).toFixed(2)} m/s, ${M.metres(M.GAIT.step)} m a step, and each bare heel sinks ${(M.GAIT.depth * 10).toFixed(0)} mm. While the foot is down, the sand around it turns pale: shearing makes the packed grains dilate, and the water drains down into the new pore space (Reynolds' dilatancy). When the foot lifts, the water comes back and pools in the heel and the ball. Then a bore collapses ${M.metres(-M.SWASH.from)} m seaward of the strip. Its swash crosses the sea edge at ${(entry / 100).toFixed(1)} m/s and slows at g·sin β = ${(M.DOWNHILL / 100).toFixed(2)} m/s², so it turns ${M.turnOf(wave, L / 2).toFixed(1)} s after the collapse, about ${M.metres(meanTop)} m up the strip (${M.metres(Math.min(...tops))} to ${M.metres(Math.max(...tops))} m along its lobes, from wave to wave), and drains back the same way (Shen and Meyer's ballistic swash). The sheet is never more than ${(deepest * 10).toFixed(0)} mm deep, yet it smooths each print away within a second or two of covering it. The film it leaves sinks into the sand, and the sheen fades.`;
 
 const body = `<div class="fp">${k.plateHtml({
   fig: "Fig 1",
