@@ -160,8 +160,8 @@ function draw(force = false) {
       haloUnder = under;
     }
     put(memoFlat, "halo", halo, "d", paint.halo || "M0 0");
-    halo.style.opacity = paint.halo ? paint.haloOpacity.toFixed(3) : "0";
-    if (paint.haloBlur) halo.style.filter = `blur(${paint.haloBlur.toFixed(1)}px)`;
+    // the blur steps by half pixels, so its filter is not rebuilt every frame
+    if (paint.haloBlur) put(memoFlat, "haloBlur", halo, "style", `opacity:${paint.halo ? paint.haloOpacity.toFixed(2) : 0};filter:blur(${(Math.round(paint.haloBlur * 2) / 2).toFixed(1)}px)`);
     put(memoFlat, "contact", contact, "d", paint.contact || "M0 0");
     contact.style.opacity = paint.contact ? paint.contactOpacity.toFixed(3) : "0";
     const f = paint.flat;
@@ -201,7 +201,7 @@ function draw(force = false) {
       put(slot.memo, "crease", slot.crease, "d", s.crease);
       put(slot.memo, "ink", slot.ink, "d", s.ink);
       put(slot.memo, "edge", slot.edge, "d", s.edge);
-      put(slot.memo, "w", slot.ink, "style", `stroke-width:${(inkWidth * s.width).toFixed(2)}px`);
+      if (s.ink) put(slot.memo, "w", slot.ink, "style", `stroke-width:${(inkWidth * s.width).toFixed(1)}px`);
     }
     cost = cost * 0.9 + (performance.now() - t0) * 0.1;
     if (DATA.coarse === null) {
