@@ -558,6 +558,19 @@ const put = (name, at3, svg, high = 4, half = 14) => items.push({ name, key: dep
     const tree = SC.cypress({ P, x, y, z, height: 16 + 12 * T.hash2(q, 3, 93), seed: q, lean: 0.4 });
     put(`tree${placed.length}`, tree.at, `<g>${tree.svg}</g>`, 4, 20);
   }
+  // the steep slope under the summit: narrow terraces, so no level spots; the trees stand on the steps
+  for (let q = 0; q < 1500 && placed.length < 80; q++) {
+    const x = M.PORTAL_X + 14 + T.hash2(q, 4, 95) * (X1 - M.PORTAL_X - 60);
+    const y = Y0 + 6 + T.hash2(q, 5, 96) * 30;
+    const z = heightAt(x, y);
+    if (gridAt(coastGrid, x, y) > -14 || z <= 61) continue;
+    const near = nearestRoad(x, y, 3);
+    if (near && Math.abs(near.d) < benchOf(near.i, Math.sign(near.d) || 1) * u + 9) continue;
+    if (placed.some((p) => Math.hypot(p[0] - x, p[1] - y) < 16)) continue;
+    placed.push([x, y]);
+    const tree = SC.cypress({ P, x, y, z, height: 14 + 10 * T.hash2(q, 6, 97), seed: 900 + q, lean: 0.4 });
+    put(`tree${placed.length}`, tree.at, `<g>${tree.svg}</g>`, 4, 20);
+  }
 }
 const POSTS = [];
 // a tree on the crown of each hairpin's knoll, like the wooded humps a pass winds round
