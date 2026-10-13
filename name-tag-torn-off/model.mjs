@@ -402,9 +402,25 @@ export const PEEL = (() => {
     const c = Math.cos(angle), s = Math.sin(angle);
     return add(mul(v, c), add(mul(cross(a, v), s), mul(a, dot(a, v) * (1 - c))));
   };
-  function motionOf(off, place) {
+  function motionOf(off) {
     const e = off * off * (3 - 2 * off);
-    return { roll: 34 * RAD * e, spin: -16 * RAD * e, move: add(mul(N, 46 * e + place), [10 * e, 0, -150 * off * off]) };
+    return { roll: 34 * RAD * e, spin: -16 * RAD * e, move: add(mul(N, 46 * e), [10 * e, 0, -150 * off * off]) };
+  }
+  // A new label goes on top edge first: held tilted out from the plate on that edge, it comes in,
+  // the edge meets the plate, and the rest swings down flat. `place` is how far its lower edge
+  // still stands off, in world units.
+  const HINGE = onFace([0, -TAG.h / 2], TAG_T);
+  const tiltOf = (place) => (place > 0 ? Math.asin(Math.min(1, (0.65 * place) / TAG.h)) : 0);
+  const placed = (p, place) => {
+    const t = tiltOf(place);
+    return add(t ? rotateAbout(p, HINGE, EX, t) : p, mul(N, 0.35 * place));
+  };
+  // The label plane's map to the screen while a new label comes in, for the paper grain to follow.
+  function planeMatrix(P, place) {
+    const C = camera(P);
+    const O = project(C, placed(onFace([0, 0]), place));
+    const A = project(C, placed(onFace([1, 0]), place)), B = project(C, placed(onFace([0, 1]), place));
+    return [A[0] - O[0], A[1] - O[1], B[0] - O[0], B[1] - O[1], O[0], O[1]];
   }
 
   // ---- One frame of the sheet ----------------------------------------------------------------------
@@ -412,15 +428,19 @@ export const PEEL = (() => {
     const sigmaMax = Math.max(0, st.f - D_MIN) + 2;
     const profiles = W_SAMPLES.map((w) => profileOf({ ...st, k0: st.k0 * waveK(w), theta: st.theta * waveT(w) }, sigmaMax));
     const base = onFace([0, 0], TAG_T);
-    const m = motionOf(st.off, place);
+    const m = motionOf(st.off);
     const moved = st.off > 0 || place > 0;
+    const tilt = tiltOf(place);
     const pose = (p) => {
       if (!moved) return p;
       let q = p;
-      if (st.off > 0) q = rotateAbout(rotateAbout(q, PIVOT, WW, m.roll), PIVOT, N, m.spin);
-      return add(q, m.move);
+      if (st.off > 0) q = add(rotateAbout(rotateAbout(q, PIVOT, WW, m.roll), PIVOT, N, m.spin), m.move);
+      return place > 0 ? placed(q, place) : q;
     };
-    const poseDir = (v) => (st.off > 0 ? rotateDir(rotateDir(v, WW, m.roll), N, m.spin) : v);
+    const poseDir = (v) => {
+      let r = st.off > 0 ? rotateDir(rotateDir(v, WW, m.roll), N, m.spin) : v;
+      return tilt ? rotateDir(r, EX, tilt) : r;
+    };
     const step = W_SAMPLES[1] - W_SAMPLES[0];
     const shapeAt = (sigma, w) => {
       const t = clamp((w - W_SAMPLES[0]) / step, 0, W_SAMPLES.length - 1.000001);
@@ -1069,6 +1089,6 @@ export const PEEL = (() => {
     TAG, TAG_T, CENTRE, ROT, EX, EY, N, D_MIN, D_END, LIFT, OFF, S_END, OUTLINE, FLAP, STUCK, TEAR, SPLIT, TRIS,
     SCRIBBLE, INK, RESIDUE, STUCK_EDGE, G_ADHESIVE, TAG_AREA, FLAP_AREA, SHARE_OFF,
     frontAt, sAtFront, slipAt, toDW, toUV, onFace, uvDir, camera, project, bandOf, stateAt, sheetOf, frameOf, inkOf, cutsOf,
-    paintOf, stuckPaint, pathOf, hull2, peeledArea, chordAt, forceAt, profileOf, profileAt, rng, smooth, clamp, mix, inside, areaOf,
+    paintOf, stuckPaint, planeMatrix, pathOf, hull2, peeledArea, chordAt, forceAt, profileOf, profileAt, rng, smooth, clamp, mix, inside, areaOf,
   };
 })();

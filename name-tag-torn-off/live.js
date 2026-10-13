@@ -45,11 +45,9 @@ const slots = [...svg.querySelectorAll(".nt-slot")].map((g) => ({
 
 const memoFlat = {};
 const paper = svg.querySelector('[data-part="paper"]');
-const C0 = PEEL.camera(P);
-// The paper grain is laid in the label's plane; while a new label comes in, it travels with it.
+// The paper grain is laid in the label's plane; while a new label comes in, it follows that plane.
 function placeGrain(place) {
-  const o = PEEL.project(C0, [0, 0, 0]), q = PEEL.project(C0, PEEL.onFace([0, 0], place).map((v, i) => v - PEEL.onFace([0, 0])[i]));
-  const t = place > 0 ? `translate(${(q[0] - o[0]).toFixed(2)} ${(q[1] - o[1]).toFixed(2)}) ${DATA.label}` : DATA.label;
+  const t = place > 0 ? `matrix(${PEEL.planeMatrix(P, place).map((v) => v.toFixed(3)).join(" ")})` : DATA.label;
   put(memoFlat, "grainT", paper, "patternTransform", t);
 }
 const put = (memo, key, el, name, value) => {
