@@ -424,14 +424,32 @@ const themeOf = () => ({
   uGlint: tokenOf("--fp-glint"),
   uGain: isPale() ? [5.5, 0.7, 1, 0.2] : [7, 1.1, 0.92, 0.2],
 });
-const layer = glLayer({
-  canvas,
-  fragment: FRAGMENT,
-  view: [D.W, D.H],
-  camera: D.camera,
-  uniforms: ["uPrint", "uAge", "uWave", "uPrev", "uClock"],
-  fixed: { uEdge: edges, uSole: FOOT.sole.flat(), ...themeOf() },
-});
+const layerAt = (maxRatio) =>
+  glLayer({
+    canvas,
+    fragment: FRAGMENT,
+    view: [D.W, D.H],
+    camera: D.camera,
+    uniforms: ["uPrint", "uAge", "uWave", "uPrev", "uClock"],
+    fixed: { uEdge: edges, uSole: FOOT.sole.flat(), ...themeOf() },
+    maxRatio,
+  });
+const RATIOS = [1.5, 1, 0.75];
+let quality = 0;
+let layer = layerAt(RATIOS[quality]);
+const pace = { sum: 0, count: 0 };
+function watchPace(dt) {
+  if (!layer || quality >= RATIOS.length - 1 || dt <= 0) return;
+  pace.sum += dt;
+  pace.count += 1;
+  if (pace.count < 45) return;
+  const slow = pace.sum / pace.count > 0.028;
+  pace.sum = 0;
+  pace.count = 0;
+  if (!slow) return;
+  quality += 1;
+  layer = layerAt(RATIOS[quality]) || layer;
+}
 if (layer) stage.setAttribute("data-gl", "");
 
 const state = { clock: 0, prints: [], wave: null, prev: null, waves: 0, cycle: 0, plan: [], next: 0, side: 1, steps: 0, lastStep: -10, lastWord: "" };
@@ -603,10 +621,14 @@ function draw() {
 }
 
 function tick(now) {
-  const dt = last ? Math.min((now - last) / 1000, 1 / 30) : 1 / 60;
+  const raw = last ? (now - last) / 1000 : 0;
+  const dt = last ? Math.min(raw, 1 / 30) : 1 / 60;
   last = now;
   const calm = still.matches;
-  if (!calm && !frozen) advance(dt);
+  if (!calm && !frozen) {
+    advance(dt);
+    if (raw < 1) watchPace(raw);
+  }
   const busy = !calm && !frozen && (touring || waveBusy() || state.prints.some((print) => state.clock - print.born < FOOT.seep[1] + 0.5) || (state.wave && waveAge() < 2 * turnOf(state.wave, STRIP.length / 2) + 8));
   if (busy || dirty) draw();
   dirty = false;

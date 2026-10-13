@@ -335,7 +335,7 @@ const caption = `A strip of the swash zone, ${M.metres(L)} m along the shore and
 const body = `<div class="fp">${k.plateHtml({
   fig: "Fig 1",
   title: "Footprints in wet sand",
-  hint: "Tap the sand to step · Space sends a wave",
+  hint: "Click the sand to step · Space sends a wave",
   readout: "smooth",
   keys: [
     { mark: "raised", label: "Beach block, cut to show its laminae and water table" },
