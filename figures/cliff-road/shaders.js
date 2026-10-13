@@ -275,6 +275,9 @@ void main(){
     spray+=b;
     under+=b*smoothstep(s.z+s.w*.2,s.z-s.w*.8,p0.z+v.z*dot(s.xyz-p0,v));
   }
+  // spray is threads of water flung upward: streaks that climb; smoke billows
+  float threads=.5+.5*noise2(vec2(vb.x*.42,vb.y*.045+uTime*1.4))*(.7+.3*noise2(vec2(vb.x*1.3,vb.y*.12+uTime*2.1)));
+  spray*=threads*1.25;under*=threads*1.25;
   float smoke=0.;float heat=0.;
   for(int i=0;i<${NS};i++){
     vec4 s=uSmk[i];vec4 sb=uSmkB[i];
@@ -283,6 +286,7 @@ void main(){
     smoke+=b;heat+=b*sb.y;
   }
   heat/=max(smoke,1e-4);
+  smoke*=.55+.6*fbm2(vb*.06+vec2(uTime*.25,-uTime*.4));
   // light on the portal walls and down the bores
   float wall=0.;float bore=0.;float sodium=0.;
   {
@@ -333,7 +337,7 @@ void main(){
     }
   }
   if(uPale<.5){
-    vec3 c=vec3(.52,.58,.64)*(1.-exp(-spray*1.1))*.85+vec3(.62,.64,.67)*(1.-exp(-smoke*1.2))*.95+vec3(.95,.18,.1)*(1.-exp(-smoke*heat*1.6))*.6;
+    vec3 c=vec3(.56,.62,.68)*(1.-exp(-spray*1.3))*.9+vec3(.62,.64,.67)*(1.-exp(-smoke*1.2))*.95+vec3(.95,.18,.1)*(1.-exp(-smoke*heat*1.6))*.6;
     c+=vec3(1.,.9,.72)*(wall+bore)+vec3(.95,.9,.78)*beam*.16+vec3(1.,.48,.12)*sodium*.11;
     c=tonemap(c,1.2);
     col=vec4(c,max(c.r,max(c.g,c.b)));
@@ -488,10 +492,11 @@ function gpuOf(D, stage, pale) {
       crests[j] = n;
       if (calm || Number.isNaN(was) || n === was) return;
       const an = 0.55 + 0.45 * hashN(n);
-      if (an < 0.5 || hashN(n * 7.1 + j * 1.37) > 0.92) return;
+      if (an < 0.5 || hashN(n * 7.1 + j * 1.37) > 0.6) return;
       const p = oldest(spray);
-      const v0 = M.SPRAY.rise * M.U * (0.5 + 0.5 * an) * (0.75 + 0.5 * hashN(j + n * 3.3));
-      Object.assign(p, { x: x + nx * 2, y: y + ny * 2, z: D.sea + 2, vx: nx * 5 + WIND[0], vy: ny * 5 + WIND[1], vz: v0, age: 0, life: 2.2 + hashN(j * 2.1 + n) * 1.0, a0: 0.26 + 0.24 * an, r0: 3.2 });
+      // each point of the waterline throws its own jet: height from the crest's size and a little luck
+      const v0 = M.SPRAY.rise * M.U * (0.45 + 0.55 * an) * (0.6 + 0.7 * hashN(j + n * 3.3));
+      Object.assign(p, { x: x + nx * 1.5, y: y + ny * 1.5, z: D.sea + 2, vx: nx * 4 + WIND[0] * 0.6, vy: ny * 4 + WIND[1] * 0.6, vz: v0, age: 0, life: 1.5 + hashN(j * 2.1 + n) * 0.9, a0: 0.3 + 0.25 * an, r0: 1.7 });
     });
     for (const p of spray) {
       if (p.age > p.life) continue;
@@ -513,10 +518,10 @@ function gpuOf(D, stage, pale) {
       smkB.set([a, Math.exp(-p.age * 1.2), 0, 0], i * 4);
     });
     spray.forEach((p, i) => {
-      const r = (p.r0 || 1) + 9.5 * Math.sqrt(Math.max(0, p.age));
+      const r = (p.r0 || 1) + 5.5 * Math.sqrt(Math.max(0, p.age));
       const a = p.age > p.life ? 0 : p.a0 * burst(p.age, 0.1, 0.75) * smooth(p.life, p.life * 0.6, p.age) * inBlock(p.x, p.y, r);
       // rising, the sheet is tall; as it falls back it spreads into round mist
-      const tall = 1 + 1.7 * smooth(-30, 25, p.vz || 0);
+      const tall = 1 + 2.8 * smooth(-20, 30, p.vz || 0);
       spr.set([p.x || 0, p.y || 0, (p.z || 0) - r * (tall - 1) * 0.35, r], i * 4);
       sprB.set([a, a > 0.002 ? seen(p.x, p.y, p.z) : 0, tall, 0], i * 4);
     });
