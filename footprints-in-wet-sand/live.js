@@ -59,7 +59,7 @@ vec2 localOf(vec2 p,vec4 P){vec2 d=p-P.xy;float c=cos(P.z);float s=sin(P.z);retu
 
 float lobe(float x,float seed){return .5*sin(x/37.+seed*6.1)+.3*sin(x/19.+seed*13.7)+.2*sin(x/11.5+seed*29.3);}
 float launch(vec4 w,float x){return w.y*(1.+LOBE*lobe(x,w.z));}
-float frontOf(vec4 w,float x){float s=w.x;if(w.w<.5||s<-BORE)return -1e4;if(s<=0.)return FROM+BORE_U*launch(w,x)*s;return FROM+launch(w,x)*s-.5*DOWN*s*s;}
+float frontOf(vec4 w,float x){float s=w.x;if(w.w<.5||s<-BORE)return -1e4;if(s<=0.){float u=launch(w,x);return FROM+u*s+.5*(1.-BORE_U)*u/BORE*s*s;}return FROM+launch(w,x)*s-.5*DOWN*s*s;}
 float topOf(vec4 w,float x){float u=launch(w,x);return FROM+u*u/(2.*DOWN);}
 float turnOf(vec4 w,float x){return launch(w,x)/DOWN;}
 vec2 timesOf(vec4 w,float x,float y){float u=launch(w,x);float disc=u*u-2.*DOWN*(y-FROM);if(disc<=0.)return vec2(1e4,-1e4);float r=sqrt(disc);return vec2(u-r,u+r)/DOWN;}
@@ -383,12 +383,12 @@ void main(){
   foam=max(foam,seaCov*(1.-wcover)*exp(-max(shore-p.y,0.)/1.3)*(.3+.7*smoothstep(.4,.85,noise2(vec2(p.x/1.3,(shore-p.y)/.8+uClock*.5))))*.4);
   if(water>.001){
     float speed=max(launch(uWave,p.x)-DOWN*sWave,0.);
-    float hw=sWave>0.?pow(max(dist,0.),2.)/(9.*GRAV*sWave*sWave):0.;
+    float hw=sWave>0.?pow(max(dist,0.),2.)/(9.*GRAV*sWave*sWave)*smoothstep(0.,.35,sWave):0.;
     float deep=max(-hs,0.);
     float turb=1.-exp(-(hw+seaD+deep*.5+.02)/.5);
     vec2 seed=vec2(uWave.z*17.,uWave.z*5.);
     vec2 g=vec2(0.);
-    float ripple=up*smoothstep(0.,10.,dist)*mix(.5,1.,smoothstep(10.,120.,speed))*smoothstep(.02,.25,hw);
+    float ripple=up*smoothstep(0.,10.,dist)*mix(.5,1.,smoothstep(10.,120.,speed))*smoothstep(.02,.25,hw)*smoothstep(0.,.5,sWave);
     vec2 r1=vec2(.34,.94);vec2 r2=vec2(-.5,.87);vec2 r3=vec2(.12,.99);
     float w1=6.2832*fbm2(p.xy/14.+seed);
     float w2=6.2832*noise2(p.xy/8.3+seed.yx+5.);
@@ -578,7 +578,7 @@ function phaseOf() {
     const front = frontAt(w, mid, s);
     const turn = turnOf(w, mid);
     const alive = state.prints.filter((print) => erosionAt(print) < 0.97).length;
-    if (s <= 0) return { word: "wave coming", text: `bore ${metres(-SWASH.boreSpeed * launchAt(w, mid) * s)} m out · ${((SWASH.boreSpeed * launchAt(w, mid)) / 100).toFixed(1)} m/s` };
+    if (s <= 0) return { word: "wave coming", text: `bore ${metres(-boreAt(w, mid, s))} m out · ${(boreSpeedAt(w, mid, s) / 100).toFixed(1)} m/s` };
     if (Math.abs(s - turn) < 0.3) return { word: "run-up", text: `run-up ${metres(topOf(w, mid) - SWASH.from)} m · ${turn.toFixed(1)} s` };
     if (s < turn) return { word: "swash", text: `swash ${(speedAt(w, mid, s) / 100).toFixed(1)} m/s · ${metres(front - SWASH.from)} m up` };
     if (front > SWASH.from) return { word: "backwash", text: `backwash ${(-speedAt(w, mid, s) / 100).toFixed(1)} m/s · ${alive ? `${alive} ${alive === 1 ? "print" : "prints"} left` : "prints gone"}` };

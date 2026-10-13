@@ -2,7 +2,7 @@
 
 An interactive isometric figure, built with the [Anatomy](https://github.com/wheresryan22/anatomy) skill. It looks down on an open beach that rises 1 in 12 and fills the frame: the sea at the back, a strip of smooth, dark, wet sand where the swash runs, and drier sand toward you.
 
-<p align="center"><img src="shots/loop-dark.webp" width="640" alt="The 14.5-second loop in the dark theme: four footprints press into the dark wet sand of an open beach; a bore runs in from the sea, its thin swash slides up with a foam edge, covers and smooths the prints, and drains back, leaving the sand glossy and smooth."></p>
+<p align="center"><img src="shots/loop-dark.webp" width="600" alt="The 14.5-second loop in the dark theme: four footprints press into the dark wet sand of an open beach; a bore runs in from the sea, its thin swash slides up with a foam edge, covers and smooths the prints, and drains back, leaving the sand glossy and smooth."></p>
 
 | | Light | Dark |
 |---|---|---|

@@ -63,6 +63,8 @@ export function frontAt(wave, x, s) {
 }
 
 export const speedAt = (wave, x, s) => launchAt(wave, x) - DOWNHILL * s;
+export const boreAt = (wave, x, s) => launchAt(wave, x) * (s + (0.5 * (1 - SWASH.boreSpeed) * s * s) / SWASH.bore);
+export const boreSpeedAt = (wave, x, s) => launchAt(wave, x) * (1 + ((1 - SWASH.boreSpeed) * s) / SWASH.bore);
 export const topOf = (wave, x) => SWASH.from + launchAt(wave, x) ** 2 / (2 * DOWNHILL);
 export const turnOf = (wave, x) => launchAt(wave, x) / DOWNHILL;
 
