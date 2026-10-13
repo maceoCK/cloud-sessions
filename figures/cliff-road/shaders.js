@@ -271,7 +271,10 @@ void main(){
   }
   vec3 q=onFloor(vb,uRoad);
   // only the ground at the car's own height catches the pool: the road, its bench, the hairpin's floor
-  float land=1.-smoothstep(1.5,4.5,abs(heightOf(q.xy)-uRoad));
+  // the terraces under a road sit up to a layer (7 units) below it; anything lower is the drop, anything
+  // higher the bank
+  float hq=heightOf(q.xy)-uRoad;
+  float land=smoothstep(-10.,-8.,hq)*(1.-smoothstep(1.,3.,hq));
   land*=smoothstep(uPortalX-.5*px,uPortalX+.5*px,q.x);
   land*=window(q.x,uBox.x,uBox.z,.7*px)*window(q.y,uBox.y,uBox.w,.7*px);
   if(land<.001){gl_FragColor=dithered(streak*uFade);return;}
@@ -308,6 +311,16 @@ uniform float uRoad;uniform float uPortalX;uniform vec4 uCarA;uniform vec4 uCarB
 uniform vec4 uSmk[${NS}];uniform vec4 uSmkB[${NS}];uniform vec4 uSpr[${NP}];uniform vec4 uSprB[${NP}];
 uniform vec4 uPortA;uniform vec4 uPortB;uniform float uBeams;uniform vec2 uWind;uniform float uSea;
 float landAt(vec2 p){return coastTex(p).b*512.;}
+// does anything of the mountain stand between this point and the eye?
+float seenFx(vec3 q){
+  vec3 v=towardViewer();
+  float open=1.;
+  for(int i=1;i<=24;i++){
+    vec3 p=q+v*(float(i)*8.);
+    open*=smoothstep(-1.,1.,p.z-landAt(p.xy)+.5);
+  }
+  return open;
+}
 // sea mist: a slab from the water to ~6 m up, in drifting wisps; marched from the top down, it stops at the
 // first sample inside the land, so the cliff hides whatever mist lies behind it
 float mistAt(vec2 vb){
@@ -427,7 +440,8 @@ void main(){
     }
     float tw=dot(w-p0,v);
     float hid=tCar>-1e8?smoothstep(-1.,1.,tCar-tw):0.;
-    wall=(headOn(w,vec3(1.,0.,0.),la,d0)+headOn(w,vec3(1.,0.,0.),lb,d1))*onWall*(1.-hid)*step(uPortalX+1.,uCarA.x)*2600.;
+    wall=(headOn(w,vec3(1.,0.,0.),la,d0)+headOn(w,vec3(1.,0.,0.),lb,d1))*onWall*(1.-hid)*step(uPortalX+1.,uCarA.x)*1700.;
+    if(wall>.002)wall*=seenFx(w+vec3(1.5,0.,0.));
     bore*=2600.;
   }
   // beams in the sea mist: soft volumes along each lamp's axis (dark theme only)
