@@ -224,5 +224,143 @@
   "style": "regular",
   "text": "MCK",
   "tracking": 0.04
+ },
+ {
+  "id": "flow.lede",
+  "style": "regular",
+  "text": "Engineer and founder in New York City. I started Datost, an applied research lab backed by Y Combinator and OpenAI, and we are building ED1TH: glasses that put a quiet, capable computer in the corner of your eye.",
+  "flow": true
+ },
+ {
+  "id": "flow.line.ed1th",
+  "style": "italic",
+  "text": "The computers that come after the screen.",
+  "flow": true
+ },
+ {
+  "id": "flow.line.datost",
+  "style": "italic",
+  "text": "Sixteen drawers, every one of them locked.",
+  "flow": true
+ },
+ {
+  "id": "flow.line.traba",
+  "style": "italic",
+  "text": "Shifts, filled at market speed.",
+  "flow": true
+ },
+ {
+  "id": "flow.line.simon",
+  "style": "italic",
+  "text": "A release is a promise made to strangers.",
+  "flow": true
+ },
+ {
+  "id": "flow.line.pravost",
+  "style": "italic",
+  "text": "Money held against intention.",
+  "flow": true
+ },
+ {
+  "id": "flow.line.h668",
+  "style": "italic",
+  "text": "The smallest Hadamard order nobody has settled.",
+  "flow": true
+ },
+ {
+  "id": "flow.line.conway",
+  "style": "italic",
+  "text": "You win when nothing is left alive.",
+  "flow": true
+ },
+ {
+  "id": "flow.line.school",
+  "style": "italic",
+  "text": "Two years, 4.0.",
+  "flow": true
+ },
+ {
+  "id": "flow.record.0",
+  "style": "regular",
+  "text": "Founder, Datost",
+  "flow": true
+ },
+ {
+  "id": "flow.record.1",
+  "style": "regular",
+  "text": "Engineering, Traba",
+  "flow": true
+ },
+ {
+  "id": "flow.record.2",
+  "style": "regular",
+  "text": "Software engineering, SimonComputing",
+  "flow": true
+ },
+ {
+  "id": "flow.record.3",
+  "style": "regular",
+  "text": "B.S. Computer Science, Virginia Tech",
+  "flow": true
+ },
+ {
+  "id": "flow.record.4",
+  "style": "regular",
+  "text": "pravost, h668-z37, conway",
+  "flow": true
+ },
+ {
+  "id": "flow.say",
+  "style": "italic",
+  "text": "Write to me.",
+  "flow": true
+ },
+ {
+  "id": "flow.title.ed1th",
+  "style": "italic",
+  "text": "ED1TH fitting stand",
+  "flow": true
+ },
+ {
+  "id": "flow.title.datost",
+  "style": "italic",
+  "text": "Sixteen drawers",
+  "flow": true
+ },
+ {
+  "id": "flow.title.traba",
+  "style": "italic",
+  "text": "Time clock",
+  "flow": true
+ },
+ {
+  "id": "flow.title.simon",
+  "style": "italic",
+  "text": "Production line",
+  "flow": true
+ },
+ {
+  "id": "flow.title.pravost",
+  "style": "italic",
+  "text": "Held against intention",
+  "flow": true
+ },
+ {
+  "id": "flow.title.h668",
+  "style": "italic",
+  "text": "Cyclotomic sieve",
+  "flow": true
+ },
+ {
+  "id": "flow.title.conway",
+  "style": "italic",
+  "text": "Life table",
+  "flow": true
+ },
+ {
+  "id": "flow.title.school",
+  "style": "italic",
+  "text": "Two-year stage",
+  "flow": true
  }
 ]

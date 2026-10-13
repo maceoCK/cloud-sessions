@@ -4,8 +4,9 @@
 // figures, the record, contact and colophon.
 //
 // Display lines are Michelangelus outlines from src/type/outlines.json (see
-// scripts/outline.py); running text is Crimson Pro unless the reader has
-// Michelangelus installed.
+// scripts/outline.py), and so are the standfirst, the entries' lines, the
+// contents and the record's names, set as words that wrap. Body text is
+// Crimson Pro unless the reader has Michelangelus installed.
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,6 +38,35 @@ function line(id, className = "") {
   const w = num(x1 - x0);
   return `<svg class="ol${className ? ` ${className}` : ""}" viewBox="${num(x0)} ${-CAP} ${w} ${CAP}" style="aspect-ratio:${w}/${CAP}" aria-hidden="true" focusable="false"><path d="${entry.d}"/></svg>`;
 }
+
+// Display text that wraps: each word an inline svg of <use> glyphs from one
+// shared atlas (emitted once per page by atlas()), the words themselves
+// beside it for screen readers. If the copy changed since the outlines were
+// made, the text is set plainly until `npm run outline` runs again.
+const USED = new Map(); // atlas key -> element id
+function flow(id, text) {
+  const f = OUTLINES.flows?.[id];
+  if (!f || f.text !== text) {
+    console.warn(`outline for "${id}" is ${f ? "stale" : "missing"}: run npm run outline; setting it in Crimson Pro`);
+    return txt(text);
+  }
+  const words = f.words.map(([w, glyphs]) => {
+    const uses = glyphs
+      .map(([key, x, y]) => {
+        if (!USED.has(key)) USED.set(key, `mg${USED.size.toString(36)}`);
+        return `<use href="#${USED.get(key)}"${x ? ` x="${x}"` : ""}${y ? ` y="${y}"` : ""}/>`;
+      })
+      .join("");
+    return `<svg class="fw" viewBox="0 ${-CAP} ${w} ${CAP}" style="width:${Math.round((w / OUTLINES.metrics.upm) * 1000) / 1000}em" focusable="false">${uses}</svg>`;
+  });
+  // the gaps are real spaces, so words wrap; they are set in Geist Mono (a
+  // fixed 0.6em, always embedded) and word-spacing brings each to the
+  // face's own space
+  const gap = Math.round((f.space / OUTLINES.metrics.upm - 0.6) * 1000) / 1000;
+  return `<span class="vh">${esc(text)}</span><span class="fl" style="word-spacing:${gap}em" aria-hidden="true">${words.join(" ")}</span>`;
+}
+const atlas = () =>
+  `<svg class="atlas" aria-hidden="true" focusable="false" width="0" height="0"><defs>${[...USED].map(([key, el]) => `<path id="${el}" d="${OUTLINES.atlas[key]}"/>`).join("")}</defs></svg>`;
 
 // The seal: an inscription around a circle, MCK in the middle.
 function seal(className) {
@@ -278,6 +308,10 @@ a:hover{text-decoration-color:var(--pink)}
 }
 
 /* contact */
+/* display text set as Michelangelus words (see flow()) */
+.fl{font-family:"Geist Mono",monospace;letter-spacing:0}
+.fw{height:.7em;overflow:visible;fill:currentColor;vertical-align:baseline}
+.atlas{position:absolute;width:0;height:0;overflow:hidden}
 .hint-touch{display:none}
 @media (hover:none) and (pointer:coarse){.hint-fine{display:none}.hint-touch{display:inline}}
 .contact{margin-top:clamp(100px,12vw,180px)}
@@ -318,7 +352,7 @@ function entryHtml(rendered, index, flip, wide) {
   const links = e.links.length ? `<ul class="links">${e.links.map((l) => `<li>${link(l)}</li>`).join("")}</ul>` : "";
   const body = e.body.length ? `<div class="body">${e.body.map((p) => `<p>${txt(p)}</p>`).join("")}</div>` : "";
   const who = `<span class="numeral" aria-hidden="true">${line(`roman.${ROMAN[index]}`)}</span><p class="kicker sc">${esc(e.kicker)}</p><h3 id="h-${fig.id}"><span class="vh">${esc(e.name)}</span>${line(`name.${fig.id}`)}</h3>`;
-  const what = `<p class="line">${txt(e.line)}</p>${body}${links}`;
+  const what = `<p class="line">${flow(`flow.line.${fig.id}`, e.line)}</p>${body}${links}`;
   const text = `<div class="entry-text">${who}${what}</div>`;
   return `<article class="entry${flip ? " flip" : ""}${wide ? " wide" : ""}" id="${fig.id}" aria-labelledby="h-${fig.id}">${text}${rendered.html}</article>`;
 }
@@ -331,7 +365,7 @@ export function sitePage({ figures, script, fragment = false }) {
   const contents = `<ol class="contents" aria-label="Figures">${order
     .map((id) => {
       const fig = byId[id].fig;
-      return `<li><a href="#${id}"><span class="n"><span class="vh">Figure ${numberOf(id) + 1}</span>${line(`roman.${ROMAN[numberOf(id)]}`)}</span><span class="t">${txt(fig.title)}</span><span class="s sc">${esc(CONTENTS_SUBJECT[id] ?? "")}</span></a></li>`;
+      return `<li><a href="#${id}"><span class="n"><span class="vh">Figure ${numberOf(id) + 1}</span>${line(`roman.${ROMAN[numberOf(id)]}`)}</span><span class="t">${flow(`flow.title.${id}`, fig.title)}</span><span class="s sc">${esc(CONTENTS_SUBJECT[id] ?? "")}</span></a></li>`;
     })
     .join("")}</ol>`;
 
@@ -353,11 +387,11 @@ export function sitePage({ figures, script, fragment = false }) {
   }).join("");
 
   const record = `<section class="record" id="record" aria-labelledby="g-record"><header class="group-head"><h2 id="g-record"><span class="vh">Record</span>${line("group.record")}</h2><span>The same, in plain text</span></header><dl>${RECORD.map(
-    (r) =>
-      `<div class="row"><dt class="sc">${esc(r.when)}</dt><dd class="what">${txt(r.what)}</dd><dd class="note">${txt(r.note)}</dd><dd class="rl">${r.links.map((l) => link(l)).join("")}</dd></div>`,
+    (r, i) =>
+      `<div class="row"><dt class="sc">${esc(r.when)}</dt><dd class="what">${flow(`flow.record.${i}`, r.what)}</dd><dd class="note">${txt(r.note)}</dd><dd class="rl">${r.links.map((l) => link(l)).join("")}</dd></div>`,
   ).join("")}</dl></section>`;
 
-  const contact = `<section class="contact" id="contact" aria-labelledby="g-contact"><header class="group-head"><h2 id="g-contact"><span class="vh">Contact</span>${line("group.contact")}</h2><span class="sc">${esc(PERSON.city)}</span></header><p class="say">${esc(CONTACT.line)}</p><a class="mail" href="mailto:${PERSON.email}"><span class="vh">${esc(PERSON.email)}</span>${line("contact.mail")}</a><ul>${CONTACT.links.map((l) => `<li>${link(l)}</li>`).join("")}</ul></section>`;
+  const contact = `<section class="contact" id="contact" aria-labelledby="g-contact"><header class="group-head"><h2 id="g-contact"><span class="vh">Contact</span>${line("group.contact")}</h2><span class="sc">${esc(PERSON.city)}</span></header><p class="say">${flow("flow.say", CONTACT.line)}</p><a class="mail" href="mailto:${PERSON.email}"><span class="vh">${esc(PERSON.email)}</span>${line("contact.mail")}</a><ul>${CONTACT.links.map((l) => `<li>${link(l)}</li>`).join("")}</ul></section>`;
 
   const colophon = `<footer class="colophon">${seal("seal")}<div>${COLOPHON.map((p) => `<p>${esc(p)}</p>`).join("")}</div><div class="end"><p>${esc(PERSON.name)}<br>${esc(PERSON.city)}</p></div></footer>`;
 
@@ -475,9 +509,9 @@ ${lozenges()}
 <div class="cover-foot wrap"><p class="cover-big"><span class="vh">Engineer and founder.</span>${bigWords.map((k) => line(k)).join("")}</p><p class="cover-small"><span class="vh">Founder of Datost, backed by Y Combinator and OpenAI, in New York City.</span>${smallWords.map((k) => line(k)).join("")}</p></div>
 </header>`;
 
-  const standfirst = `<section class="standfirst wrap" aria-label="Introduction"><p class="lead">${txt(LEDE[0])}</p><p>${txt(LEDE[1])} <span class="hint-fine">${esc(HOW.fine)}</span><span class="hint-touch">${esc(HOW.touch)}</span></p></section>`;
+  const standfirst = `<section class="standfirst wrap" aria-label="Introduction"><p class="lead">${flow("flow.lede", LEDE[0])}</p><p>${txt(LEDE[1])} <span class="hint-fine">${esc(HOW.fine)}</span><span class="hint-touch">${esc(HOW.touch)}</span></p></section>`;
 
-  const body = `<a class="skip" href="#figures">Skip to the figures</a>${cover}<main>${standfirst}<div class="wrap" id="figures">${contents}${groups}${record}${contact}${colophon}</div></main>${ruler}<script type="module">${script}\n${pageScript}</script>`;
+  const body = `<a class="skip" href="#figures">Skip to the figures</a>${atlas()}${cover}<main>${standfirst}<div class="wrap" id="figures">${contents}${groups}${record}${contact}${colophon}</div></main>${ruler}<script type="module">${script}\n${pageScript}</script>`;
   // a fragment for hosts that supply their own document around the page
   if (fragment) return `<title>${esc(META.title)}</title><style>${STYLE}</style><script>${THEME_INIT}</script>${body}`;
   return `<!doctype html><html lang="en"><head>${head}</head><body>${body}</body></html>`;
