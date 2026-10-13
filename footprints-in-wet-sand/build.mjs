@@ -14,8 +14,8 @@ const W = 880;
 const H = 560;
 const AZIMUTH = 70;
 const ELEVATION = 42;
-const PX_PER_CM = 2.9;
-const CENTRE = [M.STRIP.length / 2, 22];
+const PX_PER_CM = 2.6;
+const CENTRE = [M.STRIP.length / 2, 48];
 
 const L = M.STRIP.length;
 const SHORE = M.SWASH.from;
@@ -64,7 +64,7 @@ function fallback() {
 }
 
 const BAR = (() => {
-  const [x, y] = planeAt(W * 0.09, H * 0.82);
+  const [x, y] = planeAt(W * 0.2, H * 0.74);
   return { x: Math.round(x), y: Math.round(y), length: 50 };
 })();
 
@@ -104,7 +104,7 @@ for (let s = 0.3; s < 5; s += 0.02) for (let y = M.GAIT.line - 20; y < M.GAIT.li
 
 const LABEL_TEXT = `Looking down on a beach that rises 1 in 12: the sea at the back, a strip of smooth, dark, wet sand where the swash runs, and drier sand toward you. Footprints press into the wet strip one step at a time, each ringed for a moment by pale, drained sand. A bore runs in through the shallows and collapses at the water's edge; its thin sheet of swash slides up the beach with a foam edge, covers the prints, smooths them away and draws back, leaving the sand glossy and smooth again.`;
 
-const caption = `A stretch of beach that rises 1 in 12, seen from above: the sea at the back, the strip of dark sand the swash keeps wet, and drier sand toward you. Someone walks along the strip at ${((M.GAIT.step / 100) / M.GAIT.gap).toFixed(2)} m/s, ${M.metres(M.GAIT.step)} m a step, and each bare heel sinks ${(M.GAIT.depth * 10).toFixed(0)} mm. While the foot is down, the sand around it turns pale: shearing makes the packed grains dilate, and the water drains down into the new pore space (Reynolds' dilatancy). When the foot lifts, the water comes back and pools in the heel and the ball. Then a bore runs in through the shallows and collapses at the water's edge. Its swash leaves at ${(wave.u0 / 100).toFixed(1)} m/s and slows at g·sin β = ${(M.DOWNHILL / 100).toFixed(2)} m/s², so it turns ${M.turnOf(wave, L / 2).toFixed(1)} s later, about ${M.metres(meanTop)} m up the beach (${M.metres(Math.min(...tops))} to ${M.metres(Math.max(...tops))} m along its lobes, from wave to wave), and drains back the same way (Shen and Meyer's ballistic swash). Over the prints the sheet is never more than ${(deepest * 10).toFixed(0)} mm deep, yet it smooths each one away within a second or two of covering it. The film it leaves sinks into the sand, and the sheen fades.`;
+const caption = `A stretch of beach that rises 1 in 12, seen from above: the sea at the back, the strip of dark sand the swash keeps wet, and drier sand toward you. Someone walks along the strip at ${((M.GAIT.step / 100) / M.GAIT.gap).toFixed(2)} m/s, ${M.metres(M.GAIT.step)} m a step, and each bare heel sinks ${(M.GAIT.depth * 10).toFixed(0)} mm. While the foot is down, the sand around it turns pale: shearing makes the packed grains dilate, and the water drains down into the new pore space (Reynolds' dilatancy). When the foot lifts, the water comes back and pools in the heel and the ball. Then a bore runs in through the shallows, slowing from ${((M.SWASH.boreSpeed[0] * wave.u0) / 100).toFixed(1)} to ${((M.SWASH.boreSpeed[1] * wave.u0) / 100).toFixed(1)} m/s as it shoals, and collapses at the water's edge. Its swash leaves at ${(wave.u0 / 100).toFixed(1)} m/s and slows at g·sin β = ${(M.DOWNHILL / 100).toFixed(2)} m/s², so it turns ${M.turnOf(wave, L / 2).toFixed(1)} s later, about ${M.metres(meanTop)} m up the beach (${M.metres(Math.min(...tops))} to ${M.metres(Math.max(...tops))} m along its lobes, from wave to wave), and drains back the same way (Shen and Meyer's ballistic swash). Over the prints the sheet is never more than ${(deepest * 10).toFixed(0)} mm deep, yet it smooths each one away within a second or two of covering it. The film it leaves sinks into the sand, and the sheen fades.`;
 
 const backSvg = k.figureSvg({ width: W, height: H, label: LABEL_TEXT, body: back, className: "fp-back" });
 const frontSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="iso-svg fp-layer fp-front" viewBox="0 0 ${W} ${H}" aria-hidden="true">${front.join("")}</svg>`;
