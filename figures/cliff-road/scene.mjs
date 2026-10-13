@@ -315,3 +315,15 @@ export function lifebuoy({ P, x, y, z, facing = 0 }) {
   parts.push(Ln(G.circleOf(ring, 0, 2.1, P, 28), { tone: "lo" }) + Ln(G.circleOf(ring, 0, 1.2, P, 20), { tone: "lo" }));
   return { svg: parts.join(""), at: [x, y, z] };
 }
+
+// a curve mirror on an orange pole: a convex disc tilted down the road, so a driver sees round the bend
+export function mirror({ P, x, y, z, facing, height = 15 }) {
+  const parts = [];
+  parts.push(S(k.slabOf({ x: x - 1.4, y: y - 1.4, w: 2.8, d: 2.8, r: 0.6 }, z, 1, P, 2), { tone: "lo" }));
+  parts.push(S(k.cylinder(x, y, 0.42, z + 1, height - 1, P, 10), { tone: "mid", crease: "none", className: "cr-mirror-pole" }));
+  const n = [Math.cos(facing) * 0.99, Math.sin(facing) * 0.99, -0.14];
+  const F = G.frameAlong([x + n[0] * 0.9, y + n[1] * 0.9, z + height + 1.4], n);
+  parts.push(S(G.disc(-0.7, 0, 3.0, F, P), { tone: "mid", className: "cr-mirror-pole" }));
+  if (G.dot3(n, G.viewOf(P)) > 0) parts.push(`<path class="cr-mirror-glass" d="${G.circleOf(F, 0.02, 2.45, P, 28)}"/>`);
+  return { svg: parts.join(""), at: [x, y, z] };
+}

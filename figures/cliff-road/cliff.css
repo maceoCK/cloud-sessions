@@ -509,3 +509,24 @@
 .cr .iso-solid.cr-lower[data-lit] > .iso-shade {
   fill: var(--cr-lower-shade);
 }
+
+/* curve mirrors: orange poles and backs, a pale convex face */
+.cr {
+  --cr-mirror: #dbe4ea;
+}
+
+.iso:not([data-theme="light"]) .cr {
+  --cr-mirror: #45525e;
+}
+
+.cr .iso-solid.cr-mirror-pole > .iso-fill,
+.cr .iso-solid.cr-mirror-pole > .iso-shade,
+.cr .iso-solid.cr-mirror-pole > .iso-top {
+  fill: var(--cr-sock);
+}
+
+.cr-mirror-glass {
+  fill: var(--cr-mirror);
+  stroke: var(--anatomy-lo);
+  stroke-width: 0.4;
+}

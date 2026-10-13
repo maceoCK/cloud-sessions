@@ -62,9 +62,9 @@ const coastSdf = (x, y) => {
   return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - 30;
 };
 const BUMPS = [
-  { x: 175, y: -104, r: 14, h: 46 },
-  { x: -140, y: -14, r: 14, h: 42 },
-  { x: 175, y: 76, r: 14, h: 44 },
+  { x: 175, y: -104, r: 17, h: 36 },
+  { x: -140, y: -14, r: 17, h: 34 },
+  { x: 175, y: 76, r: 17, h: 35 },
   { x: -28, y: -104, r: 19, h: 30 },
   { x: -64, y: 74, r: 19, h: 30 },
   { x: 74, y: -14, r: 16, h: 24 },
@@ -78,7 +78,7 @@ const mountain = (x, y) => {
   let h = SLOPE(y) + 9 * n(x, y, 21, 45) + 4 * n(x, y, 22, 14);
   // knolls and spurs: rough-edged, not turned on a lathe
   for (const b of BUMPS) {
-    const r = b.r * (1 + 0.28 * n(x, y, 31 + b.r, 9));
+    const r = b.r * (1 + 0.38 * n(x, y, 31 + b.r, 8) + 0.12 * n(x, y, 37 + b.r, 3));
     h += b.h * Math.exp(-((x - b.x) ** 2 + (y - b.y) ** 2) / (2 * r * r));
   }
   h += 52 * Math.exp(-((x + 110) ** 2) / 9000 - ((y + 205) ** 2) / 1800);
@@ -583,6 +583,14 @@ for (let pin = 0; pin < 3; pin++) {
     put(`post${pin}-${j}`, [x, y, road.z[i]], SC.delineator({ P, x, y, z: road.z[i], toward }).svg, 4, 6);
   }
   const apex = list[Math.round(list.length / 2)];
+  // a curve mirror inside the bend, turned to the traffic coming into it
+  {
+    const at0 = Math.round(a + (b - a) * 0.8);
+    const inner = -road.drop[at0];
+    const [mx, my] = ri(at0, inner * (M.HALF_ROAD + 2.2));
+    const [ex, ey] = ri(Math.max(0, a - Math.round(14 / road.ds)), 0);
+    put(`mirror${pin}`, [mx, my, road.z[at0]], SC.mirror({ P, x: mx, y: my, z: road.z[at0], facing: Math.atan2(ey - my, ex - mx) }).svg, 6, 10);
+  }
   if (pin !== 1) {
     const [cx, cy] = ri(apex, road.drop[apex] * (M.HALF_ROAD + road.verge[apex] * 0.55));
     put(`chevron${pin}`, [cx, cy, road.z[apex]], SC.sign({ P, x: cx, y: cy, z: road.z[apex], facing: road.heading[apex] + Math.PI, kind: "chevron", height: 9, w: 11, h: 5 }).svg, 4, 12);
