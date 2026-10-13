@@ -893,17 +893,19 @@ export const PEEL = (() => {
     };
   }
 
+  const CAST = [0.22, 0, -0.33]; // shadow offset per mm of height, as the plate's: 4 mm right, 6 mm down for 18 mm
   function paintOf(st, P, { place = 0 } = {}) {
     const frame = frameOf(st, P, { place });
     const C = frame.C;
     const ink = inkOf(frame);
     const out = { halo: "", haloOpacity: 0, haloBlur: 3, flat: null, strips: [] };
-    // Halo: everything off the plate, dropped straight back onto it.
+    // Shadow: everything off the plate, cast back onto it by the light from the upper left. It falls
+    // down and to the right, the same way the plate's own shadow falls from its spacers.
     const lifted = [];
     let heights = 0, count = 0;
     const drop = (p) => {
       const h = dot(sub(p, FACE0), N);
-      lifted.push(project(C, sub(p, mul(N, h))));
+      lifted.push(project(C, add(sub(p, mul(N, h)), mul(CAST, Math.max(0, h)))));
       heights += h;
       count++;
     };

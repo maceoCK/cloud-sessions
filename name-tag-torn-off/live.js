@@ -12,6 +12,8 @@ const still = matchMedia("(prefers-reduced-motion: reduce)");
 const tagG = svg.querySelector('[data-part="tag"]');
 const halo = svg.querySelector('[data-part="halo"]');
 const flatG = svg.querySelector('[data-part="flat"]');
+const curlG = svg.querySelector('[data-part="curl"]');
+let haloUnder = false;
 const flat = {
   g: flatG,
   under: flatG.querySelector(".nt-under"),
@@ -142,6 +144,12 @@ function draw(force = false) {
     const t0 = performance.now();
     drawn = key;
     const paint = PEEL.paintOf(PEEL.stateAt(state.s), P, { place: state.place });
+    // The curl's shadow lies on the label; a new label coming down casts its shadow under itself.
+    const under = state.place > 0;
+    if (under !== haloUnder) {
+      tagG.insertBefore(halo, under ? flatG : curlG);
+      haloUnder = under;
+    }
     put(memoFlat, "halo", halo, "d", paint.halo || "M0 0");
     halo.style.opacity = paint.halo ? paint.haloOpacity.toFixed(3) : "0";
     if (paint.haloBlur) halo.style.filter = `blur(${paint.haloBlur.toFixed(1)}px)`;
