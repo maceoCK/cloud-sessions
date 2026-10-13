@@ -75,7 +75,7 @@ export const ENTRIES = {
     links: [["github.com/maceoCK/pravost", "https://github.com/maceoCK/pravost"]],
   },
   h668: {
-    kicker: "Repository, mathematics",
+    kicker: "Mathematics",
     name: "h668-z37",
     line: "The smallest Hadamard order nobody has settled.",
     body: [
@@ -84,7 +84,7 @@ export const ENTRIES = {
     links: [["github.com/maceoCK/h668-z37", "https://github.com/maceoCK/h668-z37"]],
   },
   conway: {
-    kicker: "Repository, game",
+    kicker: "Game",
     name: "conway",
     line: "You win when nothing is left alive.",
     body: ["A strategy game grown from Conway's Game of Life."],
