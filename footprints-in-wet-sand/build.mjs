@@ -172,7 +172,7 @@ function lag() {
       const r = 0.42 + 0.48 * M.hashOf(i * 5.3 + span * 0.1);
       const z = scourAt(x, y) + r * 0.78 + 0.05;
       const kind = M.hashOf(i * 9.1 + span * 0.3);
-      if (kind < 0.3) shells.push(face.name === "front" ? shellOnFront(x, z - r * 0.5, 0.9 + r * 0.6, kind < 0.15 ? 1 : -1) : shellOnEnd(y, z - r * 0.5, 0.9 + r * 0.6, kind < 0.15 ? 1 : -1));
+      if (kind < 0.3 && face.name === "front") shells.push(shellOnFront(x, z - r * 0.5, 0.9 + r * 0.6, kind < 0.15 ? 1 : -1));
       else {
         const along = face.name === "front" ? [1, 0] : [0, 1];
         const ring = Array.from({ length: 14 }, (_, j) => {
@@ -206,36 +206,31 @@ function shellPath(map, size, flip) {
   return `<g class="fp-shell"><path class="fp-shell-body" d="${fill}"/>${Ln(rib, { tone: "faint" })}${Ln(fill, { tone: "lo" })}</g>`;
 }
 const shellOnFront = (x, z, size, flip) => shellPath(([u, v]) => at([x + u, D, z + v]), size, flip);
-const shellOnEnd = (y, z, size, flip) => shellPath(([u, v]) => at([L, y + u, z + v]), size, flip);
 
 function donax() {
-  const y = 58;
-  const z = M.surfaceAt(y) - 4.2;
-  const length = 2.6;
-  const out = [];
-  const pts = [];
-  for (let i = 0; i <= 24; i++) {
-    const t = (i / 24) * Math.PI * 2;
-    const u = Math.cos(t) * length / 2;
-    const v = Math.sin(t) * 0.62 * (1 + 0.35 * Math.cos(t)) * (t < Math.PI ? 1 : 0.9);
-    pts.push([L, y + u * 0.98 - v * 0.2, z + u * 0.2 + v]);
+  const x = 236;
+  const z = Z1 - 4.4;
+  const length = 2.7;
+  const lean = 0.22;
+  const at3 = (u, v) => [x + u * Math.cos(lean) - v * Math.sin(lean), D, z + u * Math.sin(lean) + v * Math.cos(lean)];
+  const outline = [];
+  for (let i = 0; i <= 28; i++) {
+    const t = (i / 28) * Math.PI * 2;
+    const u = Math.cos(t) * (length / 2);
+    const v = Math.sin(t) * 0.66 * (1 + 0.32 * Math.cos(t)) * (Math.sin(t) > 0 ? 1 : 0.86);
+    outline.push(at3(u, v));
   }
-  out.push(`<path class="fp-shell-body" d="${poly(pts, true)}"/>`);
-  const growth = [0.4, 0.7].map((f) => {
-    const g = [];
-    for (let i = 0; i <= 12; i++) {
-      const t = Math.PI * (0.06 + 0.88 * (i / 12));
-      const u = Math.cos(t) * (length / 2);
-      const v = Math.sin(t) * 0.62 * (1 + 0.35 * Math.cos(t)) * f;
-      g.push([L, y + u * 0.98 - v * 0.2, z + u * 0.2 + v - 0.62 * (1 - f) * 0.9]);
-    }
-    return g;
-  });
-  out.push(Ln(growth.map((g) => poly(g)).join(""), { tone: "faint" }));
-  out.push(Ln(poly(pts, true), { tone: "lo" }));
-  const siphon = [[L, y + 1.15, z + 0.55], [L, y + 1.5, z + 1.6], [L, y + 1.7, z + 2.8], [L, y + 1.75, M.surfaceAt(y + 1.75)]];
-  out.push(Ln(poly(siphon), { tone: "faint", className: "fp-siphon" }));
-  return `<g class="fp-shell">${out.join("")}</g>`;
+  const growth = [0.42, 0.72].map((f) =>
+    Array.from({ length: 13 }, (_, i) => {
+      const t = Math.PI * (0.08 + 0.84 * (i / 12));
+      const u = Math.cos(t) * (length / 2) * (0.35 + 0.65 * f);
+      const v = Math.sin(t) * 0.66 * (1 + 0.32 * Math.cos(t)) * f - 0.66 * 0.86 * (1 - f);
+      return at3(u, v);
+    }),
+  );
+  const tip = at3(length / 2 - 0.15, 0.32);
+  const siphon = [tip, [tip[0] + 0.5, D, tip[2] + 1.2], [tip[0] + 0.7, D, tip[2] + 2.6], [tip[0] + 0.75, D, Z1]];
+  return `<g class="fp-shell"><path class="fp-shell-body" d="${poly(outline, true)}"/>${Ln(growth.map((g) => poly(g)).join(""), { tone: "faint" })}${Ln(poly(outline, true), { tone: "lo" })}${Ln(poly(siphon), { tone: "faint", className: "fp-siphon" })}</g>`;
 }
 
 function plate() {
