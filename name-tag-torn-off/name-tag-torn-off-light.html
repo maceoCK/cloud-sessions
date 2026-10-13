@@ -1413,11 +1413,11 @@ const PEEL = (() => {
   };
 })();
 
-const DATA = {"P":{"origin":[300,510.26881720430106],"scale":0.9457946938238382,"azimuth":58,"elevation":26},"POOL":130,"inkWidth":1.7,"label":"matrix(1.014 0.252 0.025 1.082 293.661 236.868)","hold":null};
+const DATA = {"P":{"origin":[300,510.26881720430106],"scale":0.9457946938238382,"azimuth":58,"elevation":26},"inkWidth":1.7,"label":"matrix(1.014 0.252 0.025 1.082 293.661 236.868)","hold":null};
 // Fig 4A live: one loop drives the peel from the model. The tour lifts a corner, peels the label
 // into its curl with the front lingering at each stick-slip band, lets it go, holds on the residue,
 // then lays a new label down. A drag or the arrow keys take over at any moment.
-const { P, POOL, inkWidth } = DATA;
+const { P, inkWidth } = DATA;
 const { LIFT, OFF, S_END } = PEEL;
 const stage = document.querySelector(".nt-stage");
 const svg = stage.querySelector("svg");

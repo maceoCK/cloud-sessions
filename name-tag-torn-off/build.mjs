@@ -446,7 +446,7 @@ function stuck() {
 }
 
 // ---- The label: a pool of paths the page rewrites every frame; the build fills it once --------------
-const POOL = 130;
+const POOL = 130; // slots for the curl's strips; the most a frame uses is 94
 const INK_W = 1.7;
 function tagLayer(s) {
   const st = PEEL.stateAt(s);
@@ -489,7 +489,7 @@ if (sheetArg) {
 const ARTIFACT = argv.includes("--artifact") ? argv[argv.indexOf("--artifact") + 1] || "artifact.html" : null;
 const svg = k.figureSvg({ width: WIDTH, height: HEIGHT, className: "nt-svg", label: LABEL_TEXT, body: [ARTIFACT ? "" : `<style>${CSS}</style>`, STATIC(), tagLayer(POSE)] });
 // `--hold=<s>` builds a page that rests at one pose, for close-ups.
-const DATA = { P, POOL, inkWidth: INK_W, label: LABEL, hold: flag("hold") === undefined ? null : Number(flag("hold")) };
+const DATA = { P, inkWidth: INK_W, label: LABEL, hold: flag("hold") === undefined ? null : Number(flag("hold")) };
 const MODEL = readFileSync(join(HERE, "model.mjs"), "utf8").replace(/^export /gm, "");
 const LIVE = readFileSync(join(HERE, "live.js"), "utf8");
 const script = MODEL + `\nconst DATA = ${JSON.stringify(DATA)};\n` + LIVE;

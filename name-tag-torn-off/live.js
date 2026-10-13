@@ -1,7 +1,7 @@
 // Fig 4A live: one loop drives the peel from the model. The tour lifts a corner, peels the label
 // into its curl with the front lingering at each stick-slip band, lets it go, holds on the residue,
 // then lays a new label down. A drag or the arrow keys take over at any moment.
-const { P, POOL, inkWidth } = DATA;
+const { P, inkWidth } = DATA;
 const { LIFT, OFF, S_END } = PEEL;
 const stage = document.querySelector(".nt-stage");
 const svg = stage.querySelector("svg");
