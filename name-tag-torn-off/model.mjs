@@ -798,6 +798,20 @@ export const PEEL = (() => {
     return [line.filter((p) => inside(FLAP_DW, p))];
   })();
 
+  // Loose fibres standing out past the flap's torn edge, as on the piece that stayed, in (d, w).
+  const FLAP_FIBRES = (() => {
+    const R = rng(6619);
+    const out = [];
+    for (let i = 2; i < TEAR.length - 2; i++) {
+      if (R() < 0.5) continue;
+      const [u, v] = TEAR[i];
+      const len = 0.7 + R() * 2.2;
+      const a = (R() - 0.5) * 1.3;
+      out.push([toDW([u - 0.3, v]), toDW([u + Math.cos(a) * len, v + Math.sin(a) * len])]);
+    }
+    return out;
+  })();
+
   // Fibre the plate did not keep, left on the flap's adhesive side: specks and short fibres in
   // (d, w), drawn wherever the back of the flap faces the viewer, so they move with the paper.
   const BACK_FUZZ = (() => {
@@ -1036,8 +1050,24 @@ export const PEEL = (() => {
       const near = Math.max(at, order.get(s.index - 1) ?? -1, order.get(s.index + 1) ?? -1);
       for (const r of fringe.get(s.index) || []) slots[near].fringe.push(pathOf(r));
     }
-    // Fibre on the back, in the slot that draws each strip's outline.
     const cuts = frame.cuts;
+    const slotAt = (m) => {
+      if (m >= st.f || !cuts.length) return -1;
+      let lo = 0, hi = cuts.length - 1;
+      while (hi - lo > 1) {
+        const k = (lo + hi) >> 1;
+        if (cuts[k] > m) lo = k;
+        else hi = k;
+      }
+      if (!byIndex.get(lo)) return -1;
+      return Math.max(order.get(lo), order.get(lo - 1) ?? -1, order.get(lo + 1) ?? -1);
+    };
+    // Loose fibres at the torn edge, drawn with the tear.
+    for (const [a, b] of FLAP_FIBRES) {
+      const at = slotAt(a[0]);
+      if (at >= 0) slots[at].tear.push(pathOf([project(C, frame.sheet.at(a[0], a[1])), project(C, frame.sheet.at(b[0], b[1]))]));
+    }
+    // Fibre on the back, in the slot that draws each strip's outline.
     for (const [a, b] of BACK_FUZZ) {
       const m = (a[0] + b[0]) / 2;
       if (m >= st.f || !cuts.length) continue;
