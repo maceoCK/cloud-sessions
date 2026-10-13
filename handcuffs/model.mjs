@@ -93,7 +93,7 @@ export function springCentreline(u, alpha) {
 // ---- state
 export function create() {
   return { theta: THETA_OPEN, alpha: 0, u: 0, notch: 0, peak: 0, hold: 0, dTheta: 0,
-           key: { at: "stand", depth: 0, kappa: 0, pinY: PIN.yEnter },     // + 'stand' | 'air' | 'keyhole' | 'slot'
+           key: { at: "rest", depth: 0, kappa: 0, pinY: PIN.yEnter },      // + 'rest' (lying flat on the surface) | 'air' | 'keyhole' | 'slot'
            shim: { phi: SHIM.parkPhi, under: false },                       // + phi is never null; park = −50
            events: [] };
 }
@@ -223,7 +223,7 @@ export function say(s, events = s.events, prev = {}) {
   else if (phase === "RELEASED") readout = s.dTheta < 0 ? "opening · teeth pass under pawl" : `turn 2 · ${kap}° · teeth clear`;
   else if (phase === "ENTERING") readout = tipRise(s.alpha) >= 0.05 ? `closing · pawl riding up ${up(s.alpha)} mm` : s.dTheta < 0 ? "opening · strand leaving the case" : "closing · nose inside the case";
   // design A: a strand parked part way out (θ −60, −75) is not called open; "open" is the swing out to the bumper (θ −100)
-  else if (phase === "OPEN" || phase === "DOUBLE_OPEN") readout = s.dTheta > 0 ? "closing · nose at the mouth" : keyIn ? "open · strand clear of the case" : s.theta > THETA_OPEN + 5 ? "strand out of the case" : s.key.at === "stand" ? "open · key parked" : "open";
+  else if (phase === "OPEN" || phase === "DOUBLE_OPEN") readout = s.dTheta > 0 ? "closing · nose at the mouth" : keyIn ? "open · strand clear of the case" : s.theta > THETA_OPEN + 5 ? "strand out of the case" : s.key.at === "rest" ? "open · key lies flat" : "open";
   else if (n >= NPOS && s.theta > thetaOf(NPOS) + 0.01) readout = "swing-through · strand passes free";
   else if (s.dTheta > 0 && tipRise(s.alpha) >= 0.05) readout = `closing · pawl riding up ${up(s.alpha)} mm`;
   else if (phase === "DOUBLE") readout = `double-locked · ${n} of ${NPOS} · ${mm(n)} mm`;
@@ -259,7 +259,7 @@ export function check() {
   seen = run({ jaw: thetaOf(9) - 10 }, 1);
   near(s.theta, thetaOf(9), 1e-6, "pull blocked"); truth(seen.some((e) => e.type === "blocked" && e.why === "teeth"), "pull blocked event");
   s.key.at = "slot"; s.key.pinY = PIN.yEnter; seen = run({ key: { pinY: 12.1 } }, 1);
-  near(s.u, U_ON, 1e-9, "pin ON"); truth(seen.some((e) => e.type === "dl" && e.on), "dl on event"); s.key.at = "stand";
+  near(s.u, U_ON, 1e-9, "pin ON"); truth(seen.some((e) => e.type === "dl" && e.on), "dl on event"); s.key.at = "rest";
   seen = run({ jaw: thetaOf(10) }, 1);
   near(s.theta - thetaOf(9), 0.92, 0.05, "squeeze blocked"); truth(seen.some((e) => e.type === "blocked" && e.why === "double lock"), "squeeze event");
   seen = run({ shim: SHIM.underPhi }, 3);
@@ -276,8 +276,8 @@ export function check() {
   near(s.key.kappa, KEY.endOff, 0.2, "turn 2 stop (u 0.02 after turn 1 stops it at -85.95)"); truth(s.alpha >= ALPHA_CLEAR, "teeth clear"); truth(seen.some((e) => e.type === "clear"), "clear event");
   run({ jaw: THETA_OPEN, key: { kappa: -120 } }, 2);
   near(s.theta, THETA_OPEN, 1e-9, "pull open"); truth(s.notch === 0, "open");
-  run({ key: { kappa: 0 } }, 1); step(s, { key: { at: "stand", depth: 0 } }, dt);
-  truth(s.alpha === 0 && s.key.at === "stand", "key back");
+  run({ key: { kappa: 0 } }, 1); step(s, { key: { at: "rest", depth: 0 } }, dt);
+  truth(s.alpha === 0 && s.key.at === "rest", "key back");
   run({ jaw: thetaOf(9) }, 3); near(s.theta, thetaOf(9), 1e-6, "close again");
   run({ shim: SHIM.underPhi }, 3); near(s.shim.phi, SHIM.blockedPhi, 1e-9, "shim at the teeth"); truth(!s.shim.under, "shim blocked single-locked");
   seen = run({ jaw: thetaOf(10), shim: SHIM.underPhi }, 1);

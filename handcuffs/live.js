@@ -15,6 +15,7 @@ const PARTS = HP.makeParts(KIT, P, D.parts);
 const PARTS4 = HP.makeParts(KIT, D.P4, D.parts);                 // B.5: the rebuilt mechanism parts use the fine projection P4
 const fineWrap = (inner) => `<g class="hc-fine" transform="scale(${1 / D.FINE})">${inner}</g>`;
 const jawEl = svg.querySelector('[data-part="jawA"]');
+const jawHaloEl = svg.querySelector('[data-part="jawHalo"]');      // the strand's soft halo on the undrawn surface (C1 #40, live)
 const pawlEl = svg.querySelector('[data-part="pawl"]');
 const springEl = svg.querySelector('[data-part="spring"]');
 const tabEl = svg.querySelector('[data-part="springTab"]');
@@ -24,7 +25,7 @@ const keyEls = { "key.inner": "keyInner", "key.outer": "keyOuter", "key.inv.inne
 for (const n in keyEls) keyEls[n] = svg.querySelector(`[data-part="${keyEls[n]}"]`);
 const keyMemo = {}, keyHtml = {};
 for (const n in keyEls) { keyMemo[n] = new Map(); keyHtml[n] = null; }
-const POSTF = D.key.post, PINF = D.key.pin, PARKED = D.key.parked;
+const POSTF = D.key.post, PINF = D.key.pin, REST_K = D.key.rest;   // REST_K: the key lying flat on the surface (no stand, no board)
 
 // ---- state: the model is the truth; `cmd` is the follower that feeds it the jaw target
 const s = M.create();
@@ -41,8 +42,11 @@ const fall = { x: s.alpha, v: 0 };
 let alphaShown = s.alpha, shownMech = "";
 let ridePeak = 0, ridingNotch = s.notch;            // the lift this click reached: held in the words through the staged snap
 let clickAt = -10;                                  // event ages drive the bursts (E.2 envelopes)
-// the key's page-side pose (keyPose): tip (F), flip angle phi about F y (0 upright, 180 inverted); κ is the model's
-const kp = { tip: PARKED.tip.slice(), phi: 0 };
+// the key's page-side pose (keyPose): tip (F), flip angle phi about F y (0 upright, 180 inverted), roll about its own axis
+// (−90 with phi 90: lying flat on the surface); κ is the model's
+const kp = { tip: REST_K.tip.slice(), phi: REST_K.phi, roll: REST_K.roll };
+const keyHaloEl = svg.querySelector('[data-part="keyHalo"]');
+let shownHalo = "";
 let kWant = 0;                                      // κ target (keys, drag, director); the model limits it (stops, stall)
 let shownKey = "";
 // lit (E.5): the owner switches at the contact event; --l eases 0.18 s per part
@@ -72,7 +76,10 @@ function follow(dt, calm) {
 // ---- drawing: rebuild a part only when its angle string changes
 function draw(calm) {
   const key = s.theta.toFixed(3);
-  if (key !== shownJaw) { shownJaw = key; jawEl.innerHTML = fineWrap(PARTS4.jawSvg(s.theta, { clipId: "clip-jawA", tone: "hi" })); }
+  if (key !== shownJaw) {
+    shownJaw = key; jawEl.innerHTML = fineWrap(PARTS4.jawSvg(s.theta, { clipId: "clip-jawA", tone: "hi" }));
+    if (jawHaloEl) jawHaloEl.setAttribute("d", pathOf(PARTS.jawRing(s.theta).map(([x, y]) => iso([x, -y, 0], P)), true));
+  }
   const mech = `${alphaShown.toFixed(3)}|${s.u.toFixed(3)}|${key}`;    // the pawl's clip follows the strand's top face
   if (mech !== shownMech) {
     shownMech = mech;
@@ -108,7 +115,8 @@ function say() {
   // the key passing 0° between turn 1 and turn 2 is not a beat: keep the turn's words for that frame (no "locked …" flicker);
   // only near 0° or while the key still heads back across it, so a hand-turned key's readout follows it (gate round 3 note)
   const kNow = s.key.kappa, crossing = r.phase === "KEYED" && Math.abs(kWant - kNow) > 0.5 && (Math.abs(kNow) < 0.5 || Math.sign(kNow) !== Math.sign(kWant));
-  const text = clock < held.until ? held.text : stepWords || (crossing ? shownText : r.readout);
+  let text = clock < held.until ? held.text : stepWords || (crossing ? shownText : r.readout);
+  if (arming) text = armOf(text.replace(/^arming · /, ""));
   if (text !== shownText) { readoutEl.textContent = text; shownText = text; }
   if (r.valuetext) { stage.setAttribute("aria-valuetext", r.valuetext); said.valuetext = r.valuetext; }
   stage.setAttribute("aria-valuenow", String(s.notch));
@@ -154,7 +162,7 @@ function tick(now) {
   const keyMoving = Math.abs(kWant - s.key.kappa) > 1e-6 && Math.abs(s.key.kappa - kLast) > 1e-9;
   kLast = s.key.kappa;
   const moving = cmd.v !== 0 || Math.abs(want - s.theta) > 1e-9 || pull || clock < held.until || falling || cam || clock - clickAt < 0.6 ||
-    scripted || cur || queue.length || touring || keyMoving || litMoving || clock - eventAt < 0.8 || (tourAt >= 0 && tourAt !== Infinity);
+    scripted || cur || queue.length || touring || arming || keyMoving || litMoving || clock - eventAt < 0.8 || (tourAt >= 0 && tourAt !== Infinity);
   frame = visible && moving ? requestAnimationFrame(tick) : 0;
 }
 const run = () => { if (!frame && visible) { last = 0; frame = requestAnimationFrame(tick); } };
@@ -188,23 +196,27 @@ function toggleFraming() { if (drag && !drag.tap) return; framing = framing === 
 // ---- the key's stations (C5): from its pose, where it is for the model and which slotted pieces draw it (D.3)
 const near2 = (a, b) => Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6;
 function stationOf() {
-  if (kp.phi === 0 && near2(kp.tip, POSTF) && kp.tip[2] <= 6.2 + 1e-9) return "keyhole";
-  if (kp.phi === 180 && Math.abs(kp.tip[0] - PINF.x) < 1e-6 && kp.tip[2] - KEYP.LEN <= 4.3 + 1e-9) return "slot";
-  if (kp.phi === 0 && near2(kp.tip, PARKED.tip) && kp.tip[2] <= PARKED.tip[2] + 1e-6) return "stand";
+  if (kp.phi === 0 && !kp.roll && near2(kp.tip, POSTF) && kp.tip[2] <= 6.2 + 1e-9) return "keyhole";
+  if (kp.phi === 180 && !kp.roll && Math.abs(kp.tip[0] - PINF.x) < 1e-6 && kp.tip[2] - KEYP.LEN <= 4.3 + 1e-9) return "slot";
+  if (kp.phi === REST_K.phi && kp.roll === REST_K.roll && near2(kp.tip, REST_K.tip) && Math.abs(kp.tip[2] - REST_K.tip[2]) < 1e-6) return "rest";
   return "air";
 }
 function keyPieces(at, pose) {
   const L = KEYP.LEN, out = { "key.inner": null, "key.outer": null, "key.inv.inner": null, "key.air": null };
-  if (at === "stand") out["key.outer"] = [0, L];
+  if (at === "rest") out["key.outer"] = [0, L];
   else if (at === "air") out["key.air"] = [0, L];
   else if (at === "keyhole") { const f = 4.3 - pose.tip[2]; if (f <= 0) out["key.outer"] = [0, L]; else { out["key.inner"] = [0, f]; out["key.outer"] = [f, L]; } }
   else { const f = pose.tip[2] - 4.3; if (f >= L) out["key.outer"] = [0, L]; else { out["key.inv.inner"] = [f, L]; out["key.outer"] = [0, f]; } }
   return out;
 }
 function drawKey() {
-  const at = stationOf(), pose = { tip: kp.tip, phi: kp.phi, kappa: kp.phi === 0 ? s.key.kappa : 0 };
-  const sig = `${at}|${pose.tip.map((v) => v.toFixed(3)).join(",")}|${pose.phi.toFixed(2)}|${pose.kappa.toFixed(2)}`;
+  const at = stationOf(), pose = { tip: kp.tip, phi: kp.phi, roll: kp.roll, kappa: kp.phi === 0 ? s.key.kappa : 0 };
+  const sig = `${at}|${pose.tip.map((v) => v.toFixed(3)).join(",")}|${pose.phi.toFixed(2)}|${pose.roll.toFixed(2)}|${pose.kappa.toFixed(2)}`;
   if (sig === shownKey) return;
+  // the key's halo (C1 #41) under its spot on the surface: full while it lies there, fading out as it lifts and turns away
+  const off = Math.hypot(kp.tip[0] - REST_K.tip[0], kp.tip[1] - REST_K.tip[1], kp.tip[2] - REST_K.tip[2]) + Math.abs(kp.phi - REST_K.phi) / 15 + Math.abs(kp.roll - REST_K.roll) / 15;
+  const halo = Math.max(0, 1 - off / 9).toFixed(3);
+  if (keyHaloEl && halo !== shownHalo) { shownHalo = halo; keyHaloEl.style.setProperty("--hc-kh", halo); }
   shownKey = sig;
   const pieces = keyPieces(at, pose);
   for (const n in pieces) {
@@ -230,44 +242,52 @@ function turnFrom(kappa0, kappa1) { return (f) => { kWant = lerp(kappa0, kappa1,
 // key moves: a straight translation of the tip (lift, descent, pin slide) or a flight of the flip centre (s 22.85) on a
 // quadratic Bezier through `via`, the key turning about its ring normal (F y) from phi0 to phi1 (minimum jerk)
 function keyLine(tip1, profile = minjerk) { let a; return (f, first) => { if (first) a = kp.tip.slice(); const g = profile(f); kp.tip = a.map((v, i) => lerp(v, tip1[i], g)); }; }
-function keyFly(tip1, phi1, via) {
-  let c0, c1, ctrl, phi0;
+function keyFly(tip1, phi1, via, roll1 = 0) {
+  let c0, c1, ctrl, phi0, roll0;
   return (f, first) => {
     if (first) {
-      phi0 = kp.phi; c0 = KEYP.centreOf({ tip: kp.tip, phi: phi0 }); c1 = KEYP.centreOf({ tip: tip1, phi: phi1 });
+      phi0 = kp.phi; roll0 = kp.roll; c0 = KEYP.centreOf({ tip: kp.tip, phi: phi0 }); c1 = KEYP.centreOf({ tip: tip1, phi: phi1 });
       const mid = via ?? [(c0[0] + c1[0]) / 2, (c0[1] + c1[1]) / 2, Math.max(c0[2], c1[2]) + 8];
       ctrl = c0.map((v, i) => 2 * mid[i] - (v + c1[i]) / 2);
     }
     const g = minjerk(f), h = 1 - g;
     const c = c0.map((v, i) => h * h * v + 2 * h * g * ctrl[i] + g * g * c1[i]);
     const phi = f >= 1 ? phi1 : lerp(phi0, phi1, g);
-    kp.phi = phi; kp.tip = KEYP.tipOfCentre(c, { phi });
+    kp.phi = phi; kp.roll = f >= 1 ? roll1 : lerp(roll0, roll1, g); kp.tip = KEYP.tipOfCentre(c, { phi });
   };
 }
 const ABOVE_KEYHOLE = [POSTF[0], POSTF[1], 16 - D.key.z0];          // tip at W z 16
 const ABOVE_SLOT = (y) => [PINF.x, y, 8 + KEYP.LEN];                 // inverted: pin tip at F z 8
-const PARK_HOVER = [PARKED.tip[0], PARKED.tip[1], PARKED.tip[2] + 6];
+const REST_HOVER = [REST_K.tip[0], REST_K.tip[1], REST_K.tip[2] + 6];   // lifted 6 mm off the surface, still lying flat
+// flights (the flip centre's via points, build.mjs VIA): rest → slot, keyhole → rest, slot → keyhole
+const VIA = { restSlot: [82, -24, 28], keyholeRest: [78, -36, 26], slotKeyhole: [85, -12, 40] };
+const toRest = (via) => keyFly(REST_HOVER, REST_K.phi, via, REST_K.roll);
 // the descent into the keyhole slows while the bore passes the post tip (F 3.8) and the flag passes the notch (E.2, U A12)
 const descend = (f) => (f < 0.35 ? 0.5 * minjerk(f / 0.35) : f < 0.88 ? 0.5 + 0.38 * ((f - 0.35) / 0.53) : 0.88 + 0.12 * Math.sin(((f - 0.88) / 0.12) * Math.PI / 2));
 const S = (dur, acts, extra = {}) => ({ dur, acts: [].concat(acts), ...extra });
 // Loop A (U.1–U.3)
-function loopA() {
-  const t9 = M.thetaOf(9), out = [];
-  out.push(S(1.2, [], { name: "A0", cam: "pair", words: "open · key parked" }));
+function loopA(n9 = 9) {                             // n9: the position chapters 02 and 03 work at (the tour closes to 9)
+  const t9 = M.thetaOf(n9), out = [];
+  out.push(S(1.2, [], { name: "A0", cam: "pair", words: "open · key lies flat" }));
   out.push(S(1.6, jawTo(-24.0), { name: "A1", cam: "lock" }));
   out.push(S(0.7, jawTo(M.THETA1 + 0.1, (f) => f), { name: "A2" }));
   for (let n = 1; n < 9; n++) { out.push(S(0.33, jawTo(M.thetaOf(n + 1) + 0.1), { name: "A3" })); out.push(S(0.12, [], { name: "A3" })); }
-  out.push(S(0.7, [], { name: "A4", words: `locked · 9 of ${M.NPOS} · inside ${Math.round(M.loopAt(t9).perimeter)} mm` }));
-  out.push(S(0.8, jawTo(t9 - 6), { name: "A5" }), S(0.4, (f, first) => { if (first) want = s.theta; }, { name: "A5" }));
-  out.push(S(0.3, keyLine(PARK_HOVER), { name: "A6", words: "key · pin end down to the slot" }));
-  out.push(S(1.1, keyFly(ABOVE_SLOT(PINF.yEnter), 180, [95, -30, 28]), { name: "A6", words: "key · pin end down to the slot" }));
+  out.push(S(0.7, [], { name: "A4", words: `locked · ${n9} of ${M.NPOS} · inside ${Math.round(M.loopAt(t9).perimeter)} mm` }));
+  out.push(S(0.8, jawTo(t9 - 6), { name: "A5", beat: "pull" }), S(0.4, (f, first) => { if (first) want = s.theta; }, { name: "A5" }));
+  // A6: the key lifts off the surface (still flat), then turns from lying to inverted (pin down) as it travels over the slot
+  out.push(S(0.3, keyLine(REST_HOVER), { name: "A6", words: "key · pin end down to the slot" }));
+  out.push(S(1.1, keyFly(ABOVE_SLOT(PINF.yEnter), 180, VIA.restSlot), { name: "A6", words: "key · pin end down to the slot" }));
   out.push(S(0.4, keyLine([PINF.x, PINF.yEnter, PINF.tipZ + KEYP.LEN]), { name: "A7", words: "pin in the slot" }));
   // the slide ends 0.3 s before the beat does, so the detent's words are read before A9's (S3 gate)
   out.push(S(0.9, keyLine([PINF.x, PINF.yEnd, PINF.tipZ + KEYP.LEN], smooth01), { name: "A8" }), S(0.3, [], { name: "A8" }));
-  out.push(S(0.4, keyLine(ABOVE_SLOT(PINF.yEnd)), { name: "A9", words: `double-locked · 9 of ${M.NPOS} · ${Math.round(M.loopAt(t9).perimeter)} mm` }));
-  // the squeeze test, then back onto the faces at θ9 (design says want θ9 − 2; that reads as a second pull test, "pull blocked")
-  out.push(S(0.8, jawTo(t9 + 2.6, (f) => Math.min(1, f * 4)), { name: "A10" }), S(0.6, jawTo(t9, (f) => Math.min(1, f * 4)), { name: "A10" }));
-  out.push(S(1.6, keyFly(ABOVE_KEYHOLE, 0, [85, -12, 40]), { name: "A11", words: "key to the keyhole" }));
+  // A9–A10: the key stays where it is, its pin held in the slot (the user's request: no return between the pin and the turns)
+  out.push(S(0.4, [], { name: "A9", words: `double-locked · ${n9} of ${M.NPOS} · ${Math.round(M.loopAt(t9).perimeter)} mm` }));
+  // the squeeze test with the pin still in the slot, then back onto the faces at θ9 (design says want θ9 − 2; that reads as a
+  // second pull test, "pull blocked")
+  out.push(S(0.8, jawTo(t9 + 2.6, (f) => Math.min(1, f * 4)), { name: "A10", beat: "squeeze" }), S(0.6, jawTo(t9, (f) => Math.min(1, f * 4)), { name: "A10" }));
+  // A11: straight from the slot to the keyhole: pin out, the key flips end over end in the air, then (A12) the barrel goes down
+  out.push(S(0.4, keyLine(ABOVE_SLOT(PINF.yEnd)), { name: "A11", words: "pin out of the slot" }));
+  out.push(S(1.2, keyFly(ABOVE_KEYHOLE, 0, VIA.slotKeyhole), { name: "A11", words: "key flips over to the keyhole" }));
   out.push(S(0.8, keyLine([POSTF[0], POSTF[1], M.GEO.KEY_TIP_SEATED], descend), { name: "A12", words: "key in · bore over the post" }));
   out.push(S(0.2, (f, first) => { if (first) want = s.theta; }, { name: "A13" }));
   out.push(S(0.7, turnTo(M.KEY.touchFlange), { name: "A14" }));
@@ -278,13 +298,15 @@ function loopA() {
   out.push(S(1.5, jawTo(-45), { name: "A19" }));
   out.push(S(0.7, turnTo(0), { name: "A20", words: "key back · pawl drops to its stud" }));
   out.push(S(0.6, keyLine(ABOVE_KEYHOLE), { name: "A21", words: "key out" }));
-  out.push(S(1.2, [keyFly(PARK_HOVER, 0, [92, -36, 40]), jawTo(M.THETA_OPEN)], { name: "A22", cam: "pair", words: "open · key parked" }));
-  out.push(S(0.4, keyLine(PARKED.tip), { name: "A22", words: "open · key parked" }));
+  // A22: only now, unlocked and swung open, the key goes back: it turns from upright to lying flat in the air and is laid down
+  out.push(S(1.2, [toRest(VIA.keyholeRest), jawTo(M.THETA_OPEN)], { name: "A22", cam: "pair", words: "key goes back to lie flat" }));
+  out.push(S(0.4, keyLine(REST_K.tip), { name: "A22", words: "open · key lies flat" }));
   out.push(S(1.6, [], { name: "A23" }));
   return out;
 }
 // user moves of the key (K, D, arming): from wherever the key is, the same paths as the tour. Out of a station first (κ back
-// to 0, then straight up), a flight to the target's hover point (flipping to its phi), then the descent
+// to 0, then straight up; from lying flat it lifts 6 mm still flat), a flight to the target's hover point (turning to its phi and
+// roll), then the descent. From the slot to the keyhole it goes straight across (pin out, flip, barrel down): never back to rest
 const SEATED = [POSTF[0], POSTF[1], M.GEO.KEY_TIP_SEATED];
 function keyGo(target) {
   const out = [], at = stationOf();
@@ -292,41 +314,46 @@ function keyGo(target) {
   if (done) return out;
   if (at === "keyhole" && Math.abs(s.key.kappa) > 0.5) out.push(S(0.6, turnTo(0), { words: s.key.kappa > 0 ? "key back to 0° · spring stays off" : "key back · pawl drops to its stud" }));
   if (at === "keyhole" && target !== "keyhole") out.push(S(0.6, keyLine(ABOVE_KEYHOLE), { words: "key out" }));
-  else if (at === "slot") out.push(S(0.4, keyLine(ABOVE_SLOT(kp.tip[1]))));
-  else if (at === "stand") out.push(S(0.3, keyLine(PARK_HOVER), { words: target === "slot" ? "key · pin end down to the slot" : "key to the keyhole" }));
+  else if (at === "slot") out.push(S(0.4, keyLine(ABOVE_SLOT(kp.tip[1])), { words: "pin out of the slot" }));
+  else if (at === "rest") out.push(S(0.3, keyLine(REST_HOVER), { words: target === "slot" ? "key · pin end down to the slot" : "key to the keyhole" }));
   if (target === "keyhole") {
-    if (at !== "keyhole") out.push(S(1.2, keyFly(ABOVE_KEYHOLE, 0, kp.phi > 90 ? [85, -12, 40] : null), { words: "key to the keyhole" }));
+    const flip = at === "slot" || kp.phi > 90;
+    if (at !== "keyhole") out.push(S(1.2, keyFly(ABOVE_KEYHOLE, 0, flip ? VIA.slotKeyhole : null), { words: flip ? "key flips over to the keyhole" : "key to the keyhole" }));
     out.push(S(0.8, keyLine(SEATED, descend), { words: "key in · bore over the post" }));
   } else if (target === "slot") {
-    out.push(S(1.1, keyFly(ABOVE_SLOT(PINF.yEnter), 180, [95, -30, 28]), { words: "key · pin end down to the slot" }));
+    out.push(S(1.1, keyFly(ABOVE_SLOT(PINF.yEnter), 180, at === "rest" ? VIA.restSlot : [95, -30, 28]), { words: "key · pin end down to the slot" }));
     out.push(S(0.4, keyLine([PINF.x, PINF.yEnter, PINF.tipZ + KEYP.LEN]), { words: "pin in the slot" }));
   } else {
-    out.push(S(1.2, keyFly(PARK_HOVER, 0, kp.phi > 90 ? [95, -30, 28] : null), { words: "" }));
-    out.push(S(0.4, keyLine(PARKED.tip), { words: "open · key parked" }));
+    out.push(S(1.2, toRest(kp.phi > 90 || at === "slot" ? VIA.restSlot : VIA.keyholeRest), { words: "key goes back to lie flat" }));
+    out.push(S(0.4, keyLine(REST_K.tip), { words: "key laid down flat" }));
   }
   return out;
 }
-// D: the pin into the slot, slid 4 mm toward the keyhole, out again, and the key home
-const doubleLockSteps = () => [...keyGo("slot"), S(0.9, keyLine([PINF.x, PINF.yEnd, PINF.tipZ + KEYP.LEN], smooth01), { beat: "dl" }), S(0.3, []),
-  S(0.4, keyLine(ABOVE_SLOT(PINF.yEnd))), S(1.4, keyFly(PARK_HOVER, 0, [95, -30, 28])), S(0.4, keyLine(PARKED.tip))];
+// D: the pin into the slot and slid 4 mm toward the keyhole. The key stays there, pin in the slot (the user's request): the next
+// beat squeezes with the pin held, then takes the key straight across to the keyhole
+const doubleLockSteps = () => [...keyGo("slot"), S(0.9, keyLine([PINF.x, PINF.yEnd, PINF.tipZ + KEYP.LEN], smooth01), { beat: "dl" }), S(0.3, [])];
 const closeSteps = () => [S(1.6, jawTo(-24.0), { cam: "lock", beat: "close" }), S(0.7, jawTo(M.THETA1 + 0.1, (f) => f)),
   ...Array.from({ length: 8 }, (_, i) => [S(0.33, jawTo(M.thetaOf(i + 2) + 0.1)), S(0.12, [])]).flat(), S(0.7, [])];
 const pullSteps = () => [S(0.8, jawTo(s.theta - 6), { beat: "pull" }), S(0.4, (f, first) => { if (first) want = s.theta; })];
 const squeezeSteps = () => [S(0.8, jawTo(M.thetaOf(Math.max(1, s.notch)) + 2.6, (f) => Math.min(1, f * 4)), { beat: "squeeze" }), S(0.6, jawTo(M.thetaOf(Math.max(1, s.notch)), (f) => Math.min(1, f * 4)))];
-const isRest = () => s.notch === 0 && s.theta <= M.THETA_OPEN + 5 && stationOf() === "stand" && Math.abs(s.key.kappa) < 0.5 && s.u < 0.05;   // turn 1 leaves u 0.02 (KEY1's last sample)
+const isRest = () => s.notch === 0 && s.theta <= M.THETA_OPEN + 5 && stationOf() === "rest" && Math.abs(s.key.kappa) < 0.5 && s.u < 0.05;   // turn 1 leaves u 0.02 (KEY1's last sample)
 // next beat from the state (E.4 table)
 function nextBeatSteps() {
   const at = stationOf(), n = s.notch, kap = s.key.kappa, ph = M.classify(s);
-  if (at === "air") return keyGo(Math.abs(kp.phi - 180) < 1 ? "slot" : "stand");
-  if (at === "slot") return s.u < 3.99 ? [S(0.9, keyLine([PINF.x, PINF.yEnd, PINF.tipZ + KEYP.LEN], smooth01)), S(0.3, []), S(0.4, keyLine(ABOVE_SLOT(PINF.yEnd))), ...[S(1.4, keyFly(PARK_HOVER, 0, [95, -30, 28])), S(0.4, keyLine(PARKED.tip))]]
-    : [S(0.4, keyLine(ABOVE_SLOT(PINF.yEnd))), S(1.4, keyFly(PARK_HOVER, 0, [95, -30, 28])), S(0.4, keyLine(PARKED.tip))];
+  // a key left in the air (Esc mid-flight): double-locked, it goes on to the keyhole; inverted, to the slot; else back to rest
+  if (at === "air") return keyGo(s.u >= 3.9 ? "keyhole" : Math.abs(kp.phi - 180) < 1 ? "slot" : "rest");
+  // at the slot: slide to 4 mm; then, pin still in the slot, the squeeze test; then straight across to the keyhole (no return)
+  if (at === "slot") {
+    if (s.u < 3.99) return [S(0.9, keyLine([PINF.x, PINF.yEnd, PINF.tipZ + KEYP.LEN], smooth01), { beat: "dl" }), S(0.3, [])];
+    return n > 0 && lastBeat !== "squeeze" ? squeezeSteps() : keyGo("keyhole");
+  }
   if (at === "keyhole") {
     if (kp.tip[2] > SEATED[2] + 1e-6) return keyGo("keyhole");
     if (Math.abs(kap) <= 0.5) {
       if (s.u > M.U_RELEASED) return [S(0.7, turnTo(M.KEY.touchFlange)), S(1.4, turnTo(M.KEY.endTurn1)), S(0.4, [])];
       if (n > 0) return [S(0.4, turnTo(M.KEY.touchShoulder)), S(1.1, turnTo(M.KEY.endOff)), S(0.4, [])];
-      const home = keyGo("stand");
-      if (s.theta > M.THETA_OPEN + 1) home.splice(Math.max(0, home.length - 2), 1, S(1.2, [home[home.length - 2].acts[0], jawTo(M.THETA_OPEN)], { cam: "pair", words: "open · key parked" }));
+      const home = keyGo("rest");
+      if (s.theta > M.THETA_OPEN + 1) home.splice(Math.max(0, home.length - 2), 1, S(1.2, [home[home.length - 2].acts[0], jawTo(M.THETA_OPEN)], { cam: "pair", words: "key goes back to lie flat" }));
       return home;
     }
     if (kap > 0) return [S(0.7, turnTo(0), { words: "key back to 0° · spring stays off" })];
@@ -338,13 +365,71 @@ function nextBeatSteps() {
   if (ph === "DOUBLE") return lastBeat !== "squeeze" ? squeezeSteps() : keyGo("keyhole");
   return [];
 }
+// ---- chapters (E.4): 01 Close = A0–A5, 02 Double-lock = A6–A10, 03 Unlock = A11–A23. A button (or 1–3) first arms: it plays
+// the director's own beats toward the chapter's precondition, 1.6× fast with `arming · …` words (never a snap), then the beats
+const chapterOf = (name) => (/^A\d+$/.test(name ?? "") ? (Number(name.slice(1)) <= 5 ? 1 : Number(name.slice(1)) <= 10 ? 2 : 3) : 0);
+const chapterBtns = [...document.querySelectorAll(".hc-chapter")];
+let arming = 0, shownChapter = -1;
+const restKey = () => stationOf() === "rest";
+const READY = {
+  1: () => isRest(),
+  2: () => restKey() && s.notch > 0 && s.u < 0.05 && Math.abs(s.key.kappa) < 0.5,       // LOCKED(n), the key lying flat
+  // DOUBLE(n) with the key in the slot (02's end: pin held), in the air, or lying flat; 03 takes it from there to the keyhole
+  3: () => (stationOf() === "slot" || stationOf() === "air" || restKey()) && s.notch > 0 && s.u >= 3.9,
+};
+// toward REST by the next-beat table, except that a locked cuff with the key out is unlocked at once (no pull or squeeze test);
+// a key in the slot or the air after 02 goes straight to the keyhole
+function towardRest() {
+  if ((restKey() || stationOf() === "air" || (stationOf() === "slot" && s.u >= 3.99)) && s.notch > 0) return keyGo("keyhole");
+  if (restKey() && s.notch === 0 && s.u < 0.05 && s.theta > M.THETA_OPEN + 5) return [S(1.2, jawTo(M.THETA_OPEN), { cam: "pair" })];
+  return nextBeatSteps();
+}
+function armSteps(c) {
+  if (c >= 2 && isRest()) return closeSteps();                                 // from OPEN: close to 9
+  if (c === 3 && READY[2]()) return doubleLockSteps();                         // 03 from LOCKED: double-lock first
+  return towardRest();
+}
+// 03's first beats (A11–A12) leave from the slot; with the key lying flat or in the air they are its flight to the keyhole
+function chapterSteps(c) {
+  const list = loopA(c === 1 ? 9 : s.notch).filter((st) => chapterOf(st.name) === c);
+  if (c !== 3 || stationOf() === "slot") return list;
+  const go = keyGo("keyhole").map((st, i) => ({ ...st, name: i === 0 ? "A11" : "A12" }));
+  return [...go, ...list.filter((st) => st.name !== "A11" && st.name !== "A12")];
+}
+function markChapter(c) {
+  if (c === shownChapter) return;
+  shownChapter = c;
+  for (const b of chapterBtns) { const on = Number(b.dataset.chapter) === c; b.toggleAttribute("data-on", on); b.setAttribute("aria-pressed", String(on)); }
+}
+function chapter(c) { takeOver(); arming = c; markChapter(c); run(); }
+for (const b of chapterBtns) b.addEventListener("click", () => chapter(Number(b.dataset.chapter)));
+// the arming words fit the 36-character readout: cut back to a whole " · " clause when that keeps two words or more, else to a
+// whole word, never ending on a small connecting word ("detent parked 0.6 mm over pawl" → "detent parked 0.6 mm")
+const SMALL = new Set(["to", "the", "of", "over", "under", "at", "in", "on", "by", "up", "with", "and", "·"]);
+function armOf(t) {
+  const fits = (w) => `arming · ${w}`.length <= 36;
+  if (fits(t)) return `arming · ${t}`;
+  let w = t;
+  while (!fits(w) && w.includes(" · ")) w = w.slice(0, w.lastIndexOf(" · "));
+  if (!fits(w) || w.split(" ").length < 2) {
+    const words = t.split(" ");
+    while (words.length > 1 && (!fits(words.join(" ")) || SMALL.has(words[words.length - 1]))) words.pop();
+    w = words.join(" ");
+  }
+  return `arming · ${w}`;
+}
 // the runner: one step at a time; the tour refills the queue (Loop A from REST, else the next beat until REST)
 let touring = false, tourAt = -1, hoverPause = false, resumeTimer = 0, stepWords = "", wordsAt = -1;
 function runSteps(dt, calm) {
   if (!cur) {
+    if (!queue.length && arming) {
+      if (READY[arming]()) { queue = chapterSteps(arming); arming = 0; }
+      else { const c = arming; queue = armSteps(c).map((st) => ({ ...st, dur: st.dur / 1.6, chap: c })); if (!queue.length) arming = 0; }
+    }
     if (!queue.length && touring && !hoverPause) queue = isRest() ? loopA() : nextBeatSteps();
-    if (!queue.length) { stepWords = ""; return false; }
+    if (!queue.length) { stepWords = ""; markChapter(0); return false; }
     cur = queue.shift(); stepT = 0; cur.first = true;
+    markChapter(arming || cur.chap || chapterOf(cur.name));
     if (cur.words) { wordsAt = clock; held.until = -1; }                        // a worded step's words win over an older held event
     if (cur.cam && !(drag && !drag.tap)) framing = cur.cam;
     if (cur.beat) lastBeat = cur.beat;
@@ -361,7 +446,7 @@ function takeOver() {
   // the visible state becomes the target only when a tour, step or queue was driving it; otherwise the reader's own targets
   // stand, so quick repeated presses add up (S3 gate round 3: three quick → land on position 3, as in S1 and S2)
   const busy = touring || cur || queue.length;
-  touring = false; queue = []; cur = null; stepWords = "";
+  touring = false; queue = []; cur = null; stepWords = ""; arming = 0;
   if (tourAt >= 0) tourAt = Infinity;                                         // input before the tour's start cancels it too
   if (busy) { want = s.theta; cmd.x = s.theta; cmd.v = 0; kWant = s.key.kappa; }
   clearTimeout(resumeTimer);
@@ -422,7 +507,7 @@ function nextBeat() {                                // Space, Enter, a tap: the
   const list = nextBeatSteps();
   queue = list; run();
 }
-// key intents (E.4 keys): ↑/↓ turn 15° (Shift: to the next stop), K stand ↔ keyhole, D double-lock, 0 key back to 0°
+// key intents (E.4 keys): ↑/↓ turn 15° (Shift: to the next stop), K rest or slot → keyhole, seated → rest, D double-lock, 0 key back to 0°
 const seated = () => stationOf() === "keyhole" && kp.tip[2] <= SEATED[2] + 1e-6;
 function turnBy(dir, toStop) {
   if (!seated()) { play([...keyGo("keyhole")]); return; }                      // arming: the key goes in first
@@ -436,7 +521,7 @@ function turnBy(dir, toStop) {
 }
 function keyK() {
   if (seated() && Math.abs(s.key.kappa) > 0.5) { play([S(0.7, turnTo(0))]); return; }
-  play(seated() ? keyGo("stand") : keyGo("keyhole"));
+  play(seated() ? keyGo("rest") : keyGo("keyhole"));
 }
 function keyD() { play(doubleLockSteps()); }
 function keyZero() { if (seated()) { takeOver(); kWant = 0; run(); } }
@@ -455,6 +540,7 @@ stage.addEventListener("keydown", (e) => {
     k: keyK, K: keyK, d: keyD, D: keyD, 0: keyZero,
     z: toggleFraming,
     Z: toggleFraming,
+    1: () => chapter(1), 2: () => chapter(2), 3: () => chapter(3),
   };
   const act = map[e.key];
   if (!act) return;
@@ -488,11 +574,11 @@ function onJaw(p, slackMm) {
   return inside || best <= slackMm;
 }
 let drag = null;
-// the key column on screen (viewBox px): the segment from the barrel tip to the pin tip, for hits on the key and the stand
+// the key on screen (viewBox px): the segment from the barrel tip to the pin tip and the bow, for hits on the key
 function nearKey(e, slackCss) {
   const box = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
   const q = [vb.x + ((e.clientX - box.left) / box.width) * vb.width, vb.y + ((e.clientY - box.top) / box.height) * vb.height];
-  const pose = { tip: kp.tip, phi: kp.phi, kappa: 0 };
+  const pose = { tip: kp.tip, phi: kp.phi, roll: kp.roll, kappa: 0 };
   const W3 = (p) => [p[0], -p[1], p[2] + D.key.z0];
   const a = iso(W3(KEYP.pointAt(pose, 0)), P), b = iso(W3(KEYP.pointAt(pose, KEYP.LEN)), P), c = iso(W3(KEYP.pointAt(pose, KEYP.RING_S)), P);
   const dx = b[0] - a[0], dy = b[1] - a[1], t = Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / (dx * dx + dy * dy || 1)));
@@ -509,7 +595,7 @@ svg.addEventListener("pointerdown", (e) => {
     stage.dataset.dragging = "";
     return;
   }
-  if (stationOf() === "stand" && nearKey(e, 10)) { drag = { tap: true, stand: true, x: e.clientX, y: e.clientY }; return; }
+  if (stationOf() === "rest" && nearKey(e, 10)) { drag = { tap: true, onKey: true, x: e.clientX, y: e.clientY }; return; }   // a tap on the key lying flat = K
   if (!onJaw(p, 8 * mmPerCss)) { drag = { tap: true, x: e.clientX, y: e.clientY }; return; }
   drag = { id: e.pointerId, a0: angleOf(p), last: angleOf(p), turned: 0, theta0: s.theta, captured: false };
   stage.dataset.dragging = "";
@@ -541,7 +627,7 @@ svg.addEventListener("pointermove", (e) => {
 });
 function endDrag(e) {
   if (!drag) return;
-  if (drag.tap) { if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 6) { if (drag.stand) keyK(); else nextBeat(); } }
+  if (drag.tap) { if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 6) { if (drag.onKey) keyK(); else nextBeat(); } }
   else if (drag.key) { if (drag.captured && svg.hasPointerCapture(drag.id)) svg.releasePointerCapture(drag.id); kWant = s.key.kappa; kMode = "direct"; run(); }
   else { if (drag.captured && svg.hasPointerCapture(drag.id)) svg.releasePointerCapture(drag.id); want = s.theta; cmd.x = s.theta; cmd.v = 0; run(); }
   drag = null;
@@ -557,7 +643,7 @@ stage.addEventListener("pointerleave", () => { hoverPause = false; run(); });
 if (still.matches) {
   want = M.thetaOf(9); cmd.x = want;
   M.step(s, { jaw: want }, 2);
-  kp.tip = SEATED.slice(); kp.phi = 0;
+  kp.tip = SEATED.slice(); kp.phi = 0; kp.roll = 0;
   M.step(s, { key: { at: "keyhole", depth: 1 } }, 1 / 60);
   kWant = -80;
   M.step(s, { jaw: want, key: { at: "keyhole", depth: 1, kappa: -80 } }, 2);

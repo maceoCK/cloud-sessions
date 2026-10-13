@@ -7,6 +7,7 @@ import * as k from "../../kit/iso-kit.mjs";
 import * as G from "../../kit/lathe.mjs";
 import * as A from "../../kit/audit.mjs";
 import { kitScript, glScript } from "../../scripts/inline-kit.mjs";
+import { tubePieces, tubeSvg } from "../../kit/tube.mjs";
 import { makeParts, makeKey } from "./parts.mjs";
 import * as M from "./model.mjs";
 
@@ -23,13 +24,46 @@ console.log("model check ✓");
 const VW = 920, VH = 640;
 const Z0 = 4.8;
 const W = ([x, y, z = 0]) => [x, -y, z + Z0];
-const BASE = { x: -56, y: -61, w: 284, d: 147, r: 8 };                     // W plan
-const FIT = [...k.boxCorners(BASE, -16, 0),
-  W([67.6, -16.5, 43.8]), W([72.55, 16.5, 44.1]),                          // key in keyhole (pin top); inverted key (barrel top)
-  W([112, -50, 49.9]),                                                     // parked key top
-  W([90, -12, 58.2]),                                                      // flight / flip apex
-  ...T.cheekOutline.filter((_, i) => i % 6 === 0).map(([x, y]) => W([x, y, 52.3]))];  // lid lifted 48 (apart)
-const P = k.fitProjection(FIT, VW, VH, { pad: 30, azimuth: 298, elevation: 48 });
+// No board (the user's request): the cuffs, the chain and the key lie on a plain flat surface at W z 0 that is not drawn. The camera
+// is fitted over what is drawn: both cuffs (rear dome bottoms to front dome tops), cuff A's strand over its whole sweep (θ −100 …
+// 36.4), the chain, the key lying flat, lifted, on every flight (sampled as live.js flies it), seated at any κ and inverted in the
+// slot. pad 60 leaves room for the halos' blur, and the pair at rest fills about 61% of the card (S5nb tools/fit.mjs)
+const KEY_SPOT = [62, -50];                                                // the key lying flat (F tip; see KEY_REST below)
+const VIA = { restSlot: [82, -24, 28], keyholeRest: [78, -36, 26], slotKeyhole: [85, -12, 40] };   // flights' flip-centre via points (live.js too)
+const FIT = (() => {
+  const KG = makeKey(k, G, { origin: [0, 0], scale: 1, azimuth: 298, elevation: 48 });   // the key's geometry (axes only)
+  const D2R0 = Math.PI / 180;
+  const mapB = ([x, y]) => [214 - x, -y], slab = (ring, z0, z1) => ring.flatMap(([x, y]) => [W([x, y, z0]), W([x, y, z1])]);
+  const jaw = (theta, map = (p) => p) => T.jaw_theta0.map((p) => map(M.rotF(p, [0, 0], theta)));
+  const pts = [...slab(T.cheekOutline, -4.8, 4.8), ...slab(T.cheekOutline.map(mapB), -4.8, 4.8), ...slab(jaw(M.thetaOf(M.NPOS), mapB), -1.8, 1.8)];
+  for (let t = M.THETA_OPEN; t <= M.thetaOf(M.NPOS) + 0.1; t += 4) pts.push(...slab(jaw(t), -1.8, 1.8));
+  for (let x = 82; x <= 132; x += 2) pts.push(...[[-5, -4.8], [5, -4.8], [-5, 5.5], [5, 5.5]].map(([y, z]) => W([x, y, z])));
+  const R = (s) => (s < 24.6 ? 1.765 : s < 24.93 ? 2.2 : s < 39.8 ? 1.4 : 0.95);
+  const keyPts = (pose) => {
+    const { a, u, v } = KG.axesOf(pose), at3 = (s, c, d) => W(pose.tip.map((x, i) => x + a[i] * s + u[i] * c + v[i] * d));
+    for (let s = 0; s <= 45.7; s += 2) for (let t = 0; t < 360; t += 45) pts.push(at3(s, R(s) * Math.cos(t * D2R0), R(s) * Math.sin(t * D2R0)));
+    for (let t = 0; t < 360; t += 15) for (const w of [-1, 1]) pts.push(at3(32.2 + 7.6 * Math.cos(t * D2R0), 7.6 * Math.sin(t * D2R0), w));   // the bow ring
+  };
+  const minjerk = (f) => f * f * f * (10 - 15 * f + 6 * f * f);
+  const fly = (from, to, via) => {
+    const c0 = KG.centreOf(from), c1 = KG.centreOf(to), mid = via ?? [(c0[0] + c1[0]) / 2, (c0[1] + c1[1]) / 2, Math.max(c0[2], c1[2]) + 8];
+    const ctrl = c0.map((v, i) => 2 * mid[i] - (v + c1[i]) / 2);
+    for (let j = 0; j <= 16; j++) {
+      const g = minjerk(j / 16), h = 1 - g, c = c0.map((v, i) => h * h * v + 2 * h * g * ctrl[i] + g * g * c1[i]);
+      const phi = from.phi + (to.phi - from.phi) * g, roll = (from.roll ?? 0) + ((to.roll ?? 0) - (from.roll ?? 0)) * g;
+      keyPts({ tip: KG.tipOfCentre(c, { phi }), phi, roll });
+    }
+  };
+  const rest = { tip: [KEY_SPOT[0], KEY_SPOT[1], 2.2 - Z0], phi: 90, roll: -90 }, hover = { ...rest, tip: [KEY_SPOT[0], KEY_SPOT[1], 2.2 - Z0 + 6] };
+  const aboveKeyhole = { tip: [M.GEO.POST[0], M.GEO.POST[1], 16 - Z0], phi: 0 }, aboveSlot = (y) => ({ tip: [M.PIN.x, y, 8 + 45.7], phi: 180 });
+  keyPts(rest);
+  fly(hover, aboveSlot(M.PIN.yEnter), VIA.restSlot); fly(hover, aboveKeyhole, null); fly(aboveKeyhole, hover, VIA.keyholeRest);
+  fly(aboveSlot(M.PIN.yEnd), aboveKeyhole, VIA.slotKeyhole); fly(aboveSlot(M.PIN.yEnd), hover, VIA.restSlot);
+  for (const kappa of [0, 45, 90, 135, 180, 194.4, -45, -86.1]) keyPts({ tip: [M.GEO.POST[0], M.GEO.POST[1], M.GEO.KEY_TIP_SEATED], phi: 0, kappa });
+  keyPts({ tip: [M.PIN.x, M.PIN.yEnd, M.PIN.tipZ + 45.7], phi: 180 });
+  return pts;
+})();
+const P = k.fitProjection(FIT, VW, VH, { pad: 60, azimuth: 298, elevation: 48 });
 const FINE = 4;                                                            // B.5 fine projection for the rebuilt mechanism parts
 const P4 = { ...P, origin: P.origin.map((v) => v * FINE), scale: P.scale * FINE };
 const V = G.viewOf(P), KS = G.scaleOf(P);
@@ -180,7 +214,7 @@ const KEY_PART = { "key.inner": "keyInner", "key.outer": "keyOuter", "key.inv.in
 function keyPieces(key) {
   const L = KEY.LEN, all = Object.keys(KEY_PART);
   const out = new Map(all.map((n) => [n, [n, 0, 0]]));                  // every slot exists in every pose (empty when unused)
-  if (key.at === "stand") out.set("key.outer", ["key.outer", 0, L]);
+  if (key.at === "rest") out.set("key.outer", ["key.outer", 0, L]);
   else if (key.at === "air") out.set("key.air", ["key.air", 0, L]);
   else if (key.at === "keyhole") {
     const sFace = 4.3 - key.tip[2];
@@ -207,19 +241,21 @@ function keyShapes(key, lo, hi, name) {
 }
 
 // ---- the scene (D.1–D.4): one function of the pose, so the page, the rest settle and the pose audit share every item
-const RULER = { x: -24, y: -53.5, w: 250, d: 6.5, r: 1 };
+// the surface the pair lies on (the table, W z 0): recorded as an undrawn ground so support resolves; never drawn (no board)
+const SURFACE = { x: -90, y: -100, w: 360, d: 200, r: 8 };                 // W plan, well past everything that rests on it
 const Zc = { rear: [-4.3, 2.4], frame: [-1.9, 3.8], jaw: [-1.8, 3.6], front: [1.9, 2.4], pawl: [-1.5, 3.0] };
 const ex = (ringF, [z, h], meta) => A.extruded(mirW(ringF), z + Z0, h, meta);
 const DOME = [[0, 1.9], [0.18, 1.85, 1], [0.36, 1.55, 1], [0.48, 0.9, 1], [0.5, 0]];
 const DOME_H = DOME.map(([s, r, f]) => (f ? [s, (r * 2.5) / 1.9, f] : [s, (r * 2.5) / 1.9]));
-const PIN_DOME = [[0, 1.6], [0.35, 1.45, 1], [0.62, 1.0, 1], [0.76, 0.45, 1], [0.8, 0]];
-const LOCATORS = [[66.13, -26.9], [72.13, -26.4]];
-// key stations (C5 poses, F): parked on the stand (tip on the collar top, W z 9), seated in the keyhole, inverted in the slot
-const STAND = [112, -50];
-const KEY_PARKED = { at: "stand", tip: [STAND[0], STAND[1], 9.0 - Z0], phi: 0, kappa: 0 };
+// key stations (C5 poses, F): at rest lying flat on the surface (the user's requests: no stand, no board), seated in the keyhole,
+// inverted in the slot. Lying flat: axis along F +x (tip at x 62, pin end at 107.7), ring plane horizontal, flag toward F +y; the
+// axis at W z 2.2, so the neck's r 2.2 rim (the key's widest round part) rests on the surface; the barrel clears it by 0.43, the
+// ring by 1.2. The spot (KEY_SPOT, F y −50) is behind cuff A, clear of the strand's swept band (r ≤ 63.6; nearest key point r 77)
+// and of the chain (y ≈ 0)
+const KEY_REST = { at: "rest", tip: [KEY_SPOT[0], KEY_SPOT[1], 2.2 - Z0], phi: 90, roll: -90, kappa: 0 };
 const keySeated = (kappa = 0, tipZ = M.GEO.KEY_TIP_SEATED) => ({ at: "keyhole", tip: [POST[0], POST[1], tipZ], phi: 0, kappa });
 const keyInSlot = (pinY, pinTipZ = M.PIN.tipZ) => ({ at: "slot", tip: [M.PIN.x, pinY, pinTipZ + 45.7], phi: 180, kappa: 0 });
-const poseOf = (p = {}) => ({ theta: M.THETA_OPEN, alpha: 0, u: 0, key: KEY_PARKED, ...p });
+const poseOf = (p = {}) => ({ theta: M.THETA_OPEN, alpha: 0, u: 0, key: KEY_REST, ...p });
 const REST = M.create();
 const upF = (o) => G.frameOf(W(o), [0, 0, 1], [1, 0, 0], [0, 1, 0]);
 const downF = (o) => G.frameOf(W(o), [0, 0, -1], [1, 0, 0], [0, -1, 0]);
@@ -244,20 +280,9 @@ function scene(pose) {
   const record = R.solid;
   const putW = (name, refW, svg, shapes = [], rest = {}) => R.put({ name, at: refW, svg, shapes, piece: "cuffs", ...rest });
   const put = (name, refF, svg, shapes, rest) => putW(name, W(refF), svg, shapes, rest);
-  // ground: the board and the ruler (drawn in the back group, recorded here)
-  for (const [x, y] of k.corners(BASE, 22)) {
-    record(A.cylinder(x, y, 7, -16, 1.6, { name: "stand.flange", ground: true }));
-    record(A.cylinder(x, y, 5.4, -14.4, 2.4, { name: "stand.foot", ground: true }));
-  }
-  record(A.slab(BASE, -12, 12, { name: "stand.board", ground: true }, 8));
-  record(A.slab(RULER, 0, 0.6, { name: "stand.ruler", ground: true }, 3));
-  // locator pins (C1 #33–34): tangent to case A's lower edge, standing on the board
-  LOCATORS.forEach(([x, y], i) => {
-    const name = `stand.locator${i + 1}`, cap = upF([x, y, 6.6 - Z0]);
-    putW(name, W([x, y, 3.7 - Z0]), S(k.cylinder(x, -y, 1.6, 0, 6.6, P, 24), { tone: "mid" }) + S(G.solidOf(PIN_DOME, cap, P), { tone: "mid" }),
-      [record(A.cylinder(x, -y, 1.6, 0, 6.6, { name, ground: true })), record(A.solid(cap, PIN_DOME, { name: `${name}.cap`, ground: true }))]);
-  });
-  // domes (C2 #42, #58–62; C8): lathes on the cheek faces; the rear ones carry the cuff on the board
+  // ground: the plain surface (W z 0) the cuffs, the chain and the key lie on; recorded only, never drawn (the user's request)
+  record(A.slab(SURFACE, -12, 12, { name: "stand.surface", ground: true }, 8));
+  // domes (C2 #42, #58–62; C8): lathes on the cheek faces; the rear ones carry the cuff on the surface
   const domes = (id, map) => {
     [...RIVETS.map((p) => [map(p), DOME]), [map([0, 0]), DOME_H]].forEach(([[x, y], prof], i) => {
       const FR = downF([x, y, -4.3]), FF = upF([x, y, 4.3]);
@@ -267,24 +292,12 @@ function scene(pose) {
   };
   const cyl = (name, [x, y], r, [z, h], style, owner, extra = "", meta = {}) =>
     put(name, [x, y, z + h / 2], S(k.cylinder(x, -y, r, z + Z0, h, P, 28), style) + extra, [record(A.cylinder(x, -y, r, z + Z0, h, { name, owner, ...meta }))]);
-  // a post inside the key's bore (seated in the keyhole, or parked on the stand): the barrel is recorded solid, so the post is
+  // a post inside the key's bore (seated in the keyhole): the barrel is recorded solid, so the post is
   // recorded with the barrel as its cut and `seated` (playbook §4.2): it is hidden inside the bore, never in front of the barrel
   // The cut starts 0.05 above the post's base, so the post keeps its seat on what it stands on (supports), and it names the
   // barrel's item and piece (seats)
-  const barrelCut = (at, baseZ) => pose.key.at === at && pose.key.tip[2] <= (at === "stand" ? KEY_PARKED.tip[2] : 3.8) + 1e-6
-    ? { cut: A.disc(KEY.frameOfKey(pose.key), Math.max(0, baseZ + 0.05 - pose.key.tip[2]), 24.6, M.GEO.BARREL.r, { name: at === "stand" ? "key.outer" : "key.inner", owner: "key", piece: "cuffs" }), seated: true } : {};
-
-  // key stand (C1 #26–30): flange, body with its seam, knurled collar with the index mark, the dummy post the parked bore sits on
-  {
-    const [sx, sy] = STAND, wy = -sy, base = upF([sx, sy, -Z0]);
-    putW("stand.key.flange", [sx, wy, 0.5], S(k.cylinder(sx, wy, 6, 0, 1.0, P, 40), { tone: "lo" }), [record(A.cylinder(sx, wy, 6, 0, 1.0, { name: "stand.key.flange", ground: true }))]);
-    putW("stand.key.body", [sx, wy, 3.5], S(k.cylinder(sx, wy, 3.6, 1.0, 5.0, P, 32), { tone: "mid", inner: Ln(k.sideArc(sx, wy, 3.6, 3.5, P), { tone: "faint" }) }),
-      [record(A.cylinder(sx, wy, 3.6, 1.0, 5.0, { name: "stand.key.body", ground: true }))]);
-    const knurl = k.fadedSvg(G.ribsOf(base, 6.4, 8.6, 4.6, 40, P, { fade: [0.1, 0.55], seams: true }), { tone: "lo" });
-    const index = Ln(k.lineOnTop([sx - 1.12, wy], [sx - 4.6, wy], 9.0, P), { tone: "hi" });
-    putW("stand.key.collar", [sx, wy, 7.5], S(G.disc(6.0, 9.0, 4.6, base, P), { tone: "mid", inner: knurl + index }), [record(A.disc(base, 6.0, 9.0, 4.6, { name: "stand.key.collar", ground: true }))]);
-    putW("stand.key.post", [sx, wy, 11.85], S(k.cylinder(sx, wy, 1.12, 9.0, 5.7, P, 24), { tone: "mid" }), [record(A.cylinder(sx, wy, 1.12, 9.0, 5.7, { name: "stand.key.post", ground: true, ...barrelCut("stand", 9.0 - Z0) }))]);
-  }
+  const barrelCut = (at, baseZ) => pose.key.at === at && pose.key.tip[2] <= 3.8 + 1e-6
+    ? { cut: A.disc(KEY.frameOfKey(pose.key), Math.max(0, baseZ + 0.05 - pose.key.tip[2]), 24.6, M.GEO.BARREL.r, { name: "key.inner", owner: "key", piece: "cuffs" }), seated: true } : {};
 
   // ---- cuff A (C2, C3, C4): the lock cut open
   const A_ = "cuffA", o = [40, 0];
@@ -338,7 +351,7 @@ function scene(pose) {
     put(name, ref, `<g data-part="${KEY_PART[name]}">${svg}</g>`, hi > lo ? keyShapes(pose.key, lo, hi, name).map(record) : []);
   }
 
-  // ---- cuff B (static, unsplit; S4 details it): sandwich + domes so it rests on the board
+  // ---- cuff B (static, unsplit; S4 details it): sandwich + domes so it rests on the surface
   const B_ = "cuffB", map = PARTS.mapB, oB = map([40, 0]), cB = map([70, 0]);
   domes(B_, map);
   const m = (ring) => ring.map(map);
@@ -348,35 +361,119 @@ function scene(pose) {
   const thetaB = M.thetaOf(M.NPOS), hingeB = map([0, 0]);
   put(`${B_}.jaw`, [oB[0], oB[1], 0], PARTS.jawSvg(thetaB, { map, clipId: "clip-jawB", tone: "hi" }),
     [record(ex(PARTS.jawRing(thetaB, map), Zc.jaw, { name: `${B_}.jaw`, owner: B_, cut: A.cylinder(hingeB[0], -hingeB[1], 2.15, Z0 - 1.9, 3.8) }))]);
-  put(`${B_}.front`, [oB[0], oB[1], 1.9], PARTS.cheekSvg("front", { map, clipId: `clip-${B_}-front`, tone: "mid" }), [record(ex(m(cheek), Zc.front, { name: `${B_}.front`, owner: B_ }))]);
+  // cuff B's lock exterior (C8 #99–111): keyhole (bore + flag notch) and the double-lock slot through the front cheek, the far
+  // walls of each, the post tip seen down the keyhole, the spring's fold at u 4 seen down the slot, stud 52 flush on the face,
+  // and the one engraved label. No window on cuff B. B-local → F is a half turn about (107, 0), so rings keep their winding.
+  const postB = map(POST), FAR_B = FAR_DIR + 180;                          // the far direction in B-local (the half turn)
+  const KEYHOLE_B = (() => {                                               // the bore r 2.0 the long way round + the flag's notch out to r 3.9
+    const nIn = (Math.asin(0.75 / 2.0) * 180) / Math.PI, nOut = (Math.asin(0.75 / M.GEO.NOTCH_R) * 180) / Math.PI;
+    return [...arcAbout(POST, 2.0, 180 - nIn, -180 + nIn, 54), polar(POST, M.GEO.NOTCH_R, 180 + nOut), polar(POST, M.GEO.NOTCH_R, 180 - nOut)];
+  })();
+  const FAR_KEYHOLE_B = [...arcAbout(POST, 2.0, FAR_B - 90, FAR_B + 90, 24), ...arcAbout(POST, 2.3, FAR_B + 90, FAR_B - 90, 24)];
+  const FAR_SLOT_B = (() => { const { x0, x1, y0, y1 } = M.GEO.SLOT; return [[x1, y0], [x1, y1], [x0, y1], [x0, y1 + 0.3], [x1 + 0.3, y1 + 0.3], [x1 + 0.3, y0]]; })();
+  put(`${B_}.keyhole.walls`, [postB[0], postB[1], 3.1], PARTS.holeWallsSvg(m(KEYHOLE_B), 1.9, 4.3, "clip-keyholeB", "hc-cut"),
+    [record(ex(m(FAR_KEYHOLE_B), [1.9, 2.4], { name: `${B_}.keyhole.walls`, owner: B_ }))]);
+  cyl(`${B_}.post.lower`, postB, M.GEO.POST_R, [-1.9, 3.8], { tone: "mid" }, B_);
+  cyl(`${B_}.post.tip`, postB, M.GEO.POST_R, [1.9, 1.9], { tone: "mid" }, B_, Ln(k.ring(postB[0], -postB[1], 0.8, 3.8 + Z0, P, 24), { tone: "faint" }));
+  const slotB = map([72.9, 13.7]);
+  put(`${B_}.slot.walls`, [slotB[0], slotB[1], 3.1], PARTS.holeWallsSvg(m(SLOT), 1.9, 4.3, "clip-slotB", "hc-cut"),
+    [record(ex(m(FAR_SLOT_B), [1.9, 2.4], { name: `${B_}.slot.walls`, owner: B_ }))]);
+  // the fold at u 4 (C8 #103): the spring's ribbon from the lower leg's top bend over the fold run to the upper leg, ends well
+  // outside what the slot shows; its upper leg bears on the roof (x 73.80)
+  {
+    const line = M.springCentreline(M.U_ON, 0), i0 = line.findIndex(([x, y]) => Math.abs(x - 68.2) < 0.01 && Math.abs(y - 10.3) < 0.01);
+    const i1 = line.findIndex(([x, y], i) => i > i0 && Math.abs(x - 73.55) < 0.01 && Math.abs(y - 10.3) < 0.01);
+    if (i0 < 0 || i1 < 0) throw new Error("fold B: centreline points not found");
+    const run = [...line.slice(i0, i1 + 1), [73.55, 6.0]].filter((p, i, a) => !i || !near2(p, a[i - 1]));
+    const ring = m(PARTS.ribbon(run, 0.5)), fc = map([71.0, 11.1]);
+    put(`${B_}.fold`, [fc[0], fc[1], 0], PARTS.strapF(ring, -1.5, 3.0, { bevel: 0.1, clipId: "", style: { tone: "hi", crease: "lo" } }),
+      [record(ex(ring, [-1.5, 3.0], { name: `${B_}.fold`, owner: B_ }))]);
+  }
+  const studB = map(STUD), serial = (() => {
+    // engraved serial (C8 #111) across B's case face between the rivets, read left to right on screen
+    // topMatrix(…, "y") lays the text's x along W −y and its y along W +x
+    const o = W([134.5, 0, 4.3]), a = at(o), b = at(G.add3(o, [0, -1, 0])), c = at(G.add3(o, [1, 0, 0])), flip = b[0] < a[0];
+    if (!scene.reported) console.log(`serial: baseline ${flip ? "flipped" : "as laid"} · ${(b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]) > 0 ? "not mirrored" : "MIRRORED"}`);
+    return k.faceTextSvg(`${k.topMatrix([134.5, 0], 4.3 + Z0, P, "y")}${flip ? " rotate(180)" : ""}`, "No 41207", { size: 2.2, tone: "lo", anchor: "middle" });
+  })();
+  const studMark = Ln(k.ring(studB[0], -studB[1], M.GEO.STUD_R, 4.3 + Z0, P, 28), { tone: "lo" }) + Dots([at(W([studB[0], studB[1], 4.3]))], { size: 0.4, tone: "lo" });
+  put(`${B_}.front`, [oB[0], oB[1], 1.9], PARTS.strapF(m(cheek), 1.9, 2.4, { runs: CHEEK_RUNS, bevel: 0.4, clipId: `clip-${B_}-front`,
+    style: { tone: "mid", crease: "lo", holes: PARTS.holeD(m(KEYHOLE_B), 4.3) + PARTS.holeD(m(SLOT), 4.3), inner: studMark + serial,
+      holeInner: Ln(PARTS.holeD(PARTS.offsetRing(m(SLOT), () => 0.3), 4.3), { tone: "faint" }) } }),
+    // recorded as cuff A's: the openings and their view tubes cut, the far-wall bands shared with the walls items (S2 deviation 4)
+    [record(ex(m(cheek), Zc.front, { name: `${B_}.front`, owner: B_, cut: [ex(m(KEYHOLE_B), [1.8, 2.6]), ex(m(SLOT), [1.8, 2.6]), viewTube(m(KEYHOLE_B)), viewTube(m(SLOT))] }))]);
+
+  // ---- swivels and chain (C7, truth proportions; playbook §2.6): a collar flush on each case end, a shank and neck whose
+  // r 0.7 rim lands on its eye, the eyes and the two links as closed tube loops (route + chunk items, never R.solid)
+  {
+    const owner = "chain", SHANK = [[82.4, 1.7], [83.9, 1.7], [84.3, 1.2, 1], [84.67, 0.7, 1]];
+    [["A", 0, 1], ["B", 214, -1]].forEach(([id, x0, dir]) => {          // B-local = A's profile, along −x from B's hinge
+      const Fr = G.frameOf(W([x0, 0, 0]), [dir, 0, 0], dir > 0 ? [0, 1, 0] : [0, 0, 1], dir > 0 ? [0, 0, 1] : [0, 1, 0]);
+      const xs = (s) => x0 + dir * s;
+      putW(`chain.swivel${id}.collar`, W([xs(82.0), 0, 0]), S(G.disc(81.6, 82.4, 2.6, Fr, P), { tone: "mid" }), [record(A.disc(Fr, 81.6, 82.4, 2.6, { name: `chain.swivel${id}.collar`, owner }))]);
+      putW(`chain.swivel${id}.shank`, W([xs(83.6), 0, 0]), S(G.solidOf(SHANK, Fr, P), { tone: "mid" }), [record(A.solid(Fr, SHANK, { name: `chain.swivel${id}.shank`, owner }))]);
+    });
+    // a stadium loop about centre c (W), long axis e1, cross axis e2 toward the viewer; it starts mid-way along the far side,
+    // so the near side's middle (the weld) is half-way round
+    const loop = (c, e1, e2, half, rc, n = 24) => {
+      const P3 = (a, b) => G.add3(c, G.add3(G.mul3(e1, a), G.mul3(e2, b)));
+      const pts = [P3(0, -rc), P3(half, -rc)];
+      for (let j = 1; j < n; j++) { const t = -Math.PI / 2 + (Math.PI * j) / n; pts.push(P3(half + rc * Math.cos(t), rc * Math.sin(t))); }
+      pts.push(P3(half, rc), P3(-half, rc));
+      for (let j = 1; j < n; j++) { const t = Math.PI / 2 + (Math.PI * j) / n; pts.push(P3(-half + rc * Math.cos(t), rc * Math.sin(t))); }
+      pts.push(P3(-half, -rc), P3(0, -rc));
+      return pts.filter((p, i, a) => !i || G.len3(G.sub3(p, a[i - 1])) > 1e-6);
+    };
+    const toward = (e) => (G.dot3(e, V) < 0 ? G.mul3(e, -1) : e);
+    const nRoll = [0, -0.906, 0.423], eRoll = toward(G.unit3(G.cross3([1, 0, 0], nRoll)));
+    const zLink1 = 4.0 * Math.abs(eRoll[2]) + 1.3 + 0.02;                   // link 1's lowest point on the surface (W z 0)
+    // chunks of 3 mm (playbook §2.6); the eyes' 2 mm: at the re-fitted camera (3.39 px/mm, no board) a 3 mm chunk of eye A spans
+    // both its crossings of link 1 (over and under), a 0.25 px² depth cycle; 2 mm chunks order it (S5nb tools/chain.mjs)
+    const LOOPS = [
+      { name: "chain.eyeA", pts: loop(W([88.3, 0, 0]), [1, 0, 0], toward([0, 1, 0]), 0, 3.15), r: 0.85, limp: false, touch: ["chain.link1"], len: 2 },
+      { name: "chain.link1", pts: loop([98.8, 0, zLink1], [1, 0, 0], eRoll, 5.5, 4.0), r: 1.3, limp: true, touch: ["chain.eyeA", "chain.link2", "stand.surface"], weld: true, n: nRoll },   // rests on the surface
+      { name: "chain.link2", pts: loop(W([115.2, 0, 0]), [1, 0, 0], toward([0, 1, 0]), 5.5, 4.0), r: 1.3, limp: true, touch: ["chain.link1", "chain.eyeB"], weld: true, n: [0, 0, 1] },
+      { name: "chain.eyeB", pts: loop(W([125.7, 0, 0]), [1, 0, 0], toward([0, 0, 1]), 0, 3.15), r: 0.85, limp: false, touch: ["chain.link2"], len: 2 },
+    ];
+    for (const L of LOOPS) {
+      const closedPts = [...L.pts, L.pts[0]];
+      R.route(L.name, closedPts, L.r, { closed: true, limp: L.limp, touch: L.touch, owner, piece: "cuffs" });
+      const total = G.pathLength(G.resample(closedPts, 0.4));
+      const rings = L.weld ? { pitch: 1000, phase: total / 2, fade: [0.1, 0.55], tone: "lo", steps: 16 } : null;
+      tubePieces(closedPts, L.r, P, { closed: true, maxLength: L.len ?? 3, spacing: 0.4, rings }).forEach((piece, j) =>
+        R.put({ name: `${L.name}:${j}`, at: piece.mid, svg: tubeSvg(piece, { tone: "mid" }), shapes: [A.tube(piece.points, piece.radii, { name: L.name, owner })], route: L.name, chunk: j, piece: "cuffs" }));
+      if (L.n && !scene.reported) console.log(`${L.name} f ${Math.abs(G.dot3(G.unit3(L.n), G.unit3(V))).toFixed(3)}`);
+    }
+    scene.reported = true;
+  }
+
   return R;
 }
 
-// ---- 1. back group: board and ruler (C1 #1–20)
+// ---- 1. back group: only the halos (no board: the surface is not drawn)
 const back = [];
-back.push(`<path class="iso-halo" d="${k.haloOf(BASE, -16, 12, P)}"/>`);
-const feet = k.corners(BASE, 22).sort((a, b) => k.depthOf([a[0], a[1], 0], P) - k.depthOf([b[0], b[1], 0], P));
-for (const [x, y] of feet) {
-  back.push(S(k.cylinder(x, y, 7, -16, 1.6, P, 32), { tone: "lo" }));
-  back.push(S(k.cylinder(x, y, 5.4, -14.4, 2.4, P, 32), { tone: "mid" }));
+// halos (C1 #36–41): soft contact shadows on the undrawn surface (W z 0) under cuff A, cuff B, the chain, cuff A's strand (#40,
+// live: live.js rewrites it as the strand swings) and the key lying flat (#41, live: its footprint at rest, barrel to pin, the
+// ring and the flag, as one nonzero path; live.js fades it (--hc-kh) as the key leaves the surface). They are what makes each
+// item read as resting on a surface
+{
+  const floor = (ringF) => k.pathOf(ringF.map(([x, y]) => at([x, -y, 0])), true);
+  const stadium = (x0, x1, h) => [...arcAbout([x1, 0], h, -90, 90, 12), ...arcAbout([x0, 0], h, 90, 270, 12)];
+  const halo = (d) => `<path class="iso-halo hc-halo" d="${d}"/>`;
+  back.push(halo(floor(cheek)), halo(floor(cheek.map(PARTS.mapB))), halo(floor(stadium(84, 130, 3.2))));
+  back.push(`<path class="iso-halo hc-halo" data-part="jawHalo" d="${floor(PARTS.jawRing(M.THETA_OPEN))}"/>`);
+  const [kx, ky] = KEY_SPOT, box = (x0, x1, y0, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+  const keyFoot = floor(box(kx, kx + 45.7, ky - 1.8, ky + 1.8)) + floor(box(kx, kx + 3.2, ky + 1.7, ky + 3.45)) + floor(arcAbout([kx + 32.2, ky], 7.6, 0, 350, 35));
+  back.push(`<path class="iso-halo hc-halo" data-part="keyHalo" d="${keyFoot}"/>`);
 }
-back.push(S(k.slabOf(BASE, -12, 12, P, 8, 1.6), { tone: "mid", inner: Ln(k.sideSeam(BASE, -4, P, 8), { tone: "faint" }) }));
-back.push(Ln(k.planOutline(k.insetPlan(BASE, 5), 0, P), { tone: "lo" }));
-for (const [x, y] of k.corners(BASE, 10)) back.push(Ln(k.ring(x, y, 2.2, 0, P, 32), { tone: "lo" }) + Dots([at([x, y, 0])], { size: 0.5, tone: "mid" }));
-// ruler strip: F y 47 … 53.5 (front edge on F y 53.5), ticks rooted on the front edge, minor 5 / major 25, zero tick under hinge A
-back.push(S(k.slabOf(RULER, 0, 0.6, P, 3), { tone: "lo", crease: "faint" }));     // the near top edge is drawn: every tick roots on it
-// majors 3.0 (not 3.6): at this camera 3.6 mm is 7.8 px, past the line check's 7 px "tick" limit, and a longer mark needs both ends rooted
-const TICK = [2, 3.0];
-const ticks = k.topTicks(0, 225, 5, 5, RULER.y, 0.6, TICK, P);
-back.push(Ln(ticks.minor, { tone: "lo" }) + Ln(ticks.major, { tone: "mid" }));
-back.push(Ln(k.lineOnTop([0, RULER.y], [0, RULER.y + TICK[1]], 0.6, P), { tone: "hi" }));
-back.push(Dots([at([-20, RULER.y + RULER.d / 2, 0.6]), at([222, RULER.y + RULER.d / 2, 0.6])], { size: 0.45, tone: "mid" }));
 
 // ---- 2. sorted scene. One slot per item serves every pose the page shows (D.4), so the settle merges the overlaps of the rest
 // scene with those of each pose's lock scene (the moving items and every static item their screen boxes meet)
 const MOVING = new Set(["cuffA.jaw", "cuffA.pawl", "cuffA.spring", "cuffA.spring.tab", "key.inner", "key.outer", "key.inv.inner", "key.air"]);
 const STEP = 0.5;                                                          // raster step (px) for every overlap pass
 const th9 = M.thetaOf(9);
+// the flights' via points (VIA, above: the flip centre at mid-flight; live.js uses the same numbers): rest → slot, keyhole → rest,
+// slot → keyhole
 const POSES = [
   ["1 rest", {}],
   ["2 θ −39.07", { theta: M.THETA_MOUTH }],
@@ -385,7 +482,7 @@ const POSES = [
   ["5 θ9", { theta: th9 }],
   ["6 θ9 + 0.944 pitch", { theta: th9 + 0.944 * M.PITCH }],
   ["7 θ23", { theta: M.thetaOf(M.NPOS) }],
-  ["23 squeeze double-locked", { theta: th9 + 0.92, alpha: M.ALPHA_MAX_ON, u: M.U_ON }],
+  ["23 squeeze double-locked, pin held in the slot", { theta: th9 + 0.92, alpha: M.ALPHA_MAX_ON, u: M.U_ON, key: keyInSlot(M.PIN.yEnd) }],
   // S3: the key (U.2, U.3); α and u from the model at each κ
   ["8 inverted key, pin y 16.5", { theta: th9, key: keyInSlot(M.PIN.yEnter) }],
   ["9 inverted key, pin y 12.3", { theta: th9, u: M.U_ON, key: keyInSlot(M.PIN.yEnd) }],
@@ -403,6 +500,11 @@ const POSES = [
   ["21 θ −45 κ −86.1", { theta: -45, kappa: M.KEY.endOff, u: 0 }],
   ["22 θ −100 seated κ 0", { theta: M.THETA_OPEN, kappa: 0, u: 0 }],
   ["29 key over the chain", { theta: -45, key: { at: "air", tip: [90, -10, 16 - Z0], phi: 0, kappa: 0 } }],
+  // the key at rest lying flat is pose 1; its lift and the middles of its flights (the user's request: no stand)
+  ["30 key lifted 6 off the surface, flat", { key: { ...KEY_REST, at: "air", tip: [KEY_REST.tip[0], KEY_REST.tip[1], KEY_REST.tip[2] + 6] } }],
+  ["31 rest → slot, mid-flight", { theta: th9, key: { at: "air", tip: KEY.tipOfCentre(VIA.restSlot, { phi: 135 }), phi: 135, roll: -45, kappa: 0 } }],
+  ["32 keyhole → rest, mid-flight", { theta: -100, key: { at: "air", tip: KEY.tipOfCentre(VIA.keyholeRest, { phi: 45 }), phi: 45, roll: -45, kappa: 0 } }],
+  ["33 slot → keyhole, mid-flip", { theta: th9, u: M.U_ON, key: { at: "air", tip: KEY.tipOfCentre(VIA.slotKeyhole, { phi: 90 }), phi: 90, kappa: 0 } }],
 ].map(([label, p]) => [label, poseFrom(p)]);
 // a pose from the model: u from turn 1 (KEY1) when κ > 0, α = min(max(alphaJaw, alphaKey), max(alphaLimit(u), alphaJaw)) (E.2)
 function poseFrom(p) {
@@ -414,7 +516,7 @@ function poseFrom(p) {
 }
 // the swing between the listed poses (free and ratchet) also has to keep its slot
 const SWEEP = [...POSES.slice(1).map(([, p]) => p), ...[-80, -60, -30, -10, 10, 20, 30].map((theta) => poseOf({ theta, alpha: M.alphaJaw(theta) })),
-  // the key's flights between its stations (U.2 A6, A11; U.3 A22): upright over the keyhole and the stand, inverted over the slot
+  // the key's flights between its stations (U.2 A6, A11; U.3 A22): upright over the keyhole, inverted over the slot
   poseOf({ theta: th9, key: { at: "air", tip: [POST[0], POST[1], 16 - Z0], phi: 0, kappa: 0 } }),
   poseOf({ theta: th9, key: { at: "air", tip: [M.PIN.x, M.PIN.yEnter, 8 + 45.7], phi: 180, kappa: 0 } }),
   poseOf({ theta: th9, key: keySeated(0, 6.0) }), poseOf({ theta: th9, key: keyInSlot(M.PIN.yEnter, 3.0) }),
@@ -430,7 +532,7 @@ let t0 = Date.now();
 const R = scene(poseOf());
 // `--keys <file>` (a dev speed-up, not used by the shipped build): reuse the settled keys of an earlier run of this same source
 const KEYS_AT = process.argv.indexOf("--keys"), KEYS_FILE = KEYS_AT > 0 ? process.argv[KEYS_AT + 1] : "";
-const SCENE_VERSION = 5;                                                   // bump when scene() or the settle changes (the cache key)
+const SCENE_VERSION = 6;                                                   // bump when scene() or the settle changes (the cache key)
 const SRC_SIG = `${SCENE_VERSION}:` + ["parts.mjs", "model.mjs"].map((f) => readFileSync(join(HERE, f), "utf8")).join("").length + ":" + R.items.map((it) => it.name).join(",");
 let cached = null;
 try { if (KEYS_FILE) { const c = JSON.parse(readFileSync(KEYS_FILE, "utf8")); if (c.sig === SRC_SIG) cached = c.keys; } } catch {}
@@ -452,9 +554,9 @@ if (KEYS_FILE && !cached) writeFileSync(KEYS_FILE, JSON.stringify({ sig: SRC_SIG
 R.items.sort((a, b) => a.key - b.key);
 console.log("order key:", R.items.filter((it) => /^(key|stand)\./.test(it.name) || /cuffA\.(post\.tip|pawl|slot|frame\.near|front$)/.test(it.name)).map((it) => it.name).join(" < "), cached ? "· keys from cache" : "");
 console.log("order A:", R.items.filter((it) => it.name.startsWith("cuffA")).map((it) => it.name.replace("cuffA.", "")).join(" < "), `· settle over ${SWEEP.length + 1} poses ${((Date.now() - t0) / 1000).toFixed(1)} s`);
-const groups = R.items.map((item) => `<g class="it" data-name="${item.name}"${item.attrs ?? ""}>${item.svg}</g>`);
+const groups = R.items.map((item) => `<g class="it${/^cuffB\./.test(item.name) ? " hc-dim" : ""}" data-name="${item.name}"${item.attrs ?? ""}>${item.svg}</g>`);
 
-const LABEL = "A pair of chain handcuffs lying on a demonstration board, seen from above and to the side: the right cuff open with its toothed single strand swung out and a window milled in its lock case showing the pawl and its folded spring, the left cuff closed, a ruler along the front edge.";
+const LABEL = "A pair of chain handcuffs lying on a flat surface, seen from above and to the side: the right cuff open with its toothed single strand swung out and a window milled in its lock case showing the pawl and its folded spring, the left cuff closed and double-locked, the two joined by swivels and a two-link chain, and the key lying flat behind the right cuff.";
 const svg = k.figureSvg({ width: VW, height: VH, label: LABEL, className: "hc-svg", body: [...back, `<g class="hc">${groups.join("")}</g>`] });
 
 // ---- card (A): built by hand like the Raptor's, because the legend carries the chapter buttons
@@ -463,25 +565,37 @@ const swatch = (mark) => (mark === "raised" || mark === "flat" || mark === "lit"
   ? `<svg class="iso-swatch" data-mark="${mark}" viewBox="0 0 16 10" aria-hidden="true"><path d="${mark === "flat" ? "M2 6.5 8 3.5 14 6.5 8 9.5Z" : "M2 4.5 8 1.5 14 4.5 14 6 8 9 2 6Z"}"/>${mark === "flat" ? "" : `<path class="iso-swatch-crease" d="M2 4.5 8 7.5 14 4.5"/>`}</svg>`
   : `<svg class="iso-swatch" data-mark="${mark}" viewBox="0 0 16 10" aria-hidden="true"><path d="M1.5 5h13"/></svg>`;
 const KEYS = [
-  { mark: "lit", label: "Lit: the lock part doing the work now: pawl, spring or shim" },
+  { mark: "lit", label: "Lit: the lock part doing the work now: the pawl or the spring" },
   { mark: "raised", label: `Single strand: ${M.NPOS} positions, ${M.PITCH.toFixed(1)}° apart` },
   { mark: "edge", label: "One folded leaf spring is both pawl spring and double lock" },
   { mark: "flat", label: "Standard key: hollow barrel on a post, the flag does the work" },
   { mark: "dim", label: "Left cuff: at its last click and double-locked" },
 ];
-const CHAPTERS = ["Close", "Double-lock", "Unlock", "Shim test"];       // 05 Apart only if S6 ships
+const CHAPTERS = ["Close", "Double-lock", "Unlock"];                     // E.4 chapters 01–03 (the shim test and apart view are not built)
 const chapters = CHAPTERS.map((name, i) => `<button type="button" class="hc-chapter" data-chapter="${i + 1}"><span class="hc-num">${String(i + 1).padStart(2, "0")}</span>${esc(name)}</button>`).join("");
 const P1 = M.loopAt(M.thetaOf(1)).perimeter, P23 = M.loopAt(M.thetaOf(M.NPOS)).perimeter;
-const CAPTION = `A Smith & Wesson Model 100-pattern pair on a demonstration board, the right cuff's lock milled open. Swung in, the single strand clicks through ${M.NPOS} positions ${M.PITCH.toFixed(1)}° apart, and each click takes 3 mm off the inside, from ${Math.round(P1)} mm round at the first to ${Math.round(P23)} mm at the last. Its teeth cam a 31 mm pawl up ${M.ALPHA_TIPS.toFixed(1)}° and the pawl snaps down behind each one, so square faces stop the strand being pulled back. Pushed along the slot toward the keyhole, the key's pin slides the pawl's own folded leaf spring ${M.U_ON} mm and parks a U-bend 0.6 mm above the pawl: the teeth can now rise only ${M.tipRise(M.ALPHA_MAX_ON).toFixed(2)} mm of the ${M.GEO.TOOTH_DEPTH} mm they need, so the cuff can neither tighten nor be shimmed. To open it, the key's ${(2 * M.GEO.BARREL.bore).toFixed(2)} mm bore slides over a ${(2 * M.GEO.POST_R).toFixed(2)} mm post. Turned toward the chain, its flag meets the spring at ${Math.round(M.KEY.touchFlange)}° and pushes it off by ${Math.round(M.KEY.endTurn1)}°. Turned back the other way, it catches the pawl's shoulder at ${Math.round(-M.KEY.touchShoulder)}°, the teeth clear at ${Math.round(-M.KEY.teethClear)}°, and the strand swings out. Contact angles come from a solver on the patent geometry (US 4,287,731); real cuffs vary by a few degrees.`;
-const STAGE_LABEL = "Chain handcuffs, right lock cut open. Drag the open strand or use the arrow keys: right closes one click, left pulls the strand back; Home and End swing it fully open or shut. Z zooms to the lock and back. Space or Enter steps through the story.";
+const CAPTION = `A Smith & Wesson Model 100-pattern pair, the right cuff's lock milled open. Swung in, the single strand clicks through ${M.NPOS} positions ${M.PITCH.toFixed(1)}° apart, and each click takes 3 mm off the inside, from ${Math.round(P1)} mm round at the first to ${Math.round(P23)} mm at the last. Its teeth cam a 31 mm pawl up ${M.ALPHA_TIPS.toFixed(1)}° and the pawl snaps down behind each one, so square faces stop the strand being pulled back. Pushed along the slot toward the keyhole, the key's pin slides the pawl's own folded leaf spring ${M.U_ON} mm and parks a U-bend 0.6 mm above the pawl: the teeth can now rise only ${M.tipRise(M.ALPHA_MAX_ON).toFixed(2)} mm of the ${M.GEO.TOOTH_DEPTH} mm they need, so the cuff can neither tighten nor be shimmed. To open it, the key's ${(2 * M.GEO.BARREL.bore).toFixed(2)} mm bore slides over a ${(2 * M.GEO.POST_R).toFixed(2)} mm post. Turned toward the chain, its flag meets the spring at ${Math.round(M.KEY.touchFlange)}° and pushes it off by ${Math.round(M.KEY.endTurn1)}°. Turned back the other way, it catches the pawl's shoulder at ${Math.round(-M.KEY.touchShoulder)}°, the teeth clear at ${Math.round(-M.KEY.teethClear)}°, and the strand swings out. Contact angles come from a solver on the patent geometry (US 4,287,731); real cuffs vary by a few degrees.`;
+const STAGE_LABEL = "Chain handcuffs, right lock cut open. Drag the open strand or use the arrow keys: right closes one click, left pulls the strand back; Home and End swing it fully open or shut. Z zooms to the lock and back. Space or Enter steps through the story; 1, 2 and 3 play the chapters close, double-lock and unlock.";
 const stage = `<div class="iso-stage hc-stage" tabindex="0" role="slider" aria-label="${esc(STAGE_LABEL)}" aria-valuemin="0" aria-valuemax="${M.NPOS}" aria-valuenow="0" aria-valuetext="open">${svg}<span class="hc-sr" role="status" aria-live="polite" data-status></span></div>`;
 const corners = `<div class="iso-plate-corners" aria-hidden="true"><span class="iso-plate-corner" data-corner="fig">Fig 9</span><span class="iso-plate-corner" data-corner="title">Chain handcuffs, lock cut open</span><span class="iso-plate-corner" data-corner="hint" data-hint>Drag the strand or key · space steps</span><span class="iso-plate-corner" data-corner="readout" data-readout>${esc(M.say(REST).readout)}</span></div>`;
 const legend = `<figcaption class="iso-legend"><span class="iso-keys">${KEYS.map((key) => `<span class="iso-key">${swatch(key.mark)}${esc(key.label)}</span>`).join("")}</span><span class="hc-chapters" role="group" aria-label="Chapters">${chapters}</span><span class="iso-caption">${esc(CAPTION)}</span></figcaption>`;
 const body = `<figure class="iso-figure hc-figure"><div class="iso-plate">${corners}${stage}</div>${legend}</figure>`;
 
 // ---- page: kit + gl helpers, parts and model in their own namespaces, then live.js
-const FRAMINGS = { pair: { cx: VW / 2, cy: VH / 2, z: 1 }, lock: { cx: 510.9, cy: 255.3, z: 2.6 } };   // B.5
-const DATA = { P, P4, FINE, parts: PD, rest: { theta: REST.theta }, base: BASE, view: [VW, VH], framings: FRAMINGS, key: { parked: KEY_PARKED, post: POST, pin: M.PIN, z0: Z0 } };
+// framings (B.5), from the camera: `pair` is the whole card; `lock` is centred on the midpoint of cuff A's window centre
+// (F 66.2, 0, 4.3) and the bow centre of the key in the keyhole (F 67.6, −16.5, 30.3), the same point B.5 measured, at 7.0 px/mm
+// (the same world rect as before the re-fit: the case, the mouth, the slot, the key column and bow, the key lying flat, the flip
+// apex, swivel A and the chain's start)
+const LOCK_PX_MM = 7.0;
+const FRAMINGS = (() => {
+  const a = at(W([66.2, 0, 4.3])), b = at(W([67.6, -16.5, 30.3]));
+  return { pair: { cx: VW / 2, cy: VH / 2, z: 1 }, lock: { cx: +((a[0] + b[0]) / 2).toFixed(2), cy: +((a[1] + b[1]) / 2).toFixed(2), z: +(LOCK_PX_MM / KS).toFixed(4) } };
+})();
+{
+  const L = FRAMINGS.lock, w = VW / L.z, h = VH / L.z;
+  console.log(`framing lock: centre (${L.cx}, ${L.cy}) zoom ${L.z} · ${(L.z * KS).toFixed(2)} px/mm · rect ${[L.cx - w / 2, L.cy - h / 2, w, h].map((v) => v.toFixed(1)).join(" ")}`);
+}
+const DATA = { P, P4, FINE, parts: PD, rest: { theta: REST.theta }, view: [VW, VH], framings: FRAMINGS, key: { rest: KEY_REST, post: POST, pin: M.PIN, z0: Z0 } };
 const CSS = readFileSync(join(HERE, "handcuffs.css"), "utf8");
 const strip = (src) => src.replace(/^export /gm, "").replace(/^if \(typeof process.*$/m, "");
 const partsScript = `const HP = (() => {${strip(readFileSync(join(HERE, "parts.mjs"), "utf8"))}\nreturn { makeParts, makeKey };})();\n`;
@@ -525,9 +639,17 @@ const only = (name) => (n) => n === name;
 //   top cap is coplanar with the face (z 4.3); the pin is seen only through the slot, which the cheek's fill leaves open.
 // · key.inner ↔ front (pose 11, 0.5 px²): the half-inserted barrel's cut cap is coplanar with the face at the bore.
 // · keyhole.walls ↔ key.inner (pose 13, 0.75 px² against 22.5): at κ 118 the flag under the C-ring's far side; the cheek covers it.
-const ALLOW = [[only("cuffA.jaw"), only("cuffA.pawl")], [only("cuffA.pawl"), only("cuffA.spring")],
+// S4 (finishing scope), one static pair, looked at at 10× in dark (BUILD-LOG S4: z8-cuffB-lock.png) and light (z8-cuffB-lock-light.png):
+// · cuffB.slot.walls ↔ cuffB.front (3.75 px² against 5.00 at the slot's far rim, 2.9 mm apart in depth): the walls' 0.3 mm band
+//   shares the cheek's volume at the rim (as on cuff A); the walls are drawn only inside the slot's opening (clipped to its rim),
+//   where the cheek's view tube leaves them uncovered, so the drawing is right. Cutting the band out of the cheek made it 9 px².
+//   At the re-fitted camera (S5nb, no board, 3.39 px/mm) the same pair reads 8.25 px² (areas scale with the camera).
+const ALLOW = [[only("cuffA.jaw"), only("cuffA.pawl")], [only("cuffB.slot.walls"), only("cuffB.front")], [only("cuffA.pawl"), only("cuffA.spring")],
   [only("key.inv.inner"), only("cuffA.front")], [only("key.inner"), only("cuffA.front")], [only("cuffA.keyhole.walls"), only("key.inner")]];
-const CROWD_OK = [];
+// chain crossings (playbook §2.6: closed loops have no stored `closed` flag, and interlinked links' bends touch a neighbour's
+// outline on screen): eyeA × link1, link1 × link2, link2 × eyeB, each looked at at 8× in both themes (BUILD-LOG S4 chain:
+// z8-chain-dark.png, z8-chain-light.png): each link passes through its neighbour with the near wire over and the far wire under
+const CROWD_OK = [["chain.*", "chain.*"]];
 // a live slot that is empty in a pose (no svg, no shapes: key.inner while the key is parked, …) draws nothing: the audits skip it
 function dropEmpty(settled) {
   const keep = settled.items.map((it) => !(it.shapes?.length === 0 && !/<(path|g class)/.test(it.svg.replace(/^<g data-part="[^"]*">/, ""))));
@@ -596,7 +718,7 @@ if (AUDIT) {
     contacts.push([`pin ↔ fold pin y ${pinY}`, poseOf({ theta: th9, u, key: keyInSlot(pinY) }), [[70.2, 14.95 - u], [69.2, 14.95 - u], [73.45, pinY, 3.0]]]);
   }
   { const pz = poseFrom({ theta: -10, kappa: M.KEY.endOff, u: 0 }); contacts.push(["jaw faces under the lifted tips", pz, [rot(M.GEO.TIP1, pz.alpha), M.rotF(M.GEO.TIP1, [0, 0], 0)]]); }
-  const OCC = /^(cuffA\.(front|frame\.|domeF)|key\.(outer|air)|stand\.key)/;
+  const OCC = /^(cuffA\.(front|frame\.|domeF)|key\.(outer|air))/;
   let seen = 0;
   for (const [label, p, samples, zs] of contacts) {
     const occ = scene(p.key ? p : poseOf(p)).solids.filter((s) => OCC.test(s.name ?? ""));

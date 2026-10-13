@@ -358,12 +358,18 @@ export function makeKey(k, G, P) {
   const FLAG = [[1.715, -0.51], [3.445, -0.51], [3.445, 0.51], [1.715, 0.51]];
   const FLAG_LEN = 3.18;
   // axis, flag direction and ring normal in F for a pose
-  function axesOf({ phi = 0, kappa = 0 }) {
+  // roll (the key turned about its own axis, after the flip): 0 for every station but the board, where the key lies flat
+  // (phi 90, roll −90: axis along F +x, flag toward F +y, ring plane horizontal). It leaves the axis, so tipOfCentre is unchanged
+  function axesOf({ phi = 0, kappa = 0, roll = 0 }) {
     const p = phi * D2R;
     const a = [Math.sin(p), 0, Math.cos(p)];
     const ps = (180 + kappa) * D2R;
-    const u = Math.abs(phi) < 1e-9 ? [Math.cos(ps), Math.sin(ps), 0] : [-Math.cos(p), 0, Math.sin(p)];
-    const v = [a[1] * u[2] - a[2] * u[1], a[2] * u[0] - a[0] * u[2], a[0] * u[1] - a[1] * u[0]];
+    let u = Math.abs(phi) < 1e-9 ? [Math.cos(ps), Math.sin(ps), 0] : [-Math.cos(p), 0, Math.sin(p)];
+    let v = [a[1] * u[2] - a[2] * u[1], a[2] * u[0] - a[0] * u[2], a[0] * u[1] - a[1] * u[0]];
+    if (roll) {
+      const c = Math.cos(roll * D2R), sn = Math.sin(roll * D2R);
+      [u, v] = [u.map((x, i) => x * c + v[i] * sn), v.map((x, i) => x * c - u[i] * sn)];
+    }
     return { a, u, v };
   }
   // W frame of the key: o = W(tip), a/u/v the F axes mirrored into W
@@ -497,7 +503,7 @@ export function makeKey(k, G, P) {
     const F = frameOfKey(pose);
     const aV = dot(F.a, V), uV = dot(F.u, V), vV = dot(F.v, V);
     const parts = [];
-    const base = `${pose.tip.map((v) => v.toFixed(4))}|${pose.phi.toFixed(4)}|${lo.toFixed(4)}|${hi.toFixed(4)}`;
+    const base = `${pose.tip.map((v) => v.toFixed(4))}|${pose.phi.toFixed(4)}|${(pose.roll ?? 0).toFixed(4)}|${lo.toFixed(4)}|${hi.toFixed(4)}`;
     const memoOf = (key, make) => { if (!memo) return make(); if (!memo.has(key)) { if (memo.size > 64) memo.clear(); memo.set(key, make()); } return memo.get(key); };
     // explicit facet counts (the kit's default follows the projection's scale, which P4 multiplies by 4)
     const lathe = (prof, s, steps) => { const c = clipProfile(prof, lo, hi); if (c) parts.push({ s, svg: memoOf(`${s}|${base}`, () => k.solidSvg(G.solidOf(c, F, P, { steps }), { tone })) }); };

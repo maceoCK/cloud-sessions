@@ -1,18 +1,18 @@
 # How handcuffs work: an Anatomy figure
 
-An interactive isometric figure built with the [Anatomy skill](https://github.com/wheresryan22/anatomy). A Smith & Wesson Model 100-pattern pair of chain handcuffs lies on a demonstration board, and the right cuff's lock case is milled open. Each moving part is drawn from one numeric model of the lock, taken from S&W's patent US 4,287,731 and the published Model 100 specification.
+An interactive isometric figure built with the [Anatomy skill](https://github.com/wheresryan22/anatomy). A Smith & Wesson Model 100-pattern pair of chain handcuffs lies on a flat surface, joined by two chain links on swivels. The right cuff's lock case is milled open, and the key lies flat beside it. Each moving part is drawn from one numeric model of the lock, taken from S&W's patent US 4,287,731 and the published Model 100 specification.
 
 Open `handcuffs.html` (dark) or `handcuffs-light.html` (light) in a browser. Each page is self-contained, with no network requests.
 
 ## What it shows
 
 1. **Closing.** The single strand swings into the case. Its teeth cam the spring-loaded pawl up, and the pawl snaps down behind each one: 23 positions, 2.6° apart, each taking about 3 mm off the inside perimeter (213 mm at the first click, 147 mm at the last). Pulling the strand back fails because the square tooth faces meet.
-2. **Double-locking.** The key's pin, pushed along the slot in the front cheek, slides the pawl's own folded leaf spring 4 mm. That parks a U-bend over the pawl, so the cuff can neither tighten nor be shimmed.
+2. **Double-locking.** The key is picked up, and its pin, pushed along the slot in the front cheek, slides the pawl's own folded leaf spring 4 mm. That parks a U-bend over the pawl, so the cuff can neither tighten nor be shimmed. A squeeze with the pin still in the slot proves it.
 3. **Unlocking and opening.**
-   - The key's hollow barrel goes over the key post.
+   - Straight from the slot, the key flips over, and its hollow barrel goes down over the key post.
    - Turn 1 (toward the chain): the flag meets the spring at 118° and pushes it off by 194°.
    - Turn 2 (the other way): the flag catches the pawl's shoulder at 46°, and the teeth clear at 76°. The strand swings out.
-   - The key returns, and the pawl drops back onto its stud.
+   - The key comes out and lies flat again, and the pawl drops back onto its stud.
 
 The readout in the card's bottom-right corner narrates each state from the model, for example `turn 2 · 86° · stop, teeth up 1.7`.
 
@@ -23,10 +23,11 @@ The readout in the card's bottom-right corner narrates each state from the model
 | Space / Enter | Next beat of the story |
 | → / ← | Tighten one click / try to pull open |
 | End / Home | Squeeze to the last click / pull fully open |
-| K | Key: stand → keyhole → back |
+| K | Key: from where it lies → keyhole → back |
 | ↑ / ↓ | Turn the seated key (Shift jumps to the next stop) |
 | D | Double-lock with the key pin |
 | Z | Toggle the whole-pair and lock close-up views |
+| 1 / 2 / 3 | Chapters: close, double-lock, unlock (also the numbered buttons under the card) |
 | Drag | Drag the strand to swing it; drag the key's bow to turn it |
 | Esc | Release; the tour resumes after 3.6 s |
 
@@ -44,7 +45,7 @@ An idle tour plays the whole cycle when nobody touches the figure. Under reduced
 | `truth-geometry.json` | Plan outlines in mm, traced from the patent |
 | `docs/truth.md` | The numeric truth model, with a source for every value |
 | `docs/research-*.md` | The mechanism research and the patent geometry |
-| `docs/design.md` | The build spec |
+| `docs/design.md` | The original build spec. `BUILD-LOG.md` records where the build departs from it: no board, no key stand, and the key going straight from the slot to the keyhole. |
 | `BUILD-LOG.md` | A stage-by-stage log, with check outputs |
 
 ## Rebuilding

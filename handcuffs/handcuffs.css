@@ -36,3 +36,12 @@
 /* the key (C5): the bow ring's hole stays open (evenodd on the lathe's fill and top) */
 .hc-key .iso-fill,.hc-key .iso-top{fill-rule:evenodd}
 [data-part="keyOuter"],[data-part="keyInner"]{cursor:grab}
+/* halos on the undrawn surface under the cuffs, the chain, cuff A's strand and the key lying flat (C1 #36–41): the only sign of
+   the surface (no board). Blur and offset are in user units: wider than the board-era 4 px / 1.5 px (at 2.69 px/mm), so that at
+   3.39 px/mm a soft fringe shows past each item's outline and reads as a contact shadow (the kit's own halo is 9 px / 3 px).
+   The key's fades (--hc-kh, written by live.js) as the key leaves the surface */
+.hc-svg .hc-halo{filter:blur(7px);transform:translateY(3px)}
+.hc-svg [data-part="keyHalo"]{opacity:calc(var(--anatomy-halo-opacity) * var(--hc-kh, 1))}
+/* cuff B (C8): static, so its lines step down one tone (hi → mid, mid → lo); fills are unchanged */
+.hc-svg .hc-dim [data-tone="hi"]{stroke:var(--anatomy-mid)}
+.hc-svg .hc-dim [data-tone="mid"]{stroke:var(--anatomy-lo)}
