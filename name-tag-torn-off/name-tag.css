@@ -15,7 +15,7 @@
   --nt-halo: #5c5b54;
   --nt-sheen-hi: #ffffff; --nt-sheen-hi-o: .75; --nt-sheen-lo: #6f7375; --nt-sheen-lo-o: .14;
   --nt-flash: #5b3a2c; --nt-flash-o: .22; --nt-bloom: #fbfaf4; --nt-bloom-o: .5;
-  --nt-grime: #6d5a4c; --nt-plug: #cfcfca; --nt-plughole: #4a3e37;
+  --nt-grime: #6d5a4c; --nt-plug: #cfcfca; --nt-plughole: #4a3e37; --nt-ooze: #8f8b80;
   --nt-clay-o: .32; --nt-sand-o: .7; --nt-sandlight-o: .8; --nt-fuzz-o: .62; --nt-drift-o: .42; --nt-paper-o: .13;
 }
 .iso[data-theme="dark"] {
@@ -34,7 +34,7 @@
   --nt-halo: #000000;
   --nt-sheen-hi: #9aa0a3; --nt-sheen-hi-o: .16; --nt-sheen-lo: #000000; --nt-sheen-lo-o: .3;
   --nt-flash: #000000; --nt-flash-o: .35; --nt-bloom: #6b6a64; --nt-bloom-o: .22;
-  --nt-grime: #000000; --nt-plug: #3a3a38; --nt-plughole: #0b0908;
+  --nt-grime: #000000; --nt-plug: #3a3a38; --nt-plughole: #0b0908; --nt-ooze: #57554f;
   --nt-clay-o: .7; --nt-sand-o: .9; --nt-sandlight-o: .18; --nt-fuzz-o: .34; --nt-drift-o: .55; --nt-paper-o: .16;
 }
 
@@ -99,6 +99,8 @@
 .nt-plate-halo { fill: var(--nt-halo); stroke: none; opacity: calc(var(--anatomy-halo-opacity) * .8); filter: blur(5px); }
 
 /* residue */
+.nt-ooze { fill: none; stroke: var(--nt-ooze); stroke-width: 1.3px; opacity: .3; filter: blur(.5px); stroke-linejoin: round; }
+.nt-ooze-top { stroke-width: 2px; opacity: .35; stroke-linecap: round; }
 .nt-film { fill: var(--nt-film); stroke: none; }
 .nt-islands path { fill: var(--nt-island); stroke: var(--nt-tear); stroke-width: .3px; stroke-linejoin: round; opacity: .92; }
 .nt-specks circle { fill: var(--nt-speck); opacity: .55; }

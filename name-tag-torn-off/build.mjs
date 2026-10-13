@@ -322,8 +322,25 @@ function plate() {
 
 // ---- Residue and the piece that stayed ---------------------------------------------------------------
 const onPlate = (ring, h = 0, closed = true) => pathOf(ring.map((p) => at(PEEL.onFace(p, h))), closed);
+// A ring offset outward from a convex outline, each vertex pushed along its corner's bisector.
+function offsetRing(ring, o) {
+  const n = ring.length;
+  const sgn = Math.sign(ring.reduce((a, p, i) => a + p[0] * ring[(i + 1) % n][1] - ring[(i + 1) % n][0] * p[1], 0));
+  return ring.map((p, i) => {
+    const a = ring[(i + n - 1) % n], b = ring[(i + 1) % n];
+    const ex = b[0] - a[0], ey = b[1] - a[1];
+    const l = Math.hypot(ex, ey) || 1;
+    return [p[0] + (sgn * ey * o) / l, p[1] - (sgn * ex * o) / l];
+  });
+}
 function residue() {
   const out = [];
+  // Years on the wall: adhesive crept a hair past the die-cut edge and caught dust, most along the
+  // top edge, where dust settles. It was there before the peel and stays after it.
+  const ring = offsetRing(PEEL.OUTLINE, 0.7);
+  const top = ring.map((p, i) => [p, i]).filter(([p]) => p[1] < -PEEL.TAG.h / 2 + PEEL.TAG.r * 0.6);
+  const runTop = [...top.filter(([, i]) => i > ring.length / 2), ...top.filter(([, i]) => i <= ring.length / 2)].map(([p]) => p);
+  out.push(`<path class="nt-ooze" d="${onPlate(ring)}"/><path class="nt-ooze nt-ooze-top" d="${onPlate(runTop, 0, false)}"/>`);
   const region = onPlate(PEEL.FLAP);
   // The clip is the region with every bare spot and scrape cut out of it, so the steel and its
   // grain show through the holes in the residue.
