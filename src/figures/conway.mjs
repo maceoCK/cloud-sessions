@@ -9,7 +9,7 @@ import { CELLS, N, aliveOf, replay, seedBoard } from "./conway/life.mjs";
 const WIDTH = 600;
 const HEIGHT = 380;
 const AZIMUTH = 38;
-const ELEVATION = 36;
+const ELEVATION = 32;
 
 const PITCH = 9;
 const SIDE = N * PITCH;
@@ -35,7 +35,7 @@ const SPARES = 6;
 const spareX = (i) => TRAY.x + 7 + i * 9.6;
 const PLINTH = { x: BOARD.x - 4, y: BOARD.y - 4, w: BOARD.w + 8, d: BOARD.d + 8, r: 5 };
 
-const P = k.fitProjection([...k.boxCorners({ ...PLINTH, d: PLINTH.d + 30 }, -6, ZT + 10)], WIDTH, HEIGHT, { pad: 30, azimuth: AZIMUTH, elevation: ELEVATION });
+const P = k.fitProjection([...k.boxCorners({ ...PLINTH, d: PLINTH.d + 30 }, -6, ZT + 10)], WIDTH, HEIGHT, { pad: 22, azimuth: AZIMUTH, elevation: ELEVATION });
 
 const at = (p) => k.iso(p, P);
 const S = (paths, style) => k.solidSvg(paths, style);
