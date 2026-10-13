@@ -211,9 +211,11 @@ function wall() {
       const pts = [];
       for (let i = 1; i < route.length; i++) {
         const [x0, z0] = route[i - 1], [x1, z1] = route[i];
-        const n = Math.max(2, Math.round(Math.hypot(x1 - x0, z1 - z0) / 5));
+        const n = Math.max(2, Math.round(Math.hypot(x1 - x0, z1 - z0) / 3));
+        let drift = 0;
         for (let k = i === 1 ? 0 : 1; k <= n; k++) {
-          const t = k / n, across = (Rc() - 0.5) * 4.5;
+          drift = drift * 0.6 + (Rc() - 0.5) * 2.2;
+          const t = k / n, across = drift;
           const horiz = Math.abs(z1 - z0) < Math.abs(x1 - x0);
           pts.push(at([x0 + (x1 - x0) * t + (horiz ? 0 : across), -RAKE, z0 + (z1 - z0) * t + (horiz ? across : 0)]));
         }

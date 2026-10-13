@@ -34,7 +34,7 @@
   --nt-halo: #000000;
   --nt-sheen-hi: #9aa0a3; --nt-sheen-hi-o: .16; --nt-sheen-lo: #000000; --nt-sheen-lo-o: .3; --nt-bevel-hi-o: .55; --nt-bevel-lo-o: .5;
   --nt-flash: #000000; --nt-flash-o: .35; --nt-bloom: #6b6a64; --nt-bloom-o: .22;
-  --nt-grime: #000000; --nt-plug: #3a3a38; --nt-plughole: #0b0908; --nt-ooze: #57554f; --nt-smudge: #9aa1a4; --nt-smudge-o: .05; --nt-teastain: #8a5a2e; --nt-tea-o: .13;
+  --nt-grime: #000000; --nt-plug: #3a3a38; --nt-plughole: #0b0908; --nt-ooze: #57554f; --nt-smudge: #9aa1a4; --nt-smudge-o: .05; --nt-teastain: #7a4f2a; --nt-tea-o: .09;
   --nt-clay-o: .7; --nt-sand-o: .9; --nt-sandlight-o: .18; --nt-fuzz-o: .34; --nt-drift-o: .55; --nt-paper-o: .16;
 }
 
@@ -52,7 +52,7 @@
 .nt-bloom { fill: var(--nt-bloom); stroke: none; opacity: var(--nt-bloom-o); filter: blur(5px); }
 .nt-bloomgrain { stroke: none; opacity: .9; filter: blur(.6px); }
 .nt-dust { stroke: none; opacity: .8; }
-.nt-crack { fill: none; stroke: var(--nt-plughole); stroke-width: .6px; opacity: .55; stroke-linejoin: round; stroke-linecap: round; }
+.nt-crack { fill: none; stroke: var(--nt-plughole); stroke-width: .4px; opacity: .45; stroke-linejoin: round; stroke-linecap: round; }
 .nt-jointshade { fill: var(--nt-halo); opacity: .16; filter: blur(1.2px); stroke: none; }
 .nt-run-0 { stop-color: var(--nt-grime); }
 .nt-plug { fill: var(--nt-plug); stroke: var(--anatomy-lo); stroke-width: .4px; }
