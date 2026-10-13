@@ -527,7 +527,10 @@ function drawDetail(pose, hidden) {
   const uy = DT.cy - my0;
   const gap = Math.hypot(ux, uy) || 1;
   const circle = Array.from({ length: 41 }, (_, i) => [mx0 + ring * Math.cos((i / 40) * Math.PI * 2), my0 + ring * Math.sin((i / 40) * Math.PI * 2)]);
-  detailLead.innerHTML = lineSvg(pathOf(circle, true), { tone: "mid", className: "cr-detail-mark" }) + (gap > DT.r + ring + 8 ? lineSvg(pathOf([[mx0 + (ux / gap) * ring, my0 + (uy / gap) * ring], [DT.cx - (ux / gap) * (DT.r + 4), DT.cy - (uy / gap) * (DT.r + 4)]]), { tone: "faint", dashed: true }) : "") + faceTextSvg(`translate(${(mx0 - ring - 3).toFixed(1)} ${(my0 - ring + 2).toFixed(1)})`, "A", { size: 7.5, tone: "mid", anchor: "end" });
+  // the ring goes dashed while the car is out of sight behind the mountain
+  const mid = cols ? cols[Math.floor(cols.length / 2)][1] : Infinity;
+  const out = mid < iso([car.x, car.y, zc + 2], D.P)[1];
+  detailLead.innerHTML = lineSvg(pathOf(circle, true), { tone: "mid", className: "cr-detail-mark", dashed: out }) + (gap > DT.r + ring + 8 ? lineSvg(pathOf([[mx0 + (ux / gap) * ring, my0 + (uy / gap) * ring], [DT.cx - (ux / gap) * (DT.r + 4), DT.cy - (uy / gap) * (DT.r + 4)]]), { tone: "faint", dashed: true }) : "") + faceTextSvg(`translate(${(mx0 - ring - 3).toFixed(1)} ${(my0 - ring + 2).toFixed(1)})`, "A", { size: 7.5, tone: "mid", anchor: "end" });
 }
 
 // the rear wheels' track, for the inset's fresh tyre marks
