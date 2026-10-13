@@ -170,7 +170,8 @@ a:hover{text-decoration-color:var(--ink)}
 .contents .n .ol{height:26px}
 .contents .t{font-style:italic;font-size:20px;line-height:1.15;color:var(--ink)}
 .contents .s{font-size:14px;color:var(--anatomy-muted)}
-.contents a:hover .t{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.2em}
+.contents .t{transition:color .2s}
+.contents a:hover .n,.contents a:hover .t{color:var(--anatomy-muted)}
 @media (max-width:899px){
   .contents{grid-template-columns:1fr 1fr}
   .contents li:not(:nth-child(4n+1)) a{padding-left:0}

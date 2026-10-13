@@ -167,7 +167,8 @@ a:hover{text-decoration-color:var(--ink)}
 .contents .n .ol{height:26px}
 .contents .t{font-style:italic;font-size:20px;line-height:1.15;color:var(--ink)}
 .contents .s{font-size:14px;color:var(--anatomy-muted)}
-.contents a:hover .t{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.2em}
+.contents .t{transition:color .2s}
+.contents a:hover .n,.contents a:hover .t{color:var(--anatomy-muted)}
 @media (max-width:899px){
   .contents{grid-template-columns:1fr 1fr}
   .contents li:not(:nth-child(4n+1)) a{padding-left:0}
@@ -307,7 +308,7 @@ export function sitePage({ figures, script, fragment = false }) {
 
   const STYLE = `${FONTS}${ISO_CSS}${THEME}${CSS}${figures.map((f) => darkify(f.css)).join("")}`;
   const head = `<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(META.title)}</title><meta name="description" content="${esc(META.description)}"><link rel="canonical" href="${PERSON.url}"><meta property="og:type" content="website"><meta property="og:title" content="${esc(PERSON.name)}"><meta property="og:description" content="${esc(META.description)}"><meta property="og:url" content="${PERSON.url}"><meta property="og:image" content="${PERSON.url}og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="theme-color" media="(prefers-color-scheme: light)" content="#edede9"><meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0b0b"><link rel="icon" href="data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#070807"/><g transform="translate(16 25.5) scale(.026) translate(${-(OUTLINES.lines["cover.M"].box[0] + OUTLINES.lines["cover.M"].box[2]) / 2} 0)"><path fill="#f4f0e8" d="${OUTLINES.lines["cover.M"].d}"/></g></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><style>path{fill:#141414}@media (prefers-color-scheme:dark){path{fill:#ededea}}</style><g transform="translate(16 27) scale(.04) translate(${-(OUTLINES.lines["cover.M"].box[0] + OUTLINES.lines["cover.M"].box[2]) / 2} 0)"><path d="${OUTLINES.lines["cover.M"].d}"/></g></svg>`,
   )}"><script>${THEME_INIT}</script><script type="application/ld+json">${JSON.stringify(ld)}</script><style>${STYLE}</style>`;
 
 
