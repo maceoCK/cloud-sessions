@@ -60,6 +60,10 @@ const CYCLE = Object.values(T).reduce((a, b) => a + b, 0);
 const ease = (x) => x * x * (3 - 2 * x);
 const easeOut = (x) => 1 - (1 - x) ** 3;
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+// The torn-off curl fades as it falls, so it never drops out past the card. By hand too: the same
+// fade, found from how far it has fallen.
+const fadeAt = (u) => 1 - ease(clamp((u - 0.35) / 0.65, 0, 1));
+const alphaOf = (s) => (s <= 1 ? 1 : fadeAt(inverse(ease, (s - 1) / OFF)));
 function tourAt(t) {
   t = ((t % CYCLE) + CYCLE) % CYCLE;
   let at = 0;
@@ -77,7 +81,7 @@ function tourAt(t) {
     const clock = clamp((v - 0.04) / 0.96, 0, 1);
     return { s: PEEL.sAtFront(PEEL.slipAt(clock)), place: 0, alpha: 1, phase: "peel" };
   }
-  if ((u = span("off")) !== null) return { s: 1 + OFF * ease(u), place: 0, alpha: 1 - ease(clamp((u - 0.35) / 0.65, 0, 1)), phase: "off" };
+  if ((u = span("off")) !== null) return { s: 1 + OFF * ease(u), place: 0, alpha: fadeAt(u), phase: "off" };
   if ((u = span("hold")) !== null) return { s: S_END, place: 0, alpha: 0, phase: "gone" };
   if ((u = span("place")) !== null) {
     // A fresh label comes down flat, fading in high up, and is pressed onto the residue.
@@ -229,7 +233,8 @@ const run = () => {
 // a little after the last input, from the start of its cycle.
 function steer(next) {
   touring = false;
-  target = { s: clamp(next, 0, S_END), place: 0, alpha: 1 };
+  const s = clamp(next, 0, S_END);
+  target = { s, place: 0, alpha: alphaOf(s) };
   clearTimeout(idleTimer);
   idleTimer = setTimeout(() => {
     if (still.matches) return;
@@ -315,13 +320,14 @@ stage.addEventListener("keydown", (event) => {
 
 if (still.matches || DATA.hold !== null) {
   touring = false;
-  state = { s: DATA.hold ?? 0.78, place: 0, alpha: 1 };
+  const s = DATA.hold ?? 0.78;
+  state = { s, place: 0, alpha: alphaOf(s) };
   target = { ...state };
 }
 still.addEventListener?.("change", () => {
   if (still.matches) {
     touring = false;
-    target = { s: state.s, place: 0, alpha: 1 };
+    target = { s: state.s, place: 0, alpha: alphaOf(state.s) };
   }
   run();
 });

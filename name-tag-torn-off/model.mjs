@@ -661,6 +661,21 @@ export const PEEL = (() => {
     const along = Math.atan2(W2[1], W2[0]);
     const stops = [];
     for (let d = D_MIN + 22; d < D_END - 6; d += 10 + R() * 8) stops.push(d);
+    const tornEdge = (base, depth, amp) => {
+      let pts = base;
+      for (let level = 0; level < depth; level++, amp *= 0.5) {
+        const next = [];
+        for (let i = 0; i < pts.length; i++) {
+          const a = pts[i], b = pts[(i + 1) % pts.length];
+          const dx = b[0] - a[0], dy = b[1] - a[1];
+          const len = Math.hypot(dx, dy) || 1;
+          const t = 0.35 + R() * 0.3, off = (R() - 0.5) * 2 * amp;
+          next.push(a, [a[0] + dx * t - (dy / len) * off, a[1] + dy * t + (dx / len) * off]);
+        }
+        pts = next;
+      }
+      return pts;
+    };
     // Rows of bare spots along each stop: small ragged holes, some running together.
     const holes = [];
     const ragged = (cx, cy, r, n, stretch, turn) => {
@@ -672,7 +687,7 @@ export const PEEL = (() => {
         const x = Math.cos(a) * rr * stretch[0], y = Math.sin(a) * rr * stretch[1];
         pts.push([cx + x * Math.cos(turn) - y * Math.sin(turn), cy + x * Math.sin(turn) + y * Math.cos(turn)]);
       }
-      return pts;
+      return r > 0.6 ? tornEdge(pts, 1, r * 0.22) : pts;
     };
     for (const d of stops) {
       let w = W_MIN + R() * 4;
@@ -694,22 +709,24 @@ export const PEEL = (() => {
       if (inFlap([u, v])) holes.push(ragged(u, v, 2 + R() * 3, 16, [1.5, 0.8], R() * Math.PI));
     }
     const corner = toUV(FLAP_DW.reduce((best, q) => (q[0] < best[0] ? q : best)));
-    // Paper the adhesive kept: ragged, fibrous islands, most near the corner that was picked.
+    // Paper the adhesive kept: torn scraps, most near the corner that was picked. Each is a lumpy
+    // oval, longer along the front, its edge broken up at three scales the way paper tears.
     const islands = [];
     for (let i = 0; i < 13; i++) {
       const near = i < 8;
       const [u, v] = near ? [corner[0] + 7 + R() * 24, corner[1] + 6 + R() * 18] : toUV([mix(D_MIN + 20, D_END, R()), mix(W_MIN, W_MAX, R())]);
       if (!inFlap([u, v])) continue;
       const r = near ? 1.4 + R() * 3.2 : 0.7 + R() * 1.4;
-      const n = 22;
-      const pts = [];
-      const ph = R() * 6;
-      for (let k = 0; k < n; k++) {
-        const a = (k / n) * Math.PI * 2;
-        const rr = r * (0.7 + 0.25 * Math.sin(a * 3 + ph) + (k % 2 ? 0.35 * R() : -0.1 * R()));
-        pts.push([u + Math.cos(a) * rr * 1.3, v + Math.sin(a) * rr * 0.85]);
+      const turn = along + (R() - 0.5) * 0.9;
+      const k = 6 + Math.floor(R() * 3);
+      const base = [];
+      for (let j = 0; j < k; j++) {
+        const a = (j / k) * Math.PI * 2 + (R() - 0.5) * 0.5;
+        const rr = r * (0.75 + 0.45 * R());
+        const x = Math.cos(a) * rr * 1.45, y = Math.sin(a) * rr * 0.75;
+        base.push([u + x * Math.cos(turn) - y * Math.sin(turn), v + x * Math.sin(turn) + y * Math.cos(turn)]);
       }
-      islands.push(pts);
+      islands.push(tornEdge(base, 3, r * 0.32));
     }
     const scratches = [];
     for (let i = 0; i < 7; i++) {
