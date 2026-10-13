@@ -199,7 +199,7 @@ export const ringArea = (ring) => ring.reduce((s, [x, y], i) => {
 }, 0) / 2;
 
 // The coast polyline (open, from the back cut to the front cut) and the closed land polygon.
-export function coastOf(road, M, box) {
+export function coastOf(road, M, box, front = null) {
   const [X0, Y0, X1, Y1] = box;
   const edge = [];
   for (let i = road.first; i <= road.last; i += 2) edge.push(M.cliffEdge(road, i));
@@ -222,8 +222,15 @@ export function coastOf(road, M, box) {
   coast.push(...fillet([px, farY], [0, -1], [1, 0], 10));
   coast.push(...edge.filter(([x]) => x > px + 12));
   coast.push(...fillet([px, nearY], [1, 0], [0, 1], 10));
-  for (let y = nearY + 12; y <= Y1 + 12; y += 4) coast.push([px, y]);
-  const polygon = [...coast, [X0 - 20, Y1 + 12], [X0 - 20, Y0 - 12]];
+  if (front === null) {
+    for (let y = nearY + 12; y <= Y1 + 12; y += 4) coast.push([px, y]);
+  } else {
+    // the hill comes down to the sea on the near side too: its face turns the corner and runs west
+    for (let y = nearY + 12; y < front - 14; y += 4) coast.push([px, y]);
+    coast.push(...fillet([px, front], [0, -1], [-1, 0], 14));
+    for (let x = px - 16; x >= X0 - 12; x -= 4) coast.push([x, front]);
+  }
+  const polygon = front === null ? [...coast, [X0 - 20, Y1 + 12], [X0 - 20, Y0 - 12]] : [...coast, [X0 - 20, front], [X0 - 20, Y0 - 12]];
   return { coast, polygon };
 }
 
@@ -263,7 +270,7 @@ export function layerSvg(rings, z, h, P, { joints = 0, seed = 1, className = "",
       facing.push(dot > 1e-6);
       if (dot <= 1e-6) continue;
       const shade = G.bandOf(nx * L[0] + ny * L[1]);
-      const isCut = cut ? cut(ax, ay, bx, by) : false;
+      const isCut = cut ? cut(ax, ay, bx, by, z) || false : false;
       const quad = [k.iso([ax, ay, z + h], P), k.iso([bx, by, z + h], P), k.iso([bx, by, z], P), k.iso([ax, ay, z], P)];
       faces.push({ depth: ((ax + bx) / 2) * V[0] + ((ay + by) / 2) * V[1], shade: Math.min(3, shade), quad, len, a: [ax, ay], b: [bx, by], cut: isCut });
     }
@@ -279,7 +286,7 @@ export function layerSvg(rings, z, h, P, { joints = 0, seed = 1, className = "",
   let run = null;
   const flush = () => {
     if (!run) return;
-    out.push(`<path class="iso-fill" d="${run.d}"/><path class="iso-shade${run.cut ? " cr-cut" : ""}" data-shade="${run.shade}" d="${run.d}"/>`);
+    out.push(`<path class="iso-fill" d="${run.d}"/><path class="iso-shade${run.cut ? ` ${run.cut === true ? "cr-cut" : run.cut}` : ""}" data-shade="${run.shade}" d="${run.d}"/>`);
     if (run.bottom) out.push(`<path class="iso-line" data-tone="${tone}" d="${run.bottom}"/>`);
     if (run.joints) out.push(`<path class="iso-line" data-tone="faint" d="${run.joints}"/>`);
     run = null;

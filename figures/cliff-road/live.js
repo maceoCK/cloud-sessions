@@ -84,7 +84,7 @@ function placeCar() {
 }
 
 function readoutOf() {
-  if (car.dark > 0 || car.x < D.portal - 6) return `in the tunnel · lap ${car.laps + 1} · pace ${Math.round(paceOf(state.share) * 100)}%`;
+  if (car.dark > 0 || car.x < D.portal - 6) return `in the tunnel · lap ${car.laps + 1} · pace ${Math.round(ease.x * 100)}% of the limit`;
   return M.readoutOf(car);
 }
 

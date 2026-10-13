@@ -272,3 +272,32 @@
 .iso:not([data-theme="light"]) .cr .iso-plate {
   --anatomy-paper: #0d1013;
 }
+
+.cr-cave {
+  fill: var(--cr-cave) !important;
+}
+
+.cr {
+  --cr-cave: #050607;
+}
+
+.iso[data-theme="light"] .cr,
+.cr[data-theme="light"] {
+  --cr-cave: #8f8b83;
+}
+
+/* inside the cliff, joints and bedding planes sit back; the cliff edge and the road keep the strong line */
+.iso:not([data-theme="light"]) .cr-strata .iso-line[data-tone="faint"] {
+  stroke: #1b2128;
+}
+
+@media (max-width: 560px) {
+  .cr .iso-plate {
+    padding: 48px 6px 70px;
+  }
+
+  .cr-stage {
+    width: 112%;
+    margin: -4% -6% -2%;
+  }
+}

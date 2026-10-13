@@ -43,7 +43,8 @@ const poly = (pts, closed = true) => k.pathOf(pts.map(at), closed);
 const depth = (p) => G.dot3(p, V);
 
 // ---- the rock body -----------------------------------------------------------------------------------
-const { coast, polygon } = T.coastOf(road, M, BOX);
+const HILL_FRONT = Y1 - 36;
+const { coast, polygon } = T.coastOf(road, M, BOX, HILL_FRONT);
 const sdfCoast = T.sdfOf(coast, polygon);
 const STACKS = [
   { x: 262, y: 84, r: 15, top: 132, seed: 3 },
@@ -62,9 +63,18 @@ const n = (x, y, seed, scale = 22) => 2 * T.fbm(x / scale, y / scale, seed) - 1;
 // strata: thin beds of a sedimentary cliff. Each bed's outline is the coast pushed out (into the sea) by
 // a slope term, slowly drifting ledges (noise continuous in height), vertical joints shared by every bed
 // (buttresses and gullies), a wave-cut notch at the waterline and a talus apron under water.
-const joint = (x, y) => 2.6 * (2 * T.fbm(x / 7, y / 7, 41, 2) - 1) + 1.6 * (2 * T.fbm(x / 19, y / 19, 43, 2) - 1);
-const ledge = (x, y, z) => 3.2 * (2 * T.fbmZ(x / 15, y / 15, z, 51, 26) - 1);
-const cliffOff = (z) => (x, y) => 0.055 * (Z.road - z) + ledge(x, y, z) + joint(x, y) - 0.6;
+// vertical jointing: blocky buttresses and recesses shared by every bed
+const blocky = (v) => Math.sign(v) * Math.abs(v) ** 0.55;
+const joint = (x, y) => 4.6 * blocky(2 * T.fbm(x / 8, y / 8, 41, 2) - 1) + 2.2 * (2 * T.fbm(x / 23, y / 23, 43, 2) - 1);
+const ledge = (x, y, z) => 3.4 * (2 * T.fbmZ(x / 15, y / 15, z, 51, 26) - 1);
+// chimneys the sea has opened along faults, and caves at the waterline: picked on the faces we see
+const coastNear = (tx, ty) => coast.reduce((best, p) => (Math.hypot(p[0] - tx, p[1] - ty) < Math.hypot(best[0] - tx, best[1] - ty) ? p : best), coast[0]);
+const GULLIES = [coastNear(-58, 110), coastNear(56, 112), coastNear(214, -30), coastNear(-176, 150)];
+const CAVES = [coastNear(-4, 110), coastNear(150, 100), coastNear(-150, 150)];
+const bowl = (list, r) => (x, y) => list.reduce((sum, [cx, cy]) => sum + Math.exp(-((x - cx) ** 2 + (y - cy) ** 2) / (r * r)), 0);
+const gully = bowl(GULLIES, 5.5);
+const cave = bowl(CAVES, 8.5);
+const cliffOff = (z) => (x, y) => 0.055 * (Z.road - z) + ledge(x, y, z) + joint(x, y) - 0.6 - (z < 150 ? 11 * gully(x, y) : 0);
 const STRATA = [
   [0, 5, (x, y) => 64 + 8 * n(x, y, 11, 30)],
   [5, 10, (x, y) => 48 + 7 * n(x, y, 12, 28)],
@@ -74,10 +84,11 @@ const STRATA = [
   [25, 32, (x, y) => 8 + 3.5 * n(x, y, 16, 12) + joint(x, y)],
   [32, 40, (x, y) => 5.5 + 3 * n(x, y, 17, 10) + joint(x, y)],
   [40, 43, (x, y) => 5 + 7 * n(x, y, 18, 14) + joint(x, y)],
-  [43, 49, (x, y) => -2.2 + 0.8 * n(x, y, 19, 10) + 0.6 * joint(x, y)],
-  [49, 55, (x, y) => -1.4 + 0.8 * n(x, y, 20, 10) + 0.7 * joint(x, y)],
+  [43, 49, (x, y) => -2.2 + 0.8 * n(x, y, 19, 10) + 0.6 * joint(x, y) - 16 * cave(x, y) - 11 * gully(x, y)],
+  [49, 55, (x, y) => -1.4 + 0.8 * n(x, y, 20, 10) + 0.7 * joint(x, y) - 15 * cave(x, y) - 11 * gully(x, y)],
+  [55, 61, (x, y) => 0.055 * (Z.road - 58) + ledge(x, y, 58) + joint(x, y) - 0.6 - 11 * cave(x, y) - 11 * gully(x, y)],
 ];
-for (let z = 55; z < 152; z += 7) STRATA.push([z, Math.min(152, z + 7), cliffOff(z + 3.5)]);
+for (let z = 61; z < 152; z += 7) STRATA.push([z, Math.min(152, z + 7), cliffOff(z + 3.5)]);
 STRATA.push([152, 158, (x, y) => Math.max(0, 0.5 + 0.6 * joint(x, y))]);
 STRATA.push([158, 165, () => 0]);
 const HILL = [
@@ -95,7 +106,11 @@ const HILL = [
 function ringsOf(z0, z1, off, above = false) {
   const grid = T.gridOf(BOX, STEP, (x, y, edge) => {
     if (edge) return 1e3;
-    if (above) return x - M.PORTAL_X - off(x, y);
+    if (above) {
+      const i = Math.round((x - base.x0) / STEP);
+      const j = Math.round((y - base.y0) / STEP);
+      return Math.max(x - M.PORTAL_X - off(x, y), base.v[j * base.nx + i] - off(x, y));
+    }
     const i = Math.round((x - base.x0) / STEP);
     const j = Math.round((y - base.y0) / STEP);
     const land = base.v[j * base.nx + i] - off(x, y);
@@ -105,7 +120,8 @@ function ringsOf(z0, z1, off, above = false) {
 }
 
 // a face is a cut (sawn section of the model) when it lies on the block boundary
-const onCut = (ax, ay, bx, by) => (Math.abs(ay - Y1) < 0.6 && Math.abs(by - Y1) < 0.6) || (Math.abs(ax - X1) < 0.6 && Math.abs(bx - X1) < 0.6) || (Math.abs(ay - Y0) < 0.6 && Math.abs(by - Y0) < 0.6) || (Math.abs(ax - X0) < 0.6 && Math.abs(bx - X0) < 0.6);
+const onCut = (ax, ay, bx, by, z = 0) => (z >= 40 && z < 61 && cave((ax + bx) / 2, (ay + by) / 2) > 0.25 ? "cr-cave" : sawn(ax, ay, bx, by) ? "cr-cut" : "");
+const sawn = (ax, ay, bx, by) => (Math.abs(ay - Y1) < 0.6 && Math.abs(by - Y1) < 0.6) || (Math.abs(ax - X1) < 0.6 && Math.abs(bx - X1) < 0.6) || (Math.abs(ay - Y0) < 0.6 && Math.abs(by - Y0) < 0.6) || (Math.abs(ax - X0) < 0.6 && Math.abs(bx - X0) < 0.6);
 
 const LAYERS = [];
 for (const [z0, z1, off] of STRATA) LAYERS.push({ z0, z1, rings: ringsOf(z0, z1, off) });
@@ -136,7 +152,7 @@ back.push(Dots([at([STRIP.x + 2.4, STRIP.y + 3, Z.bed + 0.8]), at([STRIP.x + STR
 const LABEL = { x: X1 + 5, y: Y1 - 120, w: 7, d: 70, r: 1.2 };
 back.push(S(k.slabOf(LABEL, Z.bed, 0.9, P, 3), { tone: "mid" }));
 back.push(Ln(k.planOutline(k.insetPlan(LABEL, 1.4), Z.bed + 0.9, P), { tone: "faint" }));
-back.push(k.faceTextSvg(k.topMatrix([LABEL.x + 4.6, LABEL.y + LABEL.d - 6], Z.bed + 0.9, P, "y"), "FIG 5A · 1:200", { size: 3.2, tone: "lo" }));
+back.push(k.faceTextSvg(k.topMatrix([LABEL.x + 4.6, LABEL.y + LABEL.d - 6], Z.bed + 0.9, P, "y"), "CLIFF ROAD · 5A", { size: 3.2, tone: "lo" }));
 back.push(Dots([at([LABEL.x + LABEL.w / 2, LABEL.y + 2.4, Z.bed + 0.9]), at([LABEL.x + LABEL.w / 2, LABEL.y + LABEL.d - 2.4, Z.bed + 0.9])], { size: 0.4 }));
 
 // bedrock under the whole model: a sawn section with its strata
@@ -145,7 +161,8 @@ back.push(Ln([-6, -12].map((z) => k.sideSeam(BLOCK, z, P, 1)).join(""), { tone: 
 
 // strata, bottom to top: the ones under water go behind the sea
 for (const layer of LAYERS) {
-  const svg = T.layerSvg(layer.rings, layer.z0, layer.z1 - layer.z0, P, { joints: layer.z0 >= 43 && !layer.hill ? 0.1 : layer.hill ? 0.06 : 0, seed: layer.z0, cut: onCut, className: layer.z1 <= Z.sea ? "cr-under" : "" });
+  const top = layer.z1 === Z.road || layer.z1 === HILL[HILL.length - 1][1];
+  const svg = T.layerSvg(layer.rings, layer.z0, layer.z1 - layer.z0, P, { joints: layer.z0 >= 43 && !layer.hill ? 0.1 : layer.hill ? 0.06 : 0, seed: layer.z0, cut: onCut, tone: top ? "mid" : "lo", className: `${layer.z1 <= Z.sea ? "cr-under" : ""}${top ? "" : " cr-strata"}` });
   if (layer.z1 <= Z.sea) back.push(svg);
   else if (layer.z1 <= Z.road) terrain.push(svg);
   else front.push(svg);
@@ -324,10 +341,23 @@ for (const [index, pt] of PORTALS.entries()) {
   front.push(`<g class="cr-portal" data-portal="${index}">${pt.interior}<g class="cr-inside" data-slot="${index}" clip-path="url(#${index ? "portal-near" : "portal-far"}-clip)"></g>${pt.shadow}${pt.facade}</g>`);
 }
 
+// a post-and-rail fence along the top of the rock wall over the portals
+{
+  const zt = 207;
+  const xs = M.PORTAL_X - 3.5;
+  const posts = [];
+  for (let y = -150; y <= 140; y += 9) if (heightAt(xs, y) >= zt - 0.5) posts.push(y);
+  let svg = "";
+  for (const y of posts) svg += S(k.slabOf({ x: xs - 0.5, y: y - 0.5, w: 1, d: 1, r: 0.2 }, zt, 5, P, 2), { tone: "mid" });
+  let rails = "";
+  for (let i = 0; i + 1 < posts.length; i++) if (posts[i + 1] - posts[i] < 10) for (const h of [2.4, 4.4]) rails += k.pathOf([at([xs, posts[i] + 0.5, zt + h]), at([xs, posts[i + 1] - 0.5, zt + h])]);
+  front.push(`<g class="cr-fence">${Ln(rails, { tone: "lo" })}${svg}</g>`);
+}
+
 // ---- things that stand on the plateau, sorted with the car each frame -----------------------------------
 const items = [];
 const put = (name, at3, svg) => items.push({ name, key: depth(at3), svg });
-for (const [i, t] of [[66, -12, 30, 1], [82, -26, 22, 2], [48, -30, 18, 3], [-104, 8, 24, 4], [-109, -30, 15, 5]].entries()) {
+for (const [i, t] of [[66, -12, 30, 1], [82, -26, 22, 2], [48, -30, 18, 3], [-106, -14, 24, 4], [-109, -38, 15, 5]].entries()) {
   const [x, y, h, seed] = t;
   const tree = SC.cypress({ P, x, y, z: Z.road + (KNOLL(x, y) < -0.42 ? 4.8 : KNOLL(x, y) < 0 ? 2.6 : 0), height: h, seed });
   put(`tree${i}`, tree.at, tree.svg);
@@ -354,8 +384,38 @@ for (const [i, [x, y, h, seed]] of [[-150, -130, 26, 6], [-176, -60, 30, 7], [-1
   const [mx, my] = ri(road.pts.findIndex(([x], i) => i > I0 && x > -60), M.HALF_ROAD + 1.2);
   put("milestone", [mx, my, Z.road], SC.milestone({ P, x: mx, y: my, z: Z.road }).svg);
 }
+// telegraph poles across the hill, wires sagging between them
+{
+  const line = [[-176, -158], [-180, -92], [-184, -26], [-188, 40], [-192, 106]];
+  const poles = line.map(([x, y]) => ({ x, y, z: heightAt(x, y) }));
+  const built = poles.map((p, i) => {
+    const next = poles[Math.min(i + 1, poles.length - 1)];
+    const prev = poles[Math.max(i - 1, 0)];
+    const dir = G.unit3([next.x - prev.x, next.y - prev.y, 0]);
+    return SC.pole({ P, x: p.x, y: p.y, z: p.z, height: 38, along: [dir[0], dir[1]] });
+  });
+  built.forEach((b, i) => {
+    let svg = b.svg;
+    if (i + 1 < built.length) for (const side of [0, 1]) svg = SC.wire({ P, a: b.tips[side], b: built[i + 1].tips[side], sag: 3.2 }) + svg;
+    put(`pole${i}`, [poles[i].x, poles[i].y, poles[i].z], svg);
+  });
+}
+// gorse on the headland and along the hill's foot
+for (const [i, [x, y, r]] of [[20, -40, 4.2], [96, 10, 3.4], [128, -42, 3.8], [-30, -46, 3.0], [-96, -48, 3.6], [-100, 52, 3.2], [140, 36, 2.8], [-70, 20, 3.4], [6, 4, 2.6]].entries()) {
+  const z = Z.road + (KNOLL(x, y) < -0.42 ? 4.8 : KNOLL(x, y) < 0 ? 2.6 : 0);
+  put(`bush${i}`, [x, y, z], SC.bush({ P, x, y, z, r, seed: 300 + i }));
+}
+// a viewpoint between the portals: a bench, binoculars and a bin, looking out over the headland
+{
+  const bn = SC.bench({ P, x: -108, y: 28, z: Z.road, facing: 0 });
+  put("bench", bn.at, bn.svg);
+  const vw = SC.viewer({ P, x: -104, y: 44, z: Z.road, facing: 0.3 });
+  put("viewer", vw.at, vw.svg);
+  const bi = SC.bin({ P, x: -110, y: 14, z: Z.road });
+  put("bin", bi.at, bi.svg);
+}
 // a few loose rocks on the plateau
-for (const [i, [x, y, r]] of [[-112, 40, 3.2], [-114, -50, 2.6], [150, -6, 3.6], [28, -46, 2.2], [104, 30, 2.8], [-60, -40, 3.0]].entries()) put(`rock${i}`, [x, y, Z.road], SC.boulder({ P, x, y, z: Z.road, r, seed: 200 + i }));
+for (const [i, [x, y, r]] of [[-114, -50, 2.6], [150, -6, 3.6], [28, -46, 2.2], [104, 30, 2.8], [-60, -40, 3.0]].entries()) put(`rock${i}`, [x, y, Z.road], SC.boulder({ P, x, y, z: Z.road, r, seed: 200 + i }));
 items.sort((a, b) => a.key - b.key);
 const STILL = (() => {
   let best = 0;
@@ -379,11 +439,12 @@ front.push(`<g class="cr-items">${before.map(itemSvg).join("")}${stillCar}${afte
     const g = k.slabOf(plan, Z.floor, top - Z.floor, P, 1, 0);
     return `<g class="cr-glass">${Ln(g.outline + g.crease, { tone: "faint" })}</g>`;
   };
-  const westEnd = M.PORTAL_X + 4;
+  const westEnd = X0;
   front.push(glass({ x: westEnd, y: Y1 - 0.8, w: X1 - westEnd, d: 0.8, r: 0 }));
   front.push(glass({ x: X1 - 0.8, y: Y0, w: 0.8, d: Y1 - Y0, r: 0 }));
   front.push(S(k.slabOf({ x: X1 - 2.4, y: Y1 - 2.4, w: 3.4, d: 3.4, r: 0.6 }, Z.bed, top + 1 - Z.bed, P, 3, 0.4), { tone: "mid" }));
   front.push(S(k.slabOf({ x: X1 - 2.4, y: Y0 - 1, w: 3.4, d: 3.4, r: 0.6 }, Z.bed, top + 1 - Z.bed, P, 3, 0.4), { tone: "mid" }));
+  front.push(S(k.slabOf({ x: X0 - 1, y: Y1 - 2.4, w: 3.4, d: 3.4, r: 0.6 }, Z.bed, top + 1 - Z.bed, P, 3, 0.4), { tone: "mid" }));
 }
 
 // ---- data for the shaders: a coast texture, spray points, studs ---------------------------------------
@@ -443,6 +504,7 @@ const DATA = {
   limit: LIMIT,
   paceMin: 0.85,
   portal: PORTALS[0].plane,
+  x0: X0,
   road: Z.road,
   sea: Z.sea,
   box: BOX,
@@ -455,13 +517,31 @@ const backSvg = k.figureSvg({ width: W, height: H, label: LABEL_TEXT, body: back
 const layerSvg = (name, body) => `<svg xmlns="http://www.w3.org/2000/svg" class="iso-svg cr-layer ${name}" viewBox="0 0 ${W} ${H}" aria-hidden="true">${body.join("")}</svg>`;
 const stage = `<div class="cr-stage" tabindex="0" role="slider" aria-label="Cliff road. Move the pointer across the figure, or press the left and right arrow keys, to set how hard the driver pushes." aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><span class="cr-said" aria-live="polite"></span>${backSvg}<canvas class="cr-layer cr-gl cr-sea-gl" aria-hidden="true"></canvas>${layerSvg("cr-terrain", terrain)}<canvas class="cr-layer cr-gl cr-light-gl" aria-hidden="true"></canvas>${layerSvg("cr-front", front)}<canvas class="cr-layer cr-gl cr-fx-gl" aria-hidden="true"></canvas></div>`;
 
+const SWELL_SLANT_FOR_CAPTION = 0.35;
+// ---- the card: every number below is computed from the model ---------------------------------------
+const kmh = (v) => Math.round(v * 3.6);
+const TIP_R = M.ROUTE.find((r) => r[0] === "arc" && r[1] === 180)[2];
+const COVE_R = M.ROUTE.find((r) => r[0] === "arc" && r[1] === -90)[2];
+const vGrip = Math.sqrt(M.MU * M.GRAV * TIP_R);
+const lapAt = (pace) => M.lapOf(road, profile, pace);
+const CALM = lapAt(0.85);
+const swell6 = M.swellOf(6);
+const sweep = (SWELL_SLANT_FOR_CAPTION * (236 - M.PORTAL_X)) / u / swell6.c;
+const sprayTop = M.SPRAY.rise ** 2 / (2 * M.GRAV);
+const roadAbove = (Z.road - Z.sea) / u;
+const caption = `A headland on a plinth, at night: ${Math.round(road.length - (road.first + road.n - 1 - road.last) * road.ds)} m of road with no guard rail runs ${roadAbove} m above the sea between two tunnel portals. Damp asphalt under sea mist grips at μ ${M.MU}, so the ${TIP_R} m hairpin holds on grip up to √(μgR) = ${kmh(vGrip)} km/h and the ${COVE_R} m cove bend up to ${kmh(Math.sqrt(M.MU * M.GRAV * COVE_R))} km/h. The driver brakes hard from up to ${Math.round(LAP.top)} km/h on the far leg, and turns in faster than grip allows. The rear tyres then slide at μ ${M.MU_SLIDE}, the path widens to v²/(μg), and the car drifts out toward the drop with its nose held into the bend, up to ${Math.round(LAP.peakDrift)}°. Near the edge the driver lifts, which tightens the line. At the top of the control the model's line clears the edge by ${LAP.least.toFixed(1)} m; at the bottom the car corners on grip, with ${Math.round(CALM.peakDrift)}° of tyre slip at most. The tyre marks are the rear wheels' path on that fastest lap. The swell has an ${M.SWELL.period} s period; in 6 m of water its crests are ${Math.round(swell6.lambda)} m apart and travel ${swell6.c.toFixed(1)} m/s. Refraction wraps them round the headland, so each one breaks on the tip first and runs back along both cliffs in about ${sweep.toFixed(0)} s, throwing spray up the rock at up to ${M.SPRAY.rise} m/s, ${sprayTop.toFixed(1)} m high.`;
 const body = `<div class="cr">${k.plateHtml({
   fig: "Fig 5A",
   title: "Cliff road at night",
   hint: "Move across to push harder",
   readout: M.readoutOf({ ...M.carStart(road, profile, 1), margin: 3 }),
-  keys: [{ mark: "lit", label: "The car" }],
-  caption: "",
+  keys: [
+    { mark: "lit", label: "The car: a 1,150 kg rear-drive coupe, lamps up" },
+    { mark: "dashed", label: "Tyre marks from the model's fastest lap" },
+    { mark: "raised", label: `Chalk cliff, ${roadAbove} m from road to sea` },
+    { mark: "flat", label: `Sea: ${M.SWELL.period} s swell breaking on the rock` },
+  ],
+  caption,
   body: stage,
 })}</div>`;
 

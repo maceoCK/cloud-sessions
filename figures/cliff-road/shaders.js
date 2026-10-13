@@ -213,7 +213,7 @@ void main(){
 
 const FX_GLSL = `${COMMON_GLSL}
 uniform float uRoad;uniform float uPortalX;uniform vec4 uCarA;uniform vec4 uCarB;
-uniform vec4 uSmk[24];uniform vec4 uSmkB[24];uniform vec4 uSpr[32];uniform vec4 uSprB[32];
+uniform vec4 uSmk[24];uniform vec4 uSmkB[24];uniform vec4 uSpr[48];uniform vec4 uSprB[48];
 uniform vec4 uPortA;uniform vec4 uPortB;uniform float uBeams;
 // the car as an oriented box: returns where the pixel's ray enters it (larger t is nearer), or -1e9
 float carHit(vec3 p0,vec3 v){
@@ -246,6 +246,14 @@ float blob(vec3 p0,vec3 v,vec3 c,float r,float tCar){
   float hidden=tCar>-1e8?smoothstep(-2.,2.,tCar-tc):0.;
   return exp(-d2/(r*r))*(1.-hidden);
 }
+// a gaussian stretched k times taller than it is wide: a sheet of spray climbing the rock
+float sheet(vec3 p0,vec3 v,vec3 c,float r,float k){
+  vec3 w=c-p0;
+  vec3 ws=vec3(w.xy,w.z/k);vec3 vs=vec3(v.xy,v.z/k);
+  float vv=dot(vs,vs);float t=dot(ws,vs);
+  float d2=dot(ws,ws)-t*t/vv;
+  return exp(-d2/(r*r))*inversesqrt(vv);
+}
 void main(){
   vec2 vb=viewOf(gl_FragCoord.xy);
   float px=pixelOf();
@@ -255,10 +263,10 @@ void main(){
   vec4 col=vec4(0.);
   // spray thrown up the cliff, then tyre smoke, both as soft volumes
   float spray=0.;float under=0.;
-  for(int i=0;i<32;i++){
+  for(int i=0;i<48;i++){
     vec4 s=uSpr[i];vec4 sb=uSprB[i];
     if(sb.x<.002)continue;
-    float b=blob(p0,v,s.xyz,s.w,tCar)*sb.x*sb.y;
+    float b=sheet(p0,v,s.xyz,s.w,sb.z)*sb.x*sb.y;
     spray+=b;
     under+=b*smoothstep(s.z+s.w*.2,s.z-s.w*.8,p0.z+v.z*dot(s.xyz-p0,v));
   }
@@ -310,7 +318,7 @@ void main(){
     }
   }
   if(uPale<.5){
-    vec3 c=vec3(.62,.68,.74)*spray*.8+vec3(.55,.56,.58)*smoke*.5+vec3(.9,.25,.15)*smoke*heat*.35;
+    vec3 c=vec3(.52,.58,.64)*(1.-exp(-spray*1.1))*.85+vec3(.55,.56,.58)*smoke*.5+vec3(.9,.25,.15)*smoke*heat*.35;
     c+=vec3(1.,.9,.72)*(wall+bore)+vec3(.95,.9,.78)*beam*.16;
     c=tonemap(c,1.2);
     col=vec4(c,max(c.r,max(c.g,c.b)));
@@ -348,7 +356,7 @@ function gpuOf(D, stage, pale) {
     const el = (56 * Math.PI) / 180;
     return [Math.cos(az) * Math.cos(el), Math.sin(az) * Math.cos(el), Math.sin(el)];
   })();
-  const sea = glLayer({ canvas: seaCanvas, fragment: SEA_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade"], fixed: { ...common, uSea: D.sea, uSwell: [SWELL_W, SWELL_K, SWELL_TIP, SWELL_SLANT], uMoon: moon, uX0: D.portal } });
+  const sea = glLayer({ canvas: seaCanvas, fragment: SEA_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade"], fixed: { ...common, uSea: D.sea, uSwell: [SWELL_W, SWELL_K, SWELL_TIP, SWELL_SLANT], uMoon: moon, uX0: D.x0 } });
   const light = sea ? glLayer({ canvas: lightCanvas, fragment: LIGHT_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade", "uCarA", "uCarB"], fixed: { ...common, uRoad: D.road, uPortalX: D.portal, uStud: [...D.studs.flat(), ...Array(Math.max(0, 48 - D.studs.length * 2)).fill(-9999)].slice(0, 48) } }) : null;
   const fx = light ? glLayer({ canvas: fxCanvas, fragment: FX_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 0.6, uniforms: ["uFade", "uCarA", "uCarB", "uSmk", "uSmkB", "uSpr", "uSprB"], fixed: { ...common, uRoad: D.road, uPortalX: D.portal, uPortA: [D.portals[0].yc, D.portals[0].half, D.portals[0].z, D.portals[0].spring], uPortB: [D.portals[1].yc, D.portals[1].half, D.portals[1].z, D.portals[1].spring], uBeams: pale ? 0 : 1 } }) : null;
   if (!fx) return null;
@@ -382,7 +390,7 @@ function gpuOf(D, stage, pale) {
 
   // ---- particles ------------------------------------------------------------------------------------
   const smoke = Array.from({ length: 24 }, () => ({ a0: 0, age: 9, life: 1 }));
-  const spray = Array.from({ length: 32 }, () => ({ a0: 0, age: 9, life: 1 }));
+  const spray = Array.from({ length: 48 }, () => ({ a0: 0, age: 9, life: 1 }));
   let smokeAt = 0;
   let smokeSide = 1;
   const crests = new Float64Array(D.sprayAt.length).fill(NaN);
@@ -393,8 +401,8 @@ function gpuOf(D, stage, pale) {
   const oldest = (list) => list.reduce((best, p) => (p.age / p.life > best.age / best.life ? p : best), list[0]);
   const smk = new Float32Array(96);
   const smkB = new Float32Array(96);
-  const spr = new Float32Array(128);
-  const sprB = new Float32Array(128);
+  const spr = new Float32Array(192);
+  const sprB = new Float32Array(192);
   const WIND = [-6, 1.2];
 
   function step(dt, clock, car, calm) {
@@ -441,10 +449,10 @@ function gpuOf(D, stage, pale) {
       crests[j] = n;
       if (calm || Number.isNaN(was) || n === was) return;
       const an = 0.55 + 0.45 * hashN(n);
-      if (an < 0.58 || hashN(n * 7.1 + j * 1.37) > 0.55) return;
+      if (an < 0.5 || hashN(n * 7.1 + j * 1.37) > 0.92) return;
       const p = oldest(spray);
-      const v0 = M.SPRAY.rise * M.U * (0.55 + 0.45 * an) * (0.8 + 0.4 * hashN(j + n * 3.3));
-      Object.assign(p, { x: x + nx * 2.5, y: y + ny * 2.5, z: D.sea + 2, vx: nx * 7 + WIND[0], vy: ny * 7 + WIND[1], vz: v0, age: 0, life: 2.3 + hashN(j * 2.1 + n) * 0.8, a0: 0.7 + 0.3 * an, r0: 3.4 });
+      const v0 = M.SPRAY.rise * M.U * (0.5 + 0.5 * an) * (0.75 + 0.5 * hashN(j + n * 3.3));
+      Object.assign(p, { x: x + nx * 2, y: y + ny * 2, z: D.sea + 2, vx: nx * 5 + WIND[0], vy: ny * 5 + WIND[1], vz: v0, age: 0, life: 2.2 + hashN(j * 2.1 + n) * 1.0, a0: 0.26 + 0.24 * an, r0: 3.2 });
     });
     for (const p of spray) {
       if (p.age > p.life) continue;
@@ -464,8 +472,11 @@ function gpuOf(D, stage, pale) {
     });
     spray.forEach((p, i) => {
       const a = p.age > p.life ? 0 : p.a0 * burst(p.age, 0.1, 0.75) * smooth(p.life, p.life * 0.6, p.age);
-      spr.set([p.x || 0, p.y || 0, p.z || 0, (p.r0 || 1) + 12 * Math.sqrt(Math.max(0, p.age))], i * 4);
-      sprB.set([a, a > 0.002 ? seen(p.x, p.y, p.z) : 0, 0, 0], i * 4);
+      const r = (p.r0 || 1) + 9.5 * Math.sqrt(Math.max(0, p.age));
+      // rising, the sheet is tall; as it falls back it spreads into round mist
+      const tall = 1 + 1.7 * smooth(-30, 25, p.vz || 0);
+      spr.set([p.x || 0, p.y || 0, (p.z || 0) - r * (tall - 1) * 0.35, r], i * 4);
+      sprB.set([a, a > 0.002 ? seen(p.x, p.y, p.z) : 0, tall, 0], i * 4);
     });
   }
 
