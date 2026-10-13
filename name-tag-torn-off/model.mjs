@@ -107,7 +107,8 @@ export const PEEL = (() => {
     const a = (P.azimuth ?? 45) * RAD;
     const e = (P.elevation ?? 30) * RAD;
     const sinA = Math.sin(a), cosA = Math.cos(a), sinE = Math.sin(e), cosE = Math.cos(e);
-    return { sinA, cosA, sinE, cosE, k: P.scale * UNIT, origin: P.origin, V: [cosA * cosE, sinA * cosE, sinE], L: unit([-sinA, cosA, 1.2]) };
+    const V = [cosA * cosE, sinA * cosE, sinE], L = unit([-sinA, cosA, 1.2]);
+    return { sinA, cosA, sinE, cosE, k: P.scale * UNIT, origin: P.origin, V, L, H: unit(add(V, L)) };
   }
   const project = (C, [x, y, z]) => [C.origin[0] + (x * C.sinA - y * C.cosA) * C.k, C.origin[1] + ((x * C.cosA + y * C.sinA) * C.sinE - z * C.cosE) * C.k];
   const bandOf = (score) => {
@@ -532,6 +533,9 @@ export const PEEL = (() => {
       out.strips.push({
         index: i, lo, hi, side,
         ...toneOf(dot(side === "face" ? n : mul(n, -1), C.L)),
+        // the adhesive side is a little glossy: a soft highlight where it comes nearest to mirroring
+        // the light (the roll turns about one axis, so that is short of a true mirror)
+        gloss: side === "back" ? Math.round(48 * smooth(0.74, 0.86, dot(mul(n, -1), C.H)) ** 2) : 0,
         facing: Math.abs(facing),
         // Strips are near-straight lines along w; their order is their order across the curl.
         key: dot(sheet.at(mid, wMid), C.V),
@@ -1024,7 +1028,7 @@ export const PEEL = (() => {
     const order = new Map(strips.map((s, i) => [s.index, i]));
     const slots = strips.map((s) => ({
       fill: pathOf(s.scr, true),
-      side: s.side, band: s.band, mix: s.mix, edge: [], tear: [], seam: [], crease: [], ink: [], ghost: [], fuzz: [], fringe: [], spots: [], scars: [],
+      side: s.side, band: s.band, mix: s.mix, gloss: s.gloss, edge: [], tear: [], seam: [], crease: [], ink: [], ghost: [], fuzz: [], fringe: [], spots: [], scars: [],
       width: clamp(s.facing / dot(N, C.V), 0.3, 1.3),
     }));
     strips.forEach((s, at) => {
