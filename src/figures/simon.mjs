@@ -5,6 +5,7 @@
 // from rev 02 to rev 07.
 import * as k from "../../kit/iso-kit.mjs";
 import * as G from "../../kit/lathe.mjs";
+import { tubePieces, tubeSvg } from "../../kit/tube.mjs";
 
 const WIDTH = 600;
 const HEIGHT = 380;
@@ -25,8 +26,11 @@ const REV0 = 2;
 const STAMP_TOP = 88;
 
 const BASE = { x: -44, y: -150, w: 88, d: 290, r: 7 };
+const MOTOR = { x: HALF + 7, y: ROLL.y1 + 10, z: BELT_Z - 22, r: 7 };
+const PULLEY = { x0: HALF + 23.6, x1: HALF + 25.6, motor: 3, roller: 3.6 };
+const LAMP = { x: -29, y: 124, z: 22, tier: 5.6, r: 4 };
 
-const P = k.fitProjection([...k.boxCorners(BASE, -12, 0), [0, Y_STAMP, STAMP_TOP + 16], [0, Y_MEASURE, STAMP_TOP]], WIDTH, HEIGHT, { pad: 26, azimuth: AZIMUTH });
+const P = k.fitProjection([...k.boxCorners(BASE, -12, 0), [0, Y_STAMP, STAMP_TOP + 16], [0, Y_MEASURE, STAMP_TOP], [LAMP.x, LAMP.y, LAMP.z + 20]], WIDTH, HEIGHT, { pad: 26, azimuth: AZIMUTH });
 
 const at = (p) => k.iso(p, P);
 const S = (paths, style) => k.solidSvg(paths, style);
@@ -82,11 +86,43 @@ function frameNear() {
     out.push(S(G.disc(0, 1.6, 2.2, F, P, { steps: 24 }), { tone: "hi" }));
     out.push(D([at([HALF + 12, y - 3.2, BELT_Z - 1.6]), at([HALF + 12, y + 3.2, BELT_Z - 1.6])], { size: 0.4 }));
   }
-  // the motor on the feed end, belted to the roller
-  const mF = G.frameOf([HALF + 7, ROLL.y1 + 10, BELT_Z - 22], [1, 0, 0], [0, 1, 0], [0, 0, 1]);
-  out.push(S(G.disc(0, 14, 7, mF, P), { tone: "mid" }));
-  out.push(k.fadedSvg(G.ribsOf(mF, 2, 12, 7, 20, P, { fade: [0.05, 0.5], seams: true }), { tone: "lo" }));
+  // the motor on the feed end, on a foot, belted to the roller by a round belt
+  out.push(S(k.slabOf({ x: MOTOR.x + 0.6, y: MOTOR.y - 6, w: 7, d: 12, r: 1 }, 0, 2, P, 3, 0.4), { tone: "lo" }));
+  out.push(S(k.slabOf({ x: MOTOR.x + 2, y: MOTOR.y - 3, w: 4.4, d: 6, r: 0.6 }, 2, MOTOR.z - MOTOR.r - 1.6, P, 2), { tone: "mid" }));
+  const mF = G.frameOf([MOTOR.x, MOTOR.y, MOTOR.z], [1, 0, 0], [0, 1, 0], [0, 0, 1]);
+  out.push(S(G.disc(0, 14, MOTOR.r, mF, P), { tone: "mid" }));
+  out.push(k.fadedSvg(G.ribsOf(mF, 2, 12, MOTOR.r, 20, P, { fade: [0.05, 0.5], seams: true }), { tone: "lo" }));
   out.push(S(G.disc(14, 16, 4, mF, P), { tone: "mid" }));
+  out.push(S(G.disc(16, PULLEY.x1 - MOTOR.x, PULLEY.motor, mF, P, { steps: 28 }), { tone: "mid" }));
+  // the roller's axle runs out past its bearing to the driven pulley
+  const aF = G.frameOf([HALF + 12, ROLL.y1, BELT_Z - ROLL.r], [1, 0, 0], [0, 1, 0], [0, 0, 1]);
+  out.push(S(G.disc(1.6, PULLEY.x0 - HALF - 12, 0.9, aF, P, { steps: 16 }), { tone: "mid", crease: "none" }));
+  out.push(S(G.disc(PULLEY.x0 - HALF - 12, PULLEY.x1 - HALF - 12, PULLEY.roller, aF, P, { steps: 28 }), { tone: "mid" }));
+  const pins = [[MOTOR.y, MOTOR.z], [ROLL.y1, BELT_Z - ROLL.r]];
+  out.push(D(pins.map(([y, z]) => at([PULLEY.x1, y, z])), { size: 0.4 }));
+  // the belt: the hull of the two pulley rims, in the pulleys' mid-plane
+  const rim = (c, r) => Array.from({ length: 48 }, (_, i) => [c[0] + Math.cos((i / 48) * Math.PI * 2) * r, c[1] + Math.sin((i / 48) * Math.PI * 2) * r]);
+  const loop = G.hullOf([...rim(pins[0], PULLEY.motor + 0.3), ...rim(pins[1], PULLEY.roller + 0.3)]);
+  const bx = (PULLEY.x0 + PULLEY.x1) / 2;
+  for (const piece of tubePieces(loop.map(([y, z]) => [bx, y, z]), 0.5, P, { closed: true, maxLength: 8, spacing: 0.5 })) out.push(tubeSvg(piece, { tone: "mid" }));
+  return out.join("");
+}
+
+// A stack light on the far corner of the feed end: running, stamping, shipped.
+function stackLight() {
+  const { x, y } = LAMP;
+  const out = [];
+  out.push(S(k.slabOf({ x: x - 5.5, y: y - 5.5, w: 11, d: 11, r: 1.4 }, 0, 2, P, 3, 0.4), { tone: "lo" }));
+  out.push(S(k.cylinder(x, y, 3.4, 2, 2.4, P, 24, 0.3), { tone: "mid" }));
+  out.push(S(k.cylinder(x, y, 1.3, 4.4, LAMP.z - 5.6, P, 14), { tone: "mid", crease: "none" }));
+  out.push(S(k.cylinder(x, y, LAMP.r + 0.4, LAMP.z - 1.2, 1.2, P, 28, 0.3), { tone: "mid" }));
+  for (let i = 0; i < 3; i++) {
+    const z = LAMP.z + i * (LAMP.tier + 0.8);
+    out.push(`<g data-lamp="${i}">${S(k.cylinder(x, y, LAMP.r, z, LAMP.tier, P, 28), { tone: "mid", className: "pl-lamp" })}</g>`);
+    out.push(S(k.cylinder(x, y, LAMP.r + 0.3, z + LAMP.tier, 0.8, P, 28, 0.2), { tone: "mid" }));
+  }
+  const top = LAMP.z + 3 * (LAMP.tier + 0.8);
+  out.push(S(G.solidOf([[0, LAMP.r], [0.9, LAMP.r - 0.2, 1], [1.8, LAMP.r - 1.2, 1], [2.4, 0]], G.frameOf([x, y, top], [0, 0, 1], [1, 0, 0], [0, 1, 0]), P), { tone: "mid" }));
   return out.join("");
 }
 
@@ -207,7 +243,7 @@ export default {
   width: WIDTH,
   height: HEIGHT,
   label:
-    "A small production line: a belt conveyor on a frame, fed from a sprung stack of five sheets, carries each sheet under an inspection gauge and then a stamp press into an out-tray. A two-digit counter on the press shows the revision.",
+    "A small production line: a belt conveyor on a frame, fed from a sprung stack of five sheets, carries each sheet under an inspection gauge and then a stamp press into an out-tray. A two-digit counter on the press shows the revision, and a three-tier stack light on the far corner shows the line running, the stamp coming down, and the batch shipped.",
   stage: { role: "group", label: "Production line. Space or Enter runs one pass, Home starts over.", attrs: { "aria-valuetext": "rev 02, 0 of 5 shipped" } },
   keys: [
     { mark: "lit", label: "The stamp, which only comes down on a sheet that passed inspection" },
@@ -215,8 +251,10 @@ export default {
   ],
   caption: "Production systems, built with a consultancy's discipline: every sheet is measured before it is stamped, and every stamp moves the revision counter. A release is a promise made to strangers.",
   css: `
-#fig-simon{--pl-window:#26262a;--pl-digit:#f4f4f1}
-[data-theme="dark"] #fig-simon{--pl-window:#050505;--pl-digit:#e6e6e6}
+#fig-simon{--pl-window:#26262a;--pl-digit:#f4f4f1;--pl-glow:#3a3a3f}
+[data-theme="dark"] #fig-simon{--pl-window:#050505;--pl-digit:#e6e6e6;--pl-glow:#ededea}
+#fig-simon .pl-lamp>path{transition:fill .2s}
+#fig-simon [data-on] .pl-lamp>.iso-fill,#fig-simon [data-on] .pl-lamp>.iso-shade,#fig-simon [data-on] .pl-lamp>.iso-top{fill:var(--pl-glow)}
 #fig-simon .pl-count{font:600 4.4px/1 var(--anatomy-mono);fill:var(--pl-digit);text-anchor:middle}
 #fig-simon .pl-mark{opacity:0}
 #fig-simon [data-stamped] .pl-mark{opacity:1}
@@ -225,7 +263,7 @@ export default {
     const feedTop = BELT_Z;
     const outZ = 14;
     const layers = {
-      under: [base(), trayStand(Y_FEED, feedTop - 2), trayStand(Y_OUT, outZ - 2), frameFar(), belt(), tray(Y_FEED, feedTop - SHEETS * SHEET.t, false), tray(Y_OUT, outZ, false)].join(""),
+      under: [base(), stackLight(), trayStand(Y_FEED, feedTop - 2), trayStand(Y_OUT, outZ - 2), frameFar(), belt(), tray(Y_FEED, feedTop - SHEETS * SHEET.t, false), tray(Y_OUT, outZ, false)].join(""),
       farPosts: [gantryPost(-GX, Y_MEASURE, STAMP_TOP - 12), gantryPost(-GX, Y_STAMP, STAMP_TOP)].join(""),
       near: [frameNear(), tray(Y_FEED, feedTop - SHEETS * SHEET.t, true), tray(Y_OUT, outZ, true), gantryPost(GX, Y_MEASURE, STAMP_TOP - 12), gantryPost(GX, Y_STAMP, STAMP_TOP)].join(""),
       heads: [gaugeHead(), pressHead()].join(""),
@@ -262,6 +300,7 @@ export default {
     const needle = svg.querySelector('[data-part="needle"]');
     const rev = svg.querySelector('[data-part="rev"]');
     const cleats = svg.querySelector('[data-part="cleats"]');
+    const lamps = [...svg.querySelectorAll("[data-lamp]")];
     // Each sheet has a slot on the line: -1 in the feeder, 0..3 the belt
     // stations (feed, measure, stamp, exit), 4 shipped. One index moves every
     // sheet on the belt one station, and feeds the next.
@@ -344,6 +383,9 @@ export default {
       needle.setAttribute("d", `M${p0[0].toFixed(1)} ${p0[1].toFixed(1)}L${p1[0].toFixed(1)} ${p1[1].toFixed(1)}`);
       rev.textContent = pad(revision);
       drawCleats();
+      lamps[0].toggleAttribute("data-on", phase !== "idle");
+      lamps[1].toggleAttribute("data-on", ramAt > 0.15);
+      lamps[2].toggleAttribute("data-on", shipped === D.SHEETS);
       const at = slot.indexOf(2);
       const doing = phase === "dwell" && at >= 0 ? (stamped[at] ? " · stamped" : " · measured") : "";
       const which = at >= 0 && phase === "dwell" ? "sheet " + (D.SHEETS - at) + " of " + D.SHEETS + doing + " · rev " + pad(revision) : "";
