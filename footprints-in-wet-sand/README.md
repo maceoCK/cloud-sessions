@@ -43,3 +43,11 @@ node build.mjs --artifact out.html   # a theme-following page body for embedding
 ```
 
 Node 20.10 or later; no dependencies. The pages expose `window.__fpSeek(seconds)`, which replays the loop deterministically to a given time and holds it there; the screenshots were taken with it and the Anatomy skill's `scripts/drive.mjs`.
+
+## The physics it follows
+
+- **Swash.** The front moves as a ballistic particle on the slope, `y(t) = y₀ + u₀t − ½·g·sin β·t²`, and the sheet behind it has the Shen–Meyer lens depth `h = (y_front − y)² / (9·g·t²)`. So the front decelerates steadily, turns, and drains back the same way, and the sheet is only millimetres deep. Each wave varies its launch speed slightly along the shore, which gives the lobed front.
+- **Erosion.** Each point of a print loses relief exponentially with the time it spends under the moving sheet (`e`-folding time 0.4 s). Relief below 3% of the print (about half a millimetre, the scale of the grains) counts as smooth.
+- **Dilatancy.** While a foot loads the sand, the grains around it shear and dilate, the pore water drains into the new space, and the surface pales. After the foot lifts, the water returns. The ring travels from heel to toe with the load.
+
+References: O. Reynolds (1885), *On the dilatancy of media composed of rigid particles in contact*, Phil. Mag. 20; M. C. Shen and R. E. Meyer (1963), *Climb of a bore on a beach, part 3: run-up*, J. Fluid Mech. 16; D. H. Peregrine and S. M. Williams (2001), *Swash overtopping a truncated plane beach*, J. Fluid Mech. 440.
