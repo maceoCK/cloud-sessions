@@ -1570,12 +1570,12 @@ void main(){
   if(waveOn>.5){
     float top=topOf(uWave,p.x);
     float turn=turnOf(uWave,p.x);
-    mark=exp(-pow((p.y-top+.6)/.75,2.))*smoothstep(turn,turn+.6,sWave);
+    mark=exp(-pow((p.y-top+.6)/.75,2.))*smoothstep(turn,turn+.6,sWave)*exp(-max(sWave-turn,0.)/9.);
   }
   if(uPrev.w>.5){
     float topP=topOf(uPrev,p.x);
     float gone=waveOn>.5?step(timesOf(uWave,p.x,topP).x,sWave):0.;
-    mark=max(mark,exp(-pow((p.y-topP+.6)/.75,2.))*(1.-gone)*.8);
+    mark=max(mark,exp(-pow((p.y-topP+.6)/.75,2.))*(1.-gone)*exp(-max(uPrev.x-turnOf(uPrev,p.x),0.)/9.));
   }
 
   vec3 wet=lin(uWet);
@@ -1636,7 +1636,7 @@ void main(){
     float edge=smoothstep(-ew,ew,fy);
     float pop=(1.-up)*smoothstep(0.,3.,age);
     float strength=mix(.45,1.,smoothstep(10.,130.,speed))*mix(1.,exp(-age/2.2),1.-up);
-    float flow=uClock*.3*up;
+    float flow=.3*min(sWave,turnW);
     vec2 seed=vec2(uWave.z*17.,uWave.z*5.);
     float pa=fbm2(vec2(p.x/5.,fy/3.4+flow)+seed);
     float st=fbm2(vec2(p.x/1.6,fy/11.+flow*.5)+seed.yx);
