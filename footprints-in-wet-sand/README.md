@@ -2,7 +2,7 @@
 
 An interactive isometric figure, built with the [Anatomy](https://github.com/wheresryan22/anatomy) skill: a block of beach cut from the swash zone, a strip of smooth, dark, wet sand 3.3 m long and 1.8 m across, rising 1 in 12 from the sea edge at the back.
 
-<p align="center"><img src="shots/loop-dark.webp" width="640" alt="The 15-second loop in the dark theme: five footprints press into a strip of wet sand on a plinth, a thin swash with a foam front slides up from the sea edge, covers and smooths them, and drains back, leaving the sand glossy and smooth."></p>
+<p align="center"><img src="shots/loop-dark.webp" width="640" alt="The 17-second loop in the dark theme: five footprints press into a strip of wet sand on a plinth, a thin swash with a foam front slides up from the sea edge, covers and smooths them, and drains back, leaving the sand glossy and smooth."></p>
 
 | | Light | Dark |
 |---|---|---|
@@ -20,7 +20,7 @@ The loop runs on its own:
 4. The backwash drains back down the same path, with a faint diamond pattern on the thin sheet, and leaves stranded foam and a swash line at the top of the run-up.
 5. The sand is smooth again. The glossy film sinks in, and a few grains glint as it drains.
 
-Tap or click the sand to press a footprint there. The right arrow key takes the next step, and Space or Enter sends a wave. The idle loop comes back about four seconds after you stop.
+Tap or click the sand to press a footprint there. The right arrow key takes the next step, and Space or Enter sends a wave. The sand holds ten prints; beyond that the oldest slumps away. The idle loop comes back about four seconds after you stop. With reduced motion the figure holds one frame, the swash about to cover the prints, and Space shows the smooth sand after the wave.
 
 ## Files
 
@@ -47,7 +47,7 @@ Node 20.10 or later; no dependencies. The pages expose `window.__fpSeek(seconds)
 ## The physics it follows
 
 - **Swash.** The front moves as a ballistic particle on the slope, `y(t) = y₀ + u₀t − ½·g·sin β·t²`, and the sheet behind it has the Shen–Meyer lens depth `h = (y_front − y)² / (9·g·t²)`. So the front decelerates steadily, turns, and drains back the same way, and the sheet is only millimetres deep. Each wave varies its launch speed slightly along the shore, which gives the lobed front.
-- **Erosion.** Each point of a print loses relief exponentially with the time it spends under the moving sheet (`e`-folding time 0.4 s). Relief below 3% of the print (about half a millimetre, the scale of the grains) counts as smooth.
+- **Erosion.** Each point of a print loses relief exponentially with the time it spends under the moving sheet, `1 − e^(−t/0.6 s)`, and relief below a tenth of the print (under 2 mm, a few grains) counts as smooth, so a print is gone about 1.4 s after the sheet covers it. That rate is chosen to match how quickly prints vanish on a real beach, not derived: the true rate depends on the grain size, how saturated the bed is and the shear stress of the flow. A print high on the beach that the sheet only grazes keeps what it lost, and the next wave starts from there.
 - **Dilatancy.** While a foot loads the sand, the grains around it shear and dilate, the pore water drains into the new space, and the surface pales. After the foot lifts, the water returns. The ring travels from heel to toe with the load.
 
 References: O. Reynolds (1885), *On the dilatancy of media composed of rigid particles in contact*, Phil. Mag. 20; M. C. Shen and R. E. Meyer (1963), *Climb of a bore on a beach, part 3: run-up*, J. Fluid Mech. 16; D. H. Peregrine and S. M. Williams (2001), *Swash overtopping a truncated plane beach*, J. Fluid Mech. 440.
