@@ -68,6 +68,7 @@ const BUMPS = [
   { x: -28, y: -104, r: 19, h: 30 },
   { x: -64, y: 74, r: 19, h: 30 },
   { x: 74, y: -14, r: 16, h: 24 },
+  { x: 4, y: 34, r: 18, h: 30 },
 ];
 const SLOPE = (y) => 253 - 0.433 * (y + 150) + (y < -172 ? 0.9 * (-172 - y) : 0);
 const RIDGE = (y) => 338 - 0.56 * (y + 150);
@@ -115,6 +116,18 @@ const nearestRoad = (x, y, reach = 3) => {
   const h = road.heading[best];
   return { i: best, d: -(x - road.pts[best][0]) * Math.sin(h) + (y - road.pts[best][1]) * Math.cos(h), dist: Math.sqrt(bestD) };
 };
+// a short tunnel through a rock rib on the third leg: the car goes into the rock and comes out facing us
+const TUNNEL = (() => {
+  let last1 = 0;
+  let first2 = road.n - 1;
+  for (let i = 0; i < road.n; i++) if (road.hairpin[i] === 1) last1 = i;
+  for (let i = road.n - 1; i >= 0; i--) if (road.hairpin[i] === 2) first2 = i;
+  let i0 = last1;
+  while (i0 < first2 && road.pts[i0][0] < -22) i0++;
+  let i1 = i0;
+  while (i1 < first2 && road.pts[i1][0] < 32) i1++;
+  return { i0, i1, roof: 44 };
+})();
 // how far the bench reaches from the centreline (metres), on the drop side and on the hill side
 const benchOf = (i, side) => M.HALF_ROAD + (side === road.drop[i] ? road.verge[i] : 0.8);
 const ground = (x, y) => {
@@ -124,6 +137,8 @@ const ground = (x, y) => {
   if (!near || near.dist > 64) return m;
   const { i, d } = near;
   const zr = road.z[i];
+  // over the tunnel the rib stands highest above the road and falls away to either side, ragged
+  if (i >= TUNNEL.i0 && i <= TUNNEL.i1 && Math.abs(d) < 36) return Math.max(m, zr + TUNNEL.roof - 0.006 * d * d + 6 * n(x, y, 27, 9) - 7 * smooth(10, 0, Math.min(x - road.pts[TUNNEL.i0][0], road.pts[TUNNEL.i1][0] - x)) * smooth(14, 30, Math.abs(d)));
   const side = Math.sign(d) || 1;
   const drop = side === road.drop[i];
   const c = benchOf(i, side) * u;
@@ -473,9 +488,11 @@ const COAST = (() => {
 const PORTALS = [
   SC.portal({ P, face: M.PORTAL_X, yc: Math.round(road.pts[I0][1]), z: road.z[I0], id: "portal-far" }),
   SC.portal({ P, face: M.PORTAL_X, yc: Math.round(road.pts[I1][1]), z: road.z[I1], id: "portal-near" }),
+  SC.portal({ P, face: road.pts[TUNNEL.i1][0] - 4, yc: Math.round(road.pts[TUNNEL.i1][1]), z: road.z[TUNNEL.i1], tall: TUNNEL.roof, id: "portal-mid" }),
 ];
+const PORTAL_TALL = [46, 46, TUNNEL.roof];
 for (const [index, pt] of PORTALS.entries()) {
-  front.push(`<g class="cr-portal" data-portal="${index}">${pt.interior}<g class="cr-inside" data-slot="${index}" clip-path="url(#${index ? "portal-near" : "portal-far"}-clip)"></g>${pt.shadow}${pt.facade}</g>`);
+  front.push(`<g class="cr-portal" data-portal="${index}">${pt.interior}<g class="cr-inside" data-slot="${index}" clip-path="url(#${["portal-far", "portal-near", "portal-mid"][index]}-clip)"></g>${pt.shadow}${pt.facade}</g>`);
 }
 
 // ---- what the slopes in front hide -------------------------------------------------------------------
@@ -671,7 +688,7 @@ const DATA = {
   coast: { ...TEX, bytes: Buffer.from(texBytes).toString("base64") },
   sprayAt: SPRAY_AT,
   studs: studs.map((i) => [...ri(i, 0).map((v) => Math.round(v * 10) / 10), Math.round(road.z[i] * 10) / 10]),
-  portals: PORTALS.map((pt) => pt.opening),
+  portals: PORTALS.map((pt, index) => ({ ...pt.opening, face: pt.plane, tall: PORTAL_TALL[index] })),
   W,
   H,
   P,
@@ -748,7 +765,7 @@ const pinZ = (pin) => {
   for (let i = 0; i < road.n; i++) if (road.hairpin[i] === pin) list.push(i);
   return Math.round((road.z[list[Math.round(list.length / 2)]] - Z.sea) / u);
 };
-const caption = `A mountain pass on a plinth, at night: ${Math.round(visible)} m of road with no guard rail winds down a sea cliff from the summit tunnel to the one at its foot, falling ${Math.round(fall)} m at ${(road.grade * 100).toFixed(0)}% through three ${PIN_R} m hairpins. Two of them sit on the cliff edge, ${pinZ(0)} m and ${pinZ(2)} m above the sea. Damp asphalt under sea mist grips at μ ${M.MU}, so a hairpin holds on grip up to √(μgR) = ${kmh(vGrip)} km/h. Downhill the car runs up to ${Math.round(LAP.top)} km/h on the legs, brakes hard, and turns in faster than grip allows. The rear tyres then slide at μ ${M.MU_SLIDE}, the path widens to v²/(μg), and the car drifts out toward the drop with its nose held into the bend, up to ${Math.round(LAP.peakDrift)}°. Near the edge the driver lifts, which tightens the line. At the top of the control the model's line clears the edge by ${LAP.least.toFixed(1)} m; at the bottom the car corners on grip, with ${Math.round(CALM.peakDrift)}° of tyre slip at most. The knolls inside the hairpins, two spurs on the face and the trees hide the car as it passes behind them. The tyre marks are the rear wheels' path on that fastest lap. The swell has an ${M.SWELL.period} s period; in 6 m of water its crests are ${Math.round(swell6.lambda)} m apart and travel ${swell6.c.toFixed(1)} m/s. Refraction wraps them round the mountain, so each one breaks under the hairpins first and runs along the front cliff in about ${sweep.toFixed(0)} s, throwing spray up the rock at up to ${M.SPRAY.rise} m/s, ${sprayTop.toFixed(1)} m high. Detail A follows the car at 3:1: the arrow is its path, the dashed line is where its nose points, and the red angle between them is the drift. The red dimension runs from the corner nearest the drop to the edge.`;
+const caption = `A mountain pass on a plinth, at night: ${Math.round(visible)} m of road with no guard rail winds down a sea cliff from the summit tunnel to the one at its foot, falling ${Math.round(fall)} m at ${(road.grade * 100).toFixed(0)}% through three ${PIN_R} m hairpins. Two of them sit on the cliff edge, ${pinZ(0)} m and ${pinZ(2)} m above the sea. Damp asphalt under sea mist grips at μ ${M.MU}, so a hairpin holds on grip up to √(μgR) = ${kmh(vGrip)} km/h. Downhill the car runs up to ${Math.round(LAP.top)} km/h on the legs, brakes hard, and turns in faster than grip allows. The rear tyres then slide at μ ${M.MU_SLIDE}, the path widens to v²/(μg), and the car drifts out toward the drop with its nose held into the bend, up to ${Math.round(LAP.peakDrift)}°. Near the edge the driver lifts, which tightens the line. At the top of the control the model's line clears the edge by ${LAP.least.toFixed(1)} m; at the bottom the car corners on grip, with ${Math.round(CALM.peakDrift)}° of tyre slip at most. The knolls inside the hairpins, the spurs on the face and the trees hide the car as it passes behind them, and on the third leg it runs through a rock rib in a short tunnel. The tyre marks are the rear wheels' path on that fastest lap. The swell has an ${M.SWELL.period} s period; in 6 m of water its crests are ${Math.round(swell6.lambda)} m apart and travel ${swell6.c.toFixed(1)} m/s. Refraction wraps them round the mountain, so each one breaks under the hairpins first and runs along the front cliff in about ${sweep.toFixed(0)} s, throwing spray up the rock at up to ${M.SPRAY.rise} m/s, ${sprayTop.toFixed(1)} m high. Detail A follows the car at 3:1: the arrow is its path, the dashed line is where its nose points, and the red angle between them is the drift. The red dimension runs from the corner nearest the drop to the edge.`;
 const body = `<div class="cr">${k.plateHtml({
   fig: "Fig 5A",
   title: "Cliff road at night",

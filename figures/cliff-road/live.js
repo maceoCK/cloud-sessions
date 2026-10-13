@@ -298,9 +298,9 @@ function worldAround(P2, cx, cy, zc) {
   let arches = "";
   const hw = D.headwall;
   for (const o of D.portals) {
-    if (Math.abs(hw.face - cx) > win + 20 || Math.abs(o.yc - cy) > win + 20) continue;
-    const x1 = D.portal;
-    const top = o.z + hw.tall;
+    if (Math.abs(o.face - cx) > win + 20 || Math.abs(o.yc - cy) > win + 20) continue;
+    const x1 = o.face;
+    const top = o.z + (o.tall || hw.tall);
     const pts = [[x1, o.yc - o.half, o.z]];
     for (let i = 0; i <= 24; i++) {
       const a = Math.PI - (i / 24) * Math.PI;
