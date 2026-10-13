@@ -1,0 +1,108 @@
+/* Fig 4A tokens. Light first; the dark set follows so a dark plate on a light page still wins. */
+.iso {
+  --nt-brick-a: #e5cdbf; --nt-brick-b: #dcc1b1; --nt-brick-c: #e9d6ca; --nt-brick-d: #d6b8a7; --nt-brick-e: #e2d0c6;
+  --nt-brick-top: #f1e5dc; --nt-brick-end: #d2baab;
+  --nt-pit: #9c8172; --nt-fleck: #f7eee8; --nt-grit: #b89e8f;
+  --nt-mortar: #e4e2dc; --nt-mortar-top: #eeece7; --nt-mortar-end: #d3d0c9;
+  --nt-sand: #aaa69c; --nt-sand-light: #f7f6f2;
+  --nt-chip: #cfb3a3;
+  --nt-steel-face: #e8e9e8; --nt-steel-top: #f4f5f4; --nt-steel-end: #d2d3d2; --nt-screw: #dfe0df;
+  --nt-face-0: #e0e0dd; --nt-face-1: #efefec; --nt-face-2: #ffffff; --nt-face-3: #ffffff; --nt-face-4: #ffffff;
+  --nt-back-0: #ccc9bf; --nt-back-1: #d8d5cc; --nt-back-2: #e2dfd7; --nt-back-3: #e9e6df; --nt-back-4: #eeebe5;
+  --nt-ink: #17171b; --nt-ghost: 18%;
+  --nt-film: #d6d5ce; --nt-thick: #c9c8bf; --nt-thin: #e2e2dc; --nt-fuzz: #f8f7f2;
+  --nt-hole: #e8e9e8; --nt-island: #fbfaf6; --nt-speck: #5f5e57;
+  --nt-delam: #f0eee7; --nt-tear: #8c8a84;
+  --nt-halo: #5c5b54;
+}
+.iso[data-theme="dark"] {
+  --nt-brick-a: #2a211d; --nt-brick-b: #2e2420; --nt-brick-c: #271f1b; --nt-brick-d: #31251f; --nt-brick-e: #241e1b;
+  --nt-brick-top: #352a24; --nt-brick-end: #1d1714;
+  --nt-pit: #110c0a; --nt-fleck: #40352e; --nt-grit: #1a1310;
+  --nt-mortar: #222120; --nt-mortar-top: #2b2a28; --nt-mortar-end: #181716;
+  --nt-sand: #121110; --nt-sand-light: #33322f;
+  --nt-chip: #1a1411;
+  --nt-steel-face: #1e1f1f; --nt-steel-top: #282929; --nt-steel-end: #161717; --nt-screw: #252626;
+  --nt-face-0: #1a1a1a; --nt-face-1: #222222; --nt-face-2: #2c2c2c; --nt-face-3: #303030; --nt-face-4: #343434;
+  --nt-back-0: #151514; --nt-back-1: #1a1a19; --nt-back-2: #20201e; --nt-back-3: #252523; --nt-back-4: #292927;
+  --nt-ink: #ededed; --nt-ghost: 15%;
+  --nt-film: #2d2d2a; --nt-thick: #393935; --nt-thin: #252523; --nt-fuzz: #4d4c47;
+  --nt-hole: #1e1f1f; --nt-island: #45443f; --nt-speck: #0a0a0a;
+  --nt-delam: #3a3936; --nt-tear: #8e8d88;
+  --nt-halo: #000000;
+}
+
+/* the wall */
+[data-part="brick"] > .iso-shade[data-shade="2"] { fill: var(--nt-brick-a); }
+[data-part="brick"][data-tint="b"] > .iso-shade[data-shade="2"] { fill: var(--nt-brick-b); }
+[data-part="brick"][data-tint="c"] > .iso-shade[data-shade="2"] { fill: var(--nt-brick-c); }
+[data-part="brick"][data-tint="d"] > .iso-shade[data-shade="2"] { fill: var(--nt-brick-d); }
+[data-part="brick"][data-tint="e"] > .iso-shade[data-shade="2"] { fill: var(--nt-brick-e); }
+.nt-mortar { fill: var(--nt-mortar); stroke: none; }
+.nt-crop { stroke: none; }
+.nt-crop-0 { stop-color: var(--anatomy-card); stop-opacity: 0; }
+.nt-crop-1 { stop-color: var(--anatomy-card); stop-opacity: .35; }
+.nt-crop-2 { stop-color: var(--anatomy-card); stop-opacity: .85; }
+.nt-crop-3 { stop-color: var(--anatomy-card); stop-opacity: 1; }
+[data-part="brick"] > .iso-top { fill: var(--nt-brick-top); }
+[data-part="brick"] > .iso-shade[data-shade="0"] { fill: var(--nt-brick-end); }
+[data-part="mortar"] > .iso-shade[data-shade="2"] { fill: var(--nt-mortar); }
+[data-part="mortar"] > .iso-top { fill: var(--nt-mortar-top); }
+[data-part="mortar"] > .iso-shade[data-shade="0"] { fill: var(--nt-mortar-end); }
+.nt-tex { stroke: none; }
+.nt-tx-pit { fill: var(--nt-pit); opacity: .55; }
+.nt-tx-fleck { fill: var(--nt-fleck); opacity: .9; }
+.nt-tx-grit { fill: var(--nt-grit); opacity: .5; }
+.nt-tx-sand { fill: var(--nt-sand); opacity: .55; }
+.nt-tx-sandlight { fill: var(--nt-sand-light); opacity: .8; }
+.nt-chip { fill: var(--nt-chip); stroke: var(--anatomy-lo); stroke-width: .5px; stroke-linejoin: round; }
+
+/* the plate */
+.nt-steel > .iso-shade[data-shade="2"] { fill: var(--nt-steel-face); }
+.nt-steel > .iso-top { fill: var(--nt-steel-top); }
+.nt-steel > .iso-shade[data-shade="0"] { fill: var(--nt-steel-end); }
+.nt-grain .iso-line { stroke-width: .45px; }
+.nt-grain [data-weight="0"] { opacity: .45; }
+.nt-grain [data-weight="1"] { opacity: .7; }
+.nt-screw { fill: var(--nt-screw); stroke: none; }
+.nt-plate-halo { fill: var(--nt-halo); stroke: none; opacity: calc(var(--anatomy-halo-opacity) * .8); filter: blur(5px); }
+
+/* residue */
+.nt-film { fill: var(--nt-film); stroke: none; }
+.nt-tx-thick { fill: var(--nt-thick); opacity: .7; }
+.nt-tx-thin { fill: var(--nt-thin); opacity: .55; }
+.nt-tx-fuzz { fill: var(--nt-fuzz); opacity: .85; }
+.nt-holes path { fill: none; stroke: var(--nt-thick); stroke-width: .4px; stroke-linejoin: round; }
+.nt-scrapes path { fill: var(--nt-hole); stroke: none; }
+.nt-islands path { fill: var(--nt-island); stroke: var(--anatomy-lo); stroke-width: .4px; stroke-linejoin: round; }
+.nt-specks circle { fill: var(--nt-speck); opacity: .55; }
+
+/* the label */
+.nt-flat, .nt-stuck, .nt-slot { --nt-paper: var(--nt-face-2); }
+:is(.nt-flat, .nt-stuck, .nt-slot[data-side="face"])[data-band="0"] { --nt-paper: var(--nt-face-0); }
+:is(.nt-flat, .nt-stuck, .nt-slot[data-side="face"])[data-band="1"] { --nt-paper: var(--nt-face-1); }
+:is(.nt-flat, .nt-stuck, .nt-slot[data-side="face"])[data-band="3"] { --nt-paper: var(--nt-face-3); }
+:is(.nt-flat, .nt-stuck, .nt-slot[data-side="face"])[data-band="4"] { --nt-paper: var(--nt-face-4); }
+.nt-slot[data-side="back"][data-band="0"] { --nt-paper: var(--nt-back-0); }
+.nt-slot[data-side="back"][data-band="1"] { --nt-paper: var(--nt-back-1); }
+.nt-slot[data-side="back"][data-band="2"] { --nt-paper: var(--nt-back-2); }
+.nt-slot[data-side="back"][data-band="3"] { --nt-paper: var(--nt-back-3); }
+.nt-slot[data-side="back"][data-band="4"] { --nt-paper: var(--nt-back-4); }
+.nt-face, .nt-strip { fill: var(--nt-paper); stroke: none; }
+.nt-seam { fill: none; stroke: var(--nt-paper); stroke-width: .8px; stroke-linecap: round; }
+.nt-under { fill: var(--anatomy-paper); stroke: none; }
+.nt-side { stroke: none; }
+.nt-side[data-shade="0"] { fill: var(--nt-face-0); }
+.nt-side[data-shade="1"] { fill: var(--nt-face-1); }
+.nt-side[data-shade="2"] { fill: var(--nt-face-1); }
+.nt-side[data-shade="3"] { fill: var(--nt-face-2); }
+.nt-delam { fill: var(--nt-delam); stroke: none; }
+.nt-halo { fill: var(--nt-halo); stroke: none; }
+.nt-edge { fill: none; stroke: var(--anatomy-lit); stroke-width: .7px; stroke-linecap: round; stroke-linejoin: round; }
+.nt-tear { fill: none; stroke: var(--nt-tear); stroke-width: .6px; stroke-linecap: round; stroke-linejoin: round; }
+.nt-ink { fill: none; stroke: var(--nt-ink); stroke-linecap: round; stroke-linejoin: round; }
+.nt-ghost { fill: none; stroke: color-mix(in srgb, var(--nt-ink) var(--nt-ghost), var(--nt-paper)); stroke-width: 1.3px; stroke-linecap: round; stroke-linejoin: round; }
+.nt-slot[data-empty] { display: none; }
+.nt-stage { touch-action: pan-y; cursor: ew-resize; outline: none; }
+.nt-stage:focus-visible { outline: 1px solid var(--anatomy-muted); outline-offset: 6px; }
+.nt-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
