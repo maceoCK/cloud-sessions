@@ -915,27 +915,38 @@ export const PEEL = (() => {
     const frame = frameOf(st, P, { place });
     const C = frame.C;
     const ink = inkOf(frame);
-    const out = { halo: "", haloOpacity: 0, haloBlur: 3, flat: null, strips: [] };
+    const out = { halo: "", haloOpacity: 0, haloBlur: 3, contact: "", contactOpacity: 0, flat: null, strips: [] };
     // Shadow: everything off the plate, cast back onto it by the light from the upper left. It falls
-    // down and to the right, the same way the plate's own shadow falls from its spacers.
-    const lifted = [];
+    // down and to the right, the same way the plate's own shadow falls from its spacers: a soft one
+    // from the whole curl, and a tight dark one from the paper just leaving the plate.
+    const lifted = [], low = [];
     let heights = 0, count = 0;
-    const drop = (p) => {
+    const drop = (p, front = false) => {
       const h = dot(sub(p, FACE0), N);
-      lifted.push(project(C, add(sub(p, mul(N, h)), mul(CAST, Math.max(0, h)))));
+      const q = project(C, add(sub(p, mul(N, h)), mul(CAST, Math.max(0, h))));
+      lifted.push(q);
+      if (front && h < 7) low.push(q);
       heights += h;
       count++;
     };
     frame.strips.forEach((strip, i) => {
-      if (i % 3 && i !== frame.strips.length - 1) return;
-      strip.dw.forEach((p, j) => j % 3 || drop(frame.sheet.at(p[0], p[1])));
+      if (i % 3 && i !== frame.strips.length - 1 && i > 12) return;
+      const front = st.f - strip.hi < 12;
+      strip.dw.forEach((p, j) => j % 3 || drop(frame.sheet.at(p[0], p[1]), front));
     });
     if (frame.flat && place > 0) for (const p of frame.flat.pts) drop(p);
+    const fade = 1 - smooth(0.2, 0.6, st.off);
     if (lifted.length >= 3) {
       const mean = heights / count;
       out.halo = pathOf(hull2(lifted), true);
-      out.haloOpacity = clamp(0.2 + mean / 70, 0.2, 0.55) * (1 - smooth(25, 95, mean)) * (1 - smooth(0.2, 0.6, st.off));
-      out.haloBlur = clamp(2.5 + mean / 5, 2.5, 12);
+      out.haloOpacity = clamp(0.16 + mean / 90, 0.16, 0.36) * (1 - smooth(25, 95, mean)) * fade;
+      out.haloBlur = clamp(3 + mean / 4, 3, 14);
+    }
+    out.contact = "";
+    out.contactOpacity = 0;
+    if (low.length >= 3 && !st.free && place === 0) {
+      out.contact = pathOf(hull2(low), true);
+      out.contactOpacity = 0.3 * smooth(0, 0.04, st.s) * fade;
     }
     if (frame.flat) {
       const { pts, kind, dw } = frame.flat;

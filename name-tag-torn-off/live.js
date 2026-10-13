@@ -11,6 +11,7 @@ const still = matchMedia("(prefers-reduced-motion: reduce)");
 
 const tagG = svg.querySelector('[data-part="tag"]');
 const halo = svg.querySelector('[data-part="halo"]');
+const contact = svg.querySelector('[data-part="contact"]');
 const flatG = svg.querySelector('[data-part="flat"]');
 const curlG = svg.querySelector('[data-part="curl"]');
 let haloUnder = false;
@@ -157,6 +158,8 @@ function draw(force = false) {
     put(memoFlat, "halo", halo, "d", paint.halo || "M0 0");
     halo.style.opacity = paint.halo ? paint.haloOpacity.toFixed(3) : "0";
     if (paint.haloBlur) halo.style.filter = `blur(${paint.haloBlur.toFixed(1)}px)`;
+    put(memoFlat, "contact", contact, "d", paint.contact || "M0 0");
+    contact.style.opacity = paint.contact ? paint.contactOpacity.toFixed(3) : "0";
     const f = paint.flat;
     placeGrain(state.place);
     put(memoFlat, "flatHidden", flat.g, "style", f ? null : "display:none");

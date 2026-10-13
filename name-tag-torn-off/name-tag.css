@@ -124,6 +124,7 @@
 .nt-side[data-shade="3"] { fill: var(--nt-face-2); }
 .nt-delam { fill: var(--nt-delam); stroke: none; }
 .nt-halo { fill: var(--nt-halo); stroke: none; }
+.nt-contact { filter: blur(1.4px); }
 .nt-edge { fill: none; stroke: var(--nt-edge); stroke-width: .7px; stroke-linecap: round; stroke-linejoin: round; }
 .nt-crease { fill: none; stroke: color-mix(in srgb, var(--nt-tear) 55%, var(--nt-paper)); stroke-width: .55px; stroke-linecap: round; }
 .nt-tear { fill: none; stroke: var(--nt-tear); stroke-width: .6px; stroke-linecap: round; stroke-linejoin: round; }
