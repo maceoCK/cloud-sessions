@@ -184,7 +184,7 @@ a:hover{text-decoration-color:var(--pink)}
 .cover-m .ol{height:min(50svh,560px,56vw);width:auto;fill:#fbf8f1;filter:drop-shadow(0 0 1px rgba(0,0,0,.4))}
 .cover-foot{position:relative;z-index:2;padding:0 0 clamp(18px,3.2vh,34px)}
 .cover-big,.cover-small{display:flex;justify-content:space-between;align-items:flex-end;margin:0}
-.cover-big .ol{height:clamp(15px,4.4vw,62px)}
+.cover-big .ol{height:clamp(15px,4.4vw,62px);overflow:visible;filter:drop-shadow(0 0 3px rgba(10,9,8,.85)) drop-shadow(0 0 12px rgba(10,9,8,.55))}
 .cover-small{margin-top:clamp(16px,2.6vh,30px);flex-wrap:wrap;row-gap:8px;column-gap:10px}
 .cover-small .ol{height:clamp(6.5px,.72vw,10px);overflow:visible;filter:drop-shadow(0 0 2px rgba(10,9,8,.9)) drop-shadow(0 0 5px rgba(10,9,8,.6))}
 @media (max-width:640px){
