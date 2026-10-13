@@ -78,7 +78,7 @@ export const ENTRIES = {
   h668: {
     kicker: "Repository, mathematics",
     name: "h668-z37",
-    line: "Closing in on the smallest Hadamard matrix nobody has found.",
+    line: "The smallest Hadamard order nobody has settled.",
     body: [
       "Cyclotomic nonexistence results for the conference graph of H(668). 668 is the smallest order for which a Hadamard matrix is not known, and the question is still open.",
     ],

@@ -19,6 +19,8 @@ const OUTLINES = JSON.parse(readFileSync(join(HERE, "type/outlines.json"), "utf8
 const CAP = OUTLINES.metrics.cap;
 
 const esc = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+// running text: escaped, with ED1TH kept in lining figures so its 1 reads as a 1
+const txt = (text) => esc(text).replace(/ED1TH/g, '<span class="ln">ED1TH</span>');
 const font = (file) => `url(data:font/woff2;base64,${readFileSync(join(HERE, "fonts", file)).toString("base64")}) format("woff2")`;
 const external = (href) => /^https?:/.test(href);
 const link = ([text, href], className = "") =>
@@ -154,7 +156,7 @@ a:hover{text-decoration-color:var(--pink)}
 .sc{font-variant:small-caps;font-variant-caps:all-small-caps;font-size:1.12em;letter-spacing:.11em;font-variant-numeric:lining-nums}
 
 /* cover */
-.cover{position:relative;isolation:isolate;overflow:hidden;background:var(--cover);color:var(--cover-ink);min-height:640px;height:min(100svh,1100px);display:grid;grid-template-rows:auto auto 1fr auto;color-scheme:dark}
+.cover{position:relative;isolation:isolate;overflow:hidden;background:var(--cover);color:var(--cover-ink);min-height:640px;height:min(100svh,1100px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;color-scheme:dark}
 .cover a{color:var(--cover-ink)}
 .lozenges{position:absolute;z-index:-2;left:50%;top:0;height:100%;width:auto;aspect-ratio:1000/1250;transform:translateX(-50%)}
 .grain{position:absolute;inset:0;z-index:3;pointer-events:none;background-size:160px;mix-blend-mode:overlay;opacity:.42}
@@ -174,13 +176,16 @@ a:hover{text-decoration-color:var(--pink)}
 .cover-m .ol{height:min(50svh,560px,56vw);width:auto;fill:#fbf8f1;filter:drop-shadow(0 0 1px rgba(0,0,0,.4))}
 .cover-foot{position:relative;z-index:2;padding:0 0 clamp(18px,3.2vh,34px)}
 .cover-big,.cover-small{display:flex;justify-content:space-between;align-items:flex-end;margin:0}
-.cover-big .ol{height:clamp(26px,4.4vw,62px)}
+.cover-big .ol{height:clamp(15px,4.4vw,62px)}
 .cover-small{margin-top:clamp(16px,2.6vh,30px);flex-wrap:wrap;row-gap:8px;column-gap:10px}
 .cover-small .ol{height:clamp(6.5px,.72vw,10px)}
 @media (max-width:640px){
   .cover{height:auto;min-height:100svh}
+  .cover-bar{gap:12px;font-size:11px}
+  .cover-bar .seal-mini{width:34px;height:34px}
   .cover-bar .where{display:none}
-  .cover-bar nav{gap:14px}
+  .cover-bar nav{gap:12px;flex:1;justify-content:flex-end}
+  .theme button{padding:6px 7px}
   .cover-word{width:92%}
   .cover-m .ol{height:min(46svh,72vw)}
   .cover-small{justify-content:flex-start;column-gap:9px}
@@ -232,12 +237,8 @@ a:hover{text-decoration-color:var(--pink)}
 .entry .body p{margin:0 0 .6em}
 .entry .links{display:flex;flex-wrap:wrap;gap:6px 18px;margin:14px 0 0;padding:0;list-style:none;font:13px/1.5 var(--mono)}
 .entry .iso-figure{margin:0}
-.entry.wide{grid-template-columns:repeat(12,minmax(0,1fr))}
-.entry.wide .entry-text{grid-column:1/-1;position:static;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:inherit;align-items:end;margin-bottom:clamp(24px,3vw,40px)}
-.entry.wide .entry-text .who{grid-column:1/6}
-.entry.wide .entry-text .what{grid-column:7/13}
-.entry.wide .entry-text .line{margin:0 0 14px;max-width:none}
-.entry.wide .fig-mount{grid-column:1/-1}
+.entry.wide{grid-template-columns:minmax(0,3fr) minmax(0,9fr)}
+.entry.wide .entry-text .line{max-width:16ch}
 @media (max-width:899px){
   .entry,.entry.flip,.entry.wide{display:block}
   .entry-text,.entry.wide .entry-text{position:static;display:block;margin-bottom:26px}
@@ -245,6 +246,8 @@ a:hover{text-decoration-color:var(--pink)}
   .entry.wide .entry-text .line{margin-top:18px}
 }
 .iso-plate{border-radius:0}
+@media (max-width:560px){.iso-plate{overflow:hidden}.iso-plate .iso-svg{width:118%;max-width:none;margin-left:-9%}}
+.ln{font-variant-numeric:lining-nums}
 .iso-legend{font-family:var(--serif);font-size:15px}
 .iso-caption{color:var(--anatomy-text)}
 .iso-stage{touch-action:pan-y;outline:none}
@@ -291,7 +294,7 @@ a:hover{text-decoration-color:var(--pink)}
 .ruler a[aria-current="true"]::after{border-color:var(--ink)}
 .ruler i{position:absolute;right:0;width:5px;border-top:1px solid var(--anatomy-lo)}
 .ruler .ptr{position:absolute;right:-1px;width:0;height:0;border-style:solid;border-width:4px 0 4px 6px;border-color:transparent transparent transparent #e05ccd;transform:translate(-14px,-50%)}
-@media (max-width:1100px),(max-height:520px){.ruler{display:none}}
+@media (max-width:1279px),(max-height:520px){.ruler{display:none}}
 `;
 
 const CONTENTS_SUBJECT = { ed1th: "Datost", datost: "Datost", traba: "Traba", simon: "SimonComputing", pravost: "pravost", h668: "h668-z37", conway: "conway", school: "Virginia Tech" };
@@ -300,12 +303,10 @@ function entryHtml(rendered, index, flip, wide) {
   const fig = rendered.fig;
   const e = ENTRIES[fig.id];
   const links = e.links.length ? `<ul class="links">${e.links.map((l) => `<li>${link(l)}</li>`).join("")}</ul>` : "";
-  const body = e.body.length ? `<div class="body">${e.body.map((p) => `<p>${esc(p)}</p>`).join("")}</div>` : "";
+  const body = e.body.length ? `<div class="body">${e.body.map((p) => `<p>${txt(p)}</p>`).join("")}</div>` : "";
   const who = `<span class="numeral" aria-hidden="true">${line(`roman.${ROMAN[index]}`)}</span><p class="kicker sc">${esc(e.kicker)}</p><h3 id="h-${fig.id}"><span class="vh">${esc(e.name)}</span>${line(`name.${fig.id}`)}</h3>`;
-  const what = `<p class="line">${esc(e.line)}</p>${body}${links}`;
-  const text = wide
-    ? `<div class="entry-text"><div class="who">${who}</div><div class="what">${what}</div></div>`
-    : `<div class="entry-text">${who}${what}</div>`;
+  const what = `<p class="line">${txt(e.line)}</p>${body}${links}`;
+  const text = `<div class="entry-text">${who}${what}</div>`;
   return `<article class="entry${flip ? " flip" : ""}${wide ? " wide" : ""}" id="${fig.id}" aria-labelledby="h-${fig.id}">${text}${rendered.html}</article>`;
 }
 
@@ -317,7 +318,7 @@ export function sitePage({ figures, script }) {
   const contents = `<ol class="contents" aria-label="Figures">${order
     .map((id) => {
       const fig = byId[id].fig;
-      return `<li><a href="#${id}"><span class="n"><span class="vh">Figure ${numberOf(id) + 1}</span>${line(`roman.${ROMAN[numberOf(id)]}`)}</span><span class="t">${esc(fig.title)}</span><span class="s sc">${esc(CONTENTS_SUBJECT[id] ?? "")}</span></a></li>`;
+      return `<li><a href="#${id}"><span class="n"><span class="vh">Figure ${numberOf(id) + 1}</span>${line(`roman.${ROMAN[numberOf(id)]}`)}</span><span class="t">${txt(fig.title)}</span><span class="s sc">${esc(CONTENTS_SUBJECT[id] ?? "")}</span></a></li>`;
     })
     .join("")}</ol>`;
 
@@ -340,7 +341,7 @@ export function sitePage({ figures, script }) {
 
   const record = `<section class="record" id="record" aria-labelledby="g-record"><header class="group-head"><h2 id="g-record"><span class="vh">Record</span>${line("group.record")}</h2><span>The same, in plain text</span></header><dl>${RECORD.map(
     (r) =>
-      `<div class="row"><dt class="sc">${esc(r.when)}</dt><dd class="what">${esc(r.what)}</dd><dd class="note">${esc(r.note)}</dd><dd class="rl">${r.links.map((l) => link(l)).join("")}</dd></div>`,
+      `<div class="row"><dt class="sc">${esc(r.when)}</dt><dd class="what">${txt(r.what)}</dd><dd class="note">${txt(r.note)}</dd><dd class="rl">${r.links.map((l) => link(l)).join("")}</dd></div>`,
   ).join("")}</dl></section>`;
 
   const contact = `<section class="contact" id="contact" aria-labelledby="g-contact"><header class="group-head"><h2 id="g-contact"><span class="vh">Contact</span>${line("group.contact")}</h2><span class="sc">${esc(PERSON.city)}</span></header><p class="say">${esc(CONTACT.line)}</p><a class="mail" href="mailto:${PERSON.email}"><span class="vh">${esc(PERSON.email)}</span>${line("contact.mail")}</a><ul>${CONTACT.links.map((l) => `<li>${link(l)}</li>`).join("")}</ul></section>`;
@@ -459,7 +460,7 @@ ${lozenges()}
 <div class="cover-foot wrap"><p class="cover-big"><span class="vh">Engineer and founder.</span>${bigWords.map((k) => line(k)).join("")}</p><p class="cover-small"><span class="vh">Founder of Datost, backed by Y Combinator and OpenAI, in New York City.</span>${smallWords.map((k) => line(k)).join("")}</p></div>
 </header>`;
 
-  const standfirst = `<section class="standfirst wrap" aria-label="Introduction"><p class="lead">${esc(LEDE[0])}</p><p>${esc(LEDE[1])}</p></section>`;
+  const standfirst = `<section class="standfirst wrap" aria-label="Introduction"><p class="lead">${txt(LEDE[0])}</p><p>${txt(LEDE[1])}</p></section>`;
 
   return `<!doctype html><html lang="en" class="iso" data-theme="light"><head>${head}</head><body><a class="skip" href="#figures">Skip to the figures</a>${cover}<main>${standfirst}<div class="wrap" id="figures">${contents}${groups}${record}${contact}${colophon}</div></main>${ruler}<script type="module">${script}\n${pageScript}</script></body></html>`;
 }
