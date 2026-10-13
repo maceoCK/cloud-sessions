@@ -86,12 +86,26 @@ function drawKnob() {
   pointer.setAttribute("d", pathOf([iso([k0.x + Math.sin(a) * 1.2, k0.y + 4.45, k0.z + Math.cos(a) * 1.2], D.P), iso([k0.x + Math.sin(a) * (k0.r - 0.8), k0.y + 4.45, k0.z + Math.cos(a) * (k0.r - 0.8)], D.P)]));
 }
 let sockDrawn = -1;
+// the trees lean away from the wind, more in the gusts (as the square of the speed), and shiver
+const swaying = items.filter((it) => /^(tree|hilltree)/.test(it.node.dataset.item || "")).map((it) => {
+  const base = iso([it.at[0], it.at[1], it.at[2] - 4], D.P);
+  return { node: it.node, base, phase: (it.at[0] * 0.13 + it.at[1] * 0.07) % (Math.PI * 2), give: 0.8 + 0.4 * Math.abs(Math.sin(it.at[0] * 1.7)) };
+});
 function drawSock(t) {
   // redraw at 20 Hz: the sock's flutter is slow and its paths are not cheap
   const slot = Math.floor(t * 20);
   if (!sockNode || slot === sockDrawn) return;
   sockDrawn = slot;
-  sockNode.innerHTML = CARS.sockSvg(D.sock, CARS.windOf(t), D.P, G, K);
+  const wind = CARS.windOf(t);
+  sockNode.innerHTML = CARS.sockSvg(D.sock, wind, D.P, G, K);
+  const [ax, ay] = iso([0, 0, 0], D.P);
+  const [bx] = iso([Math.cos(wind.heading), Math.sin(wind.heading), 0], D.P);
+  const side = Math.sign(bx - ax) || 1;
+  const push = (wind.speed / 10.5) ** 2;
+  for (const tree of swaying) {
+    const lean = side * tree.give * (2.4 * push + 1.0 * push * Math.sin(t * 4.4 + tree.phase) + 0.4 * Math.sin(t * 9.1 + tree.phase * 2));
+    tree.node.setAttribute("transform", `rotate(${lean.toFixed(2)} ${tree.base[0].toFixed(1)} ${tree.base[1].toFixed(1)})`);
+  }
 }
 const V = G.viewOf(D.P);
 const depthAt = (x, y, z) => x * V[0] + y * V[1] + z * V[2];
