@@ -211,6 +211,20 @@ a:hover{text-decoration-color:var(--ink)}
 
 
 /* contact */
+/* readers who ask for more contrast get darker greys */
+@media (prefers-contrast:more){:root{--anatomy-muted:#3f3f44;--anatomy-text:#2a2a2e;--rule:#9a9a94}}
+
+/* on paper: ink on white, one entry never split across pages */
+@media print{
+  :root{--anatomy-page:#fff;--anatomy-card:#fff;--ink:#000;--anatomy-text:#222;--anatomy-muted:#555;--rule:#bbb}
+  .cover{height:auto;min-height:0;padding-bottom:24px}
+  .cover-bar,.skip{display:none}
+  .entry,.contents{break-inside:avoid}
+  .group-head{break-after:avoid}
+  .entry-text{position:static}
+  .entry .links a::after,.contact ul a::after{content:" (" attr(href) ")";font-size:.85em;color:var(--anatomy-muted)}
+}
+
 /* display text set as Michelangelus words (see flow()) */
 .fl{font-family:"Geist Mono",monospace;letter-spacing:0}
 .fw{height:.7em;overflow:visible;fill:currentColor;vertical-align:baseline}
