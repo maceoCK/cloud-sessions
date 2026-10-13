@@ -205,13 +205,6 @@ export function delineator({ P, x, y, z, toward }) {
   return { svg: parts.join(""), at: [x, y, z] };
 }
 
-// a kilometre stone: a squat rounded block with a red cap band
-export function milestone({ P, x, y, z }) {
-  const parts = [];
-  parts.push(S(k.slabOf({ x: x - 2, y: y - 1.3, w: 4, d: 2.6, r: 1 }, z, 4.4, P, 4, 0.3), { tone: "mid" }));
-  parts.push(S(k.slabOf({ x: x - 2, y: y - 1.3, w: 4, d: 2.6, r: 1 }, z + 4.4, 1.6, P, 4, 0.3), { tone: "mid", className: "cr-cap" }));
-  return { svg: parts.join(""), at: [x, y, z] };
-}
 
 // a boulder: two stacked irregular prisms, the upper one smaller and offset
 export function boulder({ P, x, y, z, r = 4, seed = 1, h = 0 }) {
@@ -224,72 +217,12 @@ export function boulder({ P, x, y, z, r = 4, seed = 1, h = 0 }) {
   return S(k.extrude(ring(r, 1), z, hh * 0.6, P, { bevel: 0.4 }), { tone: "mid" }) + S(k.extrude(ring(r * 0.7, 7).map(([px, py]) => [px - r * 0.12, py + r * 0.05]), z + hh * 0.6, hh * 0.4, P, { bevel: 0.3 }), { tone: "mid" });
 }
 
-export const fbmAt = fbm;
 
-// ---- a telegraph pole with a crossarm and two insulators; returns the insulator points for the wires ----
-export function pole({ P, x, y, z, height = 40, along = [0, 1] }) {
-  const at = (p) => k.iso(p, P);
-  const parts = [];
-  parts.push(S(k.cylinder(x, y, 1.2, z, height, P, 14), { tone: "mid", crease: "none", className: "cr-bark" }));
-  const across = [-along[1], along[0]];
-  const arm = [[x - across[0] * 6, y - across[1] * 6], [x + across[0] * 6, y + across[1] * 6]];
-  const F = G.frameOf([x, y, z + height - 4], [across[0], across[1], 0], [along[0], along[1], 0], [0, 0, 1]);
-  parts.push(S(G.prismOf(F, [[-0.7, -0.6], [0.7, -0.6], [0.7, 0.6], [-0.7, 0.6]], -6.4, 6.4, P), { tone: "mid" }));
-  const tips = arm.map(([ax, ay]) => [ax, ay, z + height - 3.4 + 1.6]);
-  for (const [ax, ay, az] of tips) parts.push(S(k.cylinder(ax, ay, 0.5, az - 1.6, 1.6, P, 8), { tone: "hi", crease: "none" }));
-  parts.push(k.dotsSvg(tips.map(at), { size: 0.55, tone: "hi" }));
-  return { svg: parts.join(""), tips };
-}
 
-// a sagging span between two insulators
-export function wire({ P, a, b, sag = 3 }) {
-  const pts = [];
-  for (let i = 0; i <= 16; i++) {
-    const t = i / 16;
-    pts.push(k.iso([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t - sag * 4 * t * (1 - t)], P));
-  }
-  return Ln(k.pathOf(pts), { tone: "lo", className: "cr-wire" });
-}
 
-// a low gorse bush: two stacked irregular rounded masses with a speckle of flowers
-export function bush({ P, x, y, z, r = 4, seed = 1 }) {
-  const ring = (rad, s, ox = 0) => Array.from({ length: 11 }, (_, i) => {
-    const a = (i / 11) * Math.PI * 2;
-    const rr = rad * (0.75 + 0.4 * hash2(i, seed, s));
-    return [x + ox + Math.cos(a) * rr * 1.2, y + Math.sin(a) * rr];
-  });
-  const dots = [];
-  for (let j = 0; j < 7; j++) dots.push(k.iso([x - r * 0.5 + hash2(j, seed, 3) * r * 0.9, y - r * 0.5 + hash2(j, seed, 4) * r, z + r * 0.95], P));
-  return S(k.extrude(ring(r, 1), z, r * 0.55, P, { bevel: 0.4 }), { tone: "mid", className: "cr-leaf" }) + S(k.extrude(ring(r * 0.66, 5, -r * 0.15), z + r * 0.55, r * 0.4, P, { bevel: 0.3 }), { tone: "mid", className: "cr-leaf" }) + k.dotsSvg(dots, { size: 0.4, tone: "lo" });
-}
 
-// a viewpoint bench: two concrete feet and a slatted seat
-export function bench({ P, x, y, z, facing = 0 }) {
-  const c = Math.cos(facing);
-  const s = Math.sin(facing);
-  const F = (o) => G.frameOf([x + c * o[0] - s * o[1], y + s * o[0] + c * o[1], z], [-s, c, 0], [c, s, 0], [0, 0, 1]);
-  const parts = [];
-  for (const l of [-3.2, 3.2]) parts.push(S(G.prismOf(F([0, l]), [[-1.1, 0], [1.1, 0], [1.1, 2.2], [-1.1, 2.2]], -0.5, 0.5, P), { tone: "mid" }));
-  parts.push(S(G.prismOf(F([0, 0]), [[-1.4, 2.2], [1.4, 2.2], [1.4, 2.7], [-1.4, 2.7]], -4.2, 4.2, P), { tone: "hi", crease: "lo" }));
-  parts.push(S(G.prismOf(F([-1.3, 0]), [[-0.25, 2.7], [0.25, 2.7], [0.25, 4.6], [-0.25, 4.6]], -4.2, 4.2, P), { tone: "hi", crease: "lo" }));
-  return { svg: parts.join(""), at: [x, y, z] };
-}
 
-// coin-operated binoculars on a post, pointed at the sea
-export function viewer({ P, x, y, z, facing = 0 }) {
-  const parts = [];
-  parts.push(S(k.cylinder(x, y, 1.4, z, 0.8, P, 14), { tone: "lo" }));
-  parts.push(S(k.cylinder(x, y, 0.55, z + 0.8, 5.2, P, 10), { tone: "mid", crease: "none" }));
-  const F = G.frameAlong([x, y, z + 6.6], [Math.cos(facing), Math.sin(facing), 0.08]);
-  parts.push(S(G.disc(-1.6, 1.6, 1.15, F, P), { tone: "hi", crease: "lo" }));
-  parts.push(S(G.disc(1.6, 2.4, 0.8, F, P), { tone: "mid" }));
-  return { svg: parts.join(""), at: [x, y, z] };
-}
 
-// a litter bin
-export function bin({ P, x, y, z }) {
-  return { svg: S(k.cylinder(x, y, 1.6, z, 4.2, P, 16, 0.3), { tone: "mid", inner: Ln(k.sideArc(x, y, 1.6, z + 3.4, P, 12), { tone: "faint" }) }) + S(k.cylinder(x, y, 1.75, z + 4.2, 0.6, P, 16), { tone: "mid" }), at: [x, y, z] };
-}
 
 // an Ordnance Survey trig pillar: a tapered square concrete column, 1.2 m, with a brass spider on top
 export function trig({ P, x, y, z }) {
@@ -300,21 +233,6 @@ export function trig({ P, x, y, z }) {
   return { svg: parts.join(""), at: [x, y, z] };
 }
 
-// a lifebuoy on a post, the ring hung on the side that faces the path
-export function lifebuoy({ P, x, y, z, facing = 0 }) {
-  const c = Math.cos(facing);
-  const s = Math.sin(facing);
-  const F = (o) => G.frameOf([x + c * o[0] - s * o[1], y + s * o[0] + c * o[1], z], [-s, c, 0], [c, s, 0], [0, 0, 1]);
-  const parts = [S(G.prismOf(F([0, 0]), [[-0.45, 0], [0.45, 0], [0.45, 8.4], [-0.45, 8.4]], -0.45, 0.45, P), { tone: "mid", crease: "lo" })];
-  parts.push(S(G.prismOf(F([0, 0]), [[-0.7, 8.4], [0.7, 8.4], [0.7, 9.0], [-0.7, 9.0]], -0.7, 0.7, P), { tone: "mid" }));
-  const ring = G.frameAlong([x + c * 0.9, y + s * 0.9, z + 5.6], [c, s, 0]);
-  const back = G.frameAlong([x + c * 0.5, y + s * 0.5, z + 5.6], [c, s, 0]);
-  const annulus = (Fr) => `${G.circleOf(Fr, 0, 2.1, P, 28)}${G.circleOf(Fr, 0, 1.2, P, 20)}`;
-  parts.push(`<path class="cr-buoy cr-buoy-back" fill-rule="evenodd" d="${annulus(back)}"/>`);
-  parts.push(`<path class="cr-buoy" fill-rule="evenodd" d="${annulus(ring)}"/>`);
-  parts.push(Ln(G.circleOf(ring, 0, 2.1, P, 28), { tone: "lo" }) + Ln(G.circleOf(ring, 0, 1.2, P, 20), { tone: "lo" }));
-  return { svg: parts.join(""), at: [x, y, z] };
-}
 
 // a curve mirror on an orange pole: a convex disc tilted down the road, so a driver sees round the bend
 export function mirror({ P, x, y, z, facing, height = 15 }) {

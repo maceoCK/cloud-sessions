@@ -1,6 +1,7 @@
-// The headland as a layered rock body: a signed distance field of the coastline, contoured once per stratum.
-// Every layer is a vertical prism whose outline is the coast pushed out or cut back by that stratum's erosion,
-// so the cliff, the wave-cut notch, the talus and the shelving seabed are one body drawn bottom to top.
+// The mountain as a layered rock body: noise, marching squares and the drawing of one layer. Every layer is
+// a vertical prism whose outline is a contour of the ground (and of the coast, pushed out or cut back by that
+// stratum's erosion), so the cliffs, the wave-cut notch, the seabed and the terraces are one body drawn
+// bottom to top.
 import * as k from "../../anatomy/kit/iso-kit.mjs";
 import * as G from "../../anatomy/kit/lathe.mjs";
 
@@ -197,50 +198,6 @@ export const ringArea = (ring) => ring.reduce((s, [x, y], i) => {
   const [nx, ny] = ring[(i + 1) % ring.length];
   return s + x * ny - nx * y;
 }, 0) / 2;
-
-// The coast polyline (open, from the back cut to the front cut) and the closed land polygon.
-export function coastOf(road, M, box, front = null) {
-  const [X0, Y0, X1, Y1] = box;
-  const edge = [];
-  for (let i = road.first; i <= road.last; i += 2) edge.push(M.cliffEdge(road, i));
-  // the cliff edge meets the hill face at x = portal; round the inside corners
-  const px = M.PORTAL_X;
-  const farY = edge[0][1];
-  const nearY = edge[edge.length - 1][1];
-  const fillet = (corner, from, to, r) => {
-    const a = [corner[0] + from[0] * r, corner[1] + from[1] * r];
-    const b = [corner[0] + to[0] * r, corner[1] + to[1] * r];
-    const out = [];
-    for (let i = 0; i <= 8; i++) {
-      const t = i / 8;
-      out.push([(1 - t) ** 2 * a[0] + 2 * t * (1 - t) * corner[0] + t * t * b[0], (1 - t) ** 2 * a[1] + 2 * t * (1 - t) * corner[1] + t * t * b[1]]);
-    }
-    return out;
-  };
-  const coast = [];
-  for (let y = Y0 - 12; y < farY - 12; y += 4) coast.push([px, y]);
-  coast.push(...fillet([px, farY], [0, -1], [1, 0], 10));
-  coast.push(...edge.filter(([x]) => x > px + 12));
-  coast.push(...fillet([px, nearY], [1, 0], [0, 1], 10));
-  if (front === null) {
-    for (let y = nearY + 12; y <= Y1 + 12; y += 4) coast.push([px, y]);
-  } else {
-    // the hill comes down to the sea on the near side too: its face turns the corner and runs west
-    for (let y = nearY + 12; y < front - 14; y += 4) coast.push([px, y]);
-    coast.push(...fillet([px, front], [0, -1], [-1, 0], 14));
-    for (let x = px - 16; x >= X0 - 12; x -= 4) coast.push([x, front]);
-  }
-  const polygon = front === null ? [...coast, [X0 - 20, Y1 + 12], [X0 - 20, Y0 - 12]] : [...coast, [X0 - 20, front], [X0 - 20, Y0 - 12]];
-  return { coast, polygon };
-}
-
-export function sdfOf(coast, polygon) {
-  return (x, y) => {
-    let d = Infinity;
-    for (let i = 0; i < coast.length - 1; i++) d = Math.min(d, segDist(x, y, coast[i][0], coast[i][1], coast[i + 1][0], coast[i + 1][1]));
-    return inside(polygon, x, y) ? -d : d;
-  };
-}
 
 // ---- drawing a layer ---------------------------------------------------------------------------------
 const tenth = (v) => (Math.round(v * 10) / 10).toFixed(1).replace(/\.0$/, "");

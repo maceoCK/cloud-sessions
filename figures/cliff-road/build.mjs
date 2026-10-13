@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import * as k from "../../anatomy/kit/iso-kit.mjs";
 import * as G from "../../anatomy/kit/lathe.mjs";
 import { glCamera } from "../../anatomy/kit/gl.mjs";
-import { tubePieces, tubeSvg } from "../../anatomy/kit/tube.mjs";
 import { kitScript, glScript } from "../../anatomy/scripts/inline-kit.mjs";
 import * as M from "./model.mjs";
 import * as T from "./terrain.mjs";
@@ -816,7 +815,7 @@ const LIVE = readFileSync(join(HERE, "live.js"), "utf8").replace("__DATA__", JSO
 const SHADERS = readFileSync(join(HERE, "shaders.js"), "utf8");
 // the contouring helpers, for the inset's local terraces
 const terrainSource = readFileSync(join(HERE, "terrain.mjs"), "utf8");
-const TR = `const TR = (() => {\n${terrainSource.slice(terrainSource.indexOf("function segDist"), terrainSource.indexOf("// The coast polyline")).replace(/^export /gm, "")}\nreturn { inside, gridOf, contour, simplifyRing, ringArea };\n})();\n`;
+const TR = `const TR = (() => {\n${terrainSource.slice(terrainSource.indexOf("function segDist"), terrainSource.indexOf("// ---- drawing a layer")).replace(/^export /gm, "")}\nreturn { inside, gridOf, contour, simplifyRing, ringArea };\n})();\n`;
 const SCRIPT = kitScript() + LATHE + TR + asObject("model.mjs", "M") + asObject("car.mjs", "CARS") + glScript() + SHADERS + LIVE;
 const CSS = readFileSync(join(HERE, "cliff.css"), "utf8");
 const page = k.pageHtml({ title: "Cliff road at night", theme, body: `<style>${CSS}</style>${body}`, script: SCRIPT, width: 1000 });

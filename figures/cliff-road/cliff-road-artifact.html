@@ -413,12 +413,6 @@
   }
 }
 
-.cr-sock-band > .iso-fill,
-.cr-sock-band > .iso-shade,
-.cr-sock-band > .iso-top {
-  fill: var(--cr-sock);
-}
-
 .cr {
   --cr-sock: #b8442f;
 }
@@ -577,14 +571,6 @@
   stroke-width: 0.9;
 }
 
-.cr-buoy {
-  fill: var(--cr-sock);
-  stroke: none;
-}
-
-.cr-buoy-back {
-  fill: color-mix(in srgb, var(--cr-sock) 68%, #000000);
-}
 
 .cr-d-edge {
   fill: var(--anatomy-mid);
@@ -3205,35 +3191,8 @@ function windOf(t) {
   return { speed, heading };
 }
 
-function sockSvg(at, wind, P, G, k) {
-  const [x, y, z] = at;
-  const top = z + 30;
-  const fill = Math.min(1, wind.speed / 7.7);
-  const droop = (1 - fill) * 1.05 + 0.04 * Math.sin(wind.speed * 3.1);
-  const dir = [Math.cos(wind.heading) * Math.cos(droop), Math.sin(wind.heading) * Math.cos(droop), -Math.sin(droop)];
-  const V = G.viewOf(P);
-  const parts = [];
-  parts.push(k.solidSvg(G.disc(0, 1.2, 1.6, G.frameOf([x, y, z], [0, 0, 1], [1, 0, 0], [0, 1, 0]), P), { tone: "lo" }));
-  parts.push(k.solidSvg(G.disc(1.2, 31, 0.45, G.frameOf([x, y, z], [0, 0, 1], [1, 0, 0], [0, 1, 0]), P), { tone: "mid", crease: "none" }));
-  const mouth = [x + dir[0] * 0.8, y + dir[1] * 0.8, top + dir[2] * 0.8];
-  const F = G.frameAlong(mouth, dir);
-  const length = 18;
-  const bands = [];
-  for (let i = 0; i < 5; i++) {
-    const s0 = (i / 5) * length;
-    const s1 = ((i + 1) / 5) * length;
-    const r = (s) => 2.3 - (1.3 * s) / length;
-    const paths = G.lathe([[s0, 0], [s0, r(s0)], [s1, r(s1)], [s1, 0]], F, P, { steps: 24, rims: i === 0 ? "first" : i === 4 ? "last" : "none" });
-    bands.push({ key: G.dot3(G.add3(mouth, G.mul3(dir, (s0 + s1) / 2)), V), svg: k.solidSvg(paths, { tone: "hi", crease: "lo", className: i % 2 ? "cr-sock" : "cr-sock cr-sock-band" }) });
-  }
-  // the ring that holds the mouth open, and the swivel arm to the pole
-  parts.push(k.lineSvg(k.pathOf([k.iso([x, y, top], P), k.iso(mouth, P)]), { tone: "mid" }));
-  bands.sort((a, b) => a.key - b.key);
-  parts.push(...bands.map((b) => b.svg));
-  return parts.join("");
-}
 
-return { CAR_SHAPE, clipF, carSvg, windOf, sockSvg };
+return { CAR_SHAPE, clipF, carSvg, windOf };
 })();
 const GLSL_ISO = `precision highp float;
 uniform vec2 uCanvas;

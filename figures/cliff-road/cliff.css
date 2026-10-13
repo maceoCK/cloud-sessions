@@ -306,12 +306,6 @@
   }
 }
 
-.cr-sock-band > .iso-fill,
-.cr-sock-band > .iso-shade,
-.cr-sock-band > .iso-top {
-  fill: var(--cr-sock);
-}
-
 .cr {
   --cr-sock: #b8442f;
 }
@@ -470,14 +464,6 @@
   stroke-width: 0.9;
 }
 
-.cr-buoy {
-  fill: var(--cr-sock);
-  stroke: none;
-}
-
-.cr-buoy-back {
-  fill: color-mix(in srgb, var(--cr-sock) 68%, #000000);
-}
 
 .cr-d-edge {
   fill: var(--anatomy-mid);
