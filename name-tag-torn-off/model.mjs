@@ -357,6 +357,7 @@ export const PEEL = (() => {
   const CREASES = [
     { d: D_MIN + 13, a: 34 * RAD, w: 1.4, early: true },
     { d: D_MIN + 76, a: -13 * RAD, w: 3.2, early: false },
+    { d: D_MIN + 108, a: 17 * RAD, w: 2.2, early: false },
   ];
   function frontAt(s) {
     s = clamp(s, 0, S_END);
