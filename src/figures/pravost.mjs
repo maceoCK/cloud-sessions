@@ -176,7 +176,7 @@ export default {
   height: HEIGHT,
   label:
     "An equal-arm beam balance on a leveling base. The near pan takes coins one at a time from a dish on the base; the far pan carries a sealed, turned weight. A pointer on the beam reads the tilt against a scale, and a pawl on the pillar latches the beam when it levels.",
-  stage: { role: "slider", label: "Held against intention. Space or Enter adds a coin, Backspace takes one off, Home clears the pan.", attrs: { "aria-valuemin": 0, "aria-valuemax": 5, "aria-valuenow": 0, "aria-valuetext": "0 of 5 coins, tilted" } },
+  stage: { role: "slider", label: "Beam balance. Space or Enter adds a coin, Backspace takes one off, Home clears the pan.", attrs: { "aria-valuemin": 0, "aria-valuemax": 5, "aria-valuenow": 0, "aria-valuetext": "0 of 5 coins, tilted" } },
   css: `
 #fig-pravost .iso-stage{cursor:pointer}
 #fig-pravost .pv-floor{fill:var(--anatomy-shade-2)}
