@@ -121,17 +121,19 @@ export function fuzzTexture(size = 200, seed = 11) {
       a[y * size + x] = 0.08 + 0.55 * smooth(0.42, 0.72, d) * smooth(0.35, 0.75, g) + (speck > 0.93 ? 0.35 * smooth(0.4, 0.7, d) : 0) + 0.12 * smooth(0.55, 0.8, g);
     }
   }
-  for (let i = 0; i < 110; i++) {
+  // Loose fibres: short and nearly straight, the odd one kinked, as torn paper sheds them.
+  for (let i = 0; i < 150; i++) {
     let x = R() * size, y = R() * size, ang = R() * Math.PI * 2;
     const pts = [[x, y]];
-    const steps = 3 + Math.floor(R() * 7);
+    const steps = 2 + Math.floor(R() * 5);
+    const kink = R() < 0.25 ? 1 + Math.floor(R() * steps) : -1;
     for (let k = 0; k < steps; k++) {
-      ang += (R() - 0.5) * 0.9;
-      x += Math.cos(ang) * 1.6;
-      y += Math.sin(ang) * 1.6;
+      ang += (R() - 0.5) * 0.35 + (k === kink ? (R() - 0.5) * 1.6 : 0);
+      x += Math.cos(ang) * 1.5;
+      y += Math.sin(ang) * 1.5;
       pts.push([x, y]);
     }
-    stroke(a, size, size, pts, 0.45 + R() * 0.4, 0.35 + R() * 0.35);
+    stroke(a, size, size, pts, 0.35 + R() * 0.3, 0.3 + R() * 0.35);
   }
   return pngOf(size, size, a, 255);
 }
