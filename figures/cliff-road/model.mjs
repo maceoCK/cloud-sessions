@@ -4,14 +4,16 @@
 
 export const U = 5;
 export const GRAV = 9.81;
-export const MU = 0.78; // peak grip of damp asphalt under sea mist
-export const MU_SLIDE = 0.72; // kinetic grip while the rear tyres slide
+export const MU = 1.0; // peak grip of dry asphalt on sport tyres
+export const MU_SLIDE = 0.9; // kinetic grip while the rear tyres slide
 export const HALF_ROAD = 3.0; // a mountain pass: two 3 m lanes
 export const CAR = { length: 4.3, width: 1.68, height: 1.28, base: 2.4, track: 1.42, wheel: 0.31, lamp: 0.62, mass: 1150 };
 export const SWELL = { period: 11, height: 2.4, chop: 4.2 };
 export const LEVEL = { sea: 8, toe: 5, top: 54, bottom: 24 }; // metres above the plinth top: the road at the summit tunnel and at the foot
 export const SPRAY = { rise: 11.5 }; // m/s at the foot of the cliff when a crest hits
-export const DRIFT_MAX = 32; // degrees the driver holds the tail out at full commitment
+export const DRIFT_MAX = 50; // degrees the driver throws the tail out through a hairpin
+export const SWING = 30; // degrees of the manji: the tail swung out through bends the line could take straight
+export const DRIVE = { push: 0.5, brake: 0.85, vmax: 38 }; // traction and braking (g), and top speed (m/s)
 
 // Both tunnel mouths are in one rock face at x = PORTAL_X, at the left of the model: the road leaves the
 // summit tunnel heading +x and comes back down into the foot tunnel heading -x.
@@ -191,9 +193,9 @@ export function project(road, x, y, hint) {
   return { i: best, d: lateral };
 }
 
-// Speed the driver aims for at each sample, before the pace multiplier: the grip-limited corner speed
+// Speed the driver plans for at each sample, before their commitment: the grip-limited corner speed
 // (with a small attack factor), then braking and traction limits run back and forth along the road.
-export function speedProfile(road, { cliff = 0.84, land = 1.0, vmax = 27, brake = 0.82, push = 0.34 } = {}) {
+export function speedProfile(road, { cliff = 0.84, land = 1.0, vmax = DRIVE.vmax, brake = DRIVE.brake, push = DRIVE.push } = {}) {
   // the driver plans each corner by what lies on its outside: where that is the drop, 84% of the grip;
   // where it is the hillside, all of it
   const n = road.n;
@@ -212,18 +214,28 @@ export function speedProfile(road, { cliff = 0.84, land = 1.0, vmax = 27, brake 
   return Array.from(v, (x) => Math.round(x * 1000) / 1000);
 }
 
-export function carStart(road, profile, pace) {
+export function carStart(road, profile) {
   const i = 0;
-  return { x: road.pts[i][0], y: road.pts[i][1], z: road.z[i], psi: road.heading[i], v: profile[i] * pace, beta: 0, rate: 0, cmd: 0, i, d: 0, along: 0, lat: 0, lon: 0, steer: 0, slide: 0, margin: 9, brake: 0, laps: 0, dark: 0, odo: 0, air: null };
+  return { x: road.pts[i][0], y: road.pts[i][1], z: road.z[i], psi: road.heading[i], v: profile[i] * commitAt(road, i), beta: 0, rate: 0, cmd: 0, i, d: 0, along: 0, lat: 0, lon: 0, steer: 0, slide: 0, margin: 9, brake: 0, laps: 0, dark: 0, odo: 0, air: null };
+}
+
+// How hard the driver commits, as a multiple of the planned speed: well past it down the legs, just past
+// it into the first two hairpins, and far past it into the last one, from `before` metres out. The slide
+// there carries the car's centre of mass over the unguarded edge, every lap.
+export const COMMIT = { legs: 1.15, pins: 1.03, last: 1.3, before: 40 };
+export function commitAt(road, i) {
+  const last = road.pins.length - 1;
+  for (let p = 0; p <= last; p++) if (i >= road.pins[p][0] - COMMIT.before / road.ds && i <= road.pins[p][1]) return p === last ? COMMIT.last : COMMIT.pins;
+  return COMMIT.legs;
 }
 
 // One step of the driver and the car: pure pursuit toward a racing line, a friction circle shared by
-// braking and cornering, and a drift angle that opens when the demanded cornering exceeds the grip.
+// braking and cornering, and a drift angle the driver throws out into every bend.
 // With `world` ({ sea, groundAt(x, y) } in world units) the car can also leave the road: once its centre
 // of mass is past the unguarded edge it tips over and falls (fallStep).
-export function stepCar(road, profile, s, pace, dt, world = null) {
+export function stepCar(road, profile, s, dt, world = null) {
   if (s.air) {
-    fallStep(road, profile, s, pace, dt, world);
+    fallStep(road, profile, s, dt, world);
     return s;
   }
   const at = project(road, s.x, s.y, s.i);
@@ -231,9 +243,10 @@ export function stepCar(road, profile, s, pace, dt, world = null) {
   s.d = at.d;
   if (s.dark > 0) {
     s.dark -= dt;
-    if (s.dark <= 0) Object.assign(s, carStart(road, profile, pace), { laps: s.laps + 1, odo: s.odo });
+    if (s.dark <= 0) Object.assign(s, carStart(road, profile), { laps: s.laps + 1, odo: s.odo });
     return s;
   }
+  const pace = commitAt(road, s.i);
   const v = Math.max(s.v, 1);
   const look = clampTo(0.75 * v, 7, 18);
   const ahead = Math.min(road.n - 1, s.i + Math.round(look / road.ds));
@@ -246,8 +259,9 @@ export function stepCar(road, profile, s, pace, dt, world = null) {
   // near the unguarded edge the driver lifts, which shrinks the slide: commitment, not suicide
   const lift = s.slide > 0.95 ? smoothStep(3.4, 0.5, s.margin) : 0;
   const want = profile[Math.min(road.n - 1, s.i + Math.round((0.3 * v) / road.ds))] * pace * (1 - 0.5 * lift);
-  const lon = clampTo((want - s.v) / 0.35, Math.abs(s.beta) > 0.1 ? -(0.12 + 0.3 * lift) * GRAV : -0.86 * GRAV, 0.36 * GRAV * (1 - lift));
-  const grip = s.slide > 1.05 ? MU_SLIDE : MU;
+  // braking sideways is how the car is slowed into a hairpin; the friction circle takes it out of the turn
+  const lon = clampTo((want - s.v) / 0.35, -DRIVE.brake * GRAV, DRIVE.push * GRAV * (1 - lift));
+  const grip = Math.abs(s.beta) > 0.2 ? MU_SLIDE : MU;
   const lateralCap = Math.sqrt(Math.max(0, (grip * GRAV) ** 2 - lon * lon));
   const asked = v * v * s.cmd;
   const lat = clampTo(asked, -lateralCap, lateralCap);
@@ -257,9 +271,20 @@ export function stepCar(road, profile, s, pace, dt, world = null) {
   s.psi = wrapAngle(s.psi + (lat / v) * dt);
   s.x += Math.cos(s.psi) * s.v * dt * U;
   s.y += Math.sin(s.psi) * s.v * dt * U;
-  // drift angle: a little tyre slip in grip, a held slide past the limit (the driver's throttle holds it)
+  // drift angle: a little tyre slip, and a slide the driver throws out once a bend asks for a third of the
+  // grip, full at 70% (the throttle holds it). The rear tyres then slide, at MU_SLIDE.
   const sign = Math.sign(lat) || 1;
-  const target = sign * ((3.5 * Math.abs(lat)) / (MU * GRAV) + DRIFT_MAX * smoothStep(1.04, 1.5, s.slide)) * (Math.PI / 180);
+  let target = sign * ((3.5 * Math.abs(lat)) / (MU * GRAV) + DRIFT_MAX * smoothStep(0.35, 0.7, s.slide)) * (Math.PI / 180);
+  // the manji: where the line would take the S-bends straight, the driver swings the tail out anyway, into
+  // each bend in turn, by what the road's own curve would ask at this speed
+  let bend = 0;
+  const from = s.i + Math.round((0.25 * v) / road.ds);
+  for (let j = 0; j < 30; j++) {
+    const kj = road.kappa[Math.min(road.n - 1, from + j)];
+    if (Math.abs(kj) > Math.abs(bend)) bend = kj;
+  }
+  const swing = Math.sign(bend) * SWING * smoothStep(0.6, 1, (v * v * Math.abs(bend)) / (MU * GRAV)) * (Math.PI / 180);
+  if (Math.abs(swing) > Math.abs(target)) target = swing;
   s.rate += (34 * (target - s.beta) - 9.6 * s.rate) * dt;
   s.beta += s.rate * dt;
   s.lat = lat;
@@ -279,16 +304,6 @@ export function stepCar(road, profile, s, pace, dt, world = null) {
     if (centre < 0) leaveRoad(road, s, c.i);
   }
   return s;
-}
-
-// The pace control: 0 is grip, 1 the limit. Past 1 (to OVER.share) the driver holds the limit down the
-// pass, then overcooks the last hairpin, from OVER.before metres out: up to 28% past the limit, where the
-// slide carries the car over the edge and into the sea.
-export const OVER = { share: 1.25, gain: 1.1, before: 30 };
-export function paceAt(share, min, limit, road = null, i = 0) {
-  if (share <= 1) return min + share * (limit - min);
-  if (road && i < road.pins[road.pins.length - 1][0] - OVER.before / road.ds) return limit;
-  return limit * (1 + OVER.gain * (share - 1));
 }
 
 // ---- over the edge ---------------------------------------------------------------------------------------
@@ -324,7 +339,7 @@ function leaveRoad(road, s, i) {
   s.steer = 0;
 }
 
-export function fallStep(road, profile, s, pace, dt, world) {
+export function fallStep(road, profile, s, dt, world) {
   const a = s.air;
   a.t += dt;
   if (a.splash) {
@@ -380,7 +395,7 @@ export function fallStep(road, profile, s, pace, dt, world) {
     s.y = Math.min(world.box[3] - 12, Math.max(world.box[1] + 12, s.y));
   }
   // gone under (or, on land, come to rest): the next car leaves the summit tunnel
-  if ((a.splash && a.t - a.splash.t > FALL.sinkTime) || a.t > 12) Object.assign(s, carStart(road, profile, pace), { laps: s.laps + 1, odo: s.odo });
+  if ((a.splash && a.t - a.splash.t > FALL.sinkTime) || a.t > 12) Object.assign(s, carStart(road, profile), { laps: s.laps + 1, odo: s.odo });
   return s;
 }
 
@@ -408,38 +423,33 @@ export function marginOf(road, s) {
   return least;
 }
 
-export function lapOf(road, profile, pace, dt = 1 / 120) {
-  const s = carStart(road, profile, pace);
+// One lap of the drive, without the fall: it ends where the car's centre of mass goes over the edge.
+export function lapOf(road, profile, dt = 1 / 120) {
+  const s = carStart(road, profile);
   const trace = [];
-  let least = Infinity;
-  let peakDrift = 0;
+  const pins = road.pins.map(() => ({ least: Infinity, drift: 0, top: 0 }));
   let peakLat = 0;
   let top = 0;
   let time = 0;
-  while (s.dark <= 0 && time < 60) {
-    stepCar(road, profile, s, pace, dt);
+  let off = null;
+  while (s.dark <= 0 && time < 60 && !off) {
+    stepCar(road, profile, s, dt);
     time += dt;
     if (s.i > road.first && s.i < road.last) {
-      least = Math.min(least, s.margin);
-      peakDrift = Math.max(peakDrift, Math.abs(s.beta));
+      const pin = pins[road.hairpin[s.i]];
+      if (pin) {
+        pin.least = Math.min(pin.least, s.margin);
+        pin.drift = Math.max(pin.drift, (Math.abs(s.beta) * 180) / Math.PI);
+        pin.top = Math.max(pin.top, s.v * 3.6);
+      }
       peakLat = Math.max(peakLat, Math.abs(s.lat));
       top = Math.max(top, s.v);
+      const c = project(road, s.x, s.y, s.i);
+      if (HALF_ROAD + road.verge[c.i] - road.drop[c.i] * c.d < 0) off = { i: c.i, pin: road.hairpin[c.i], v: s.v * 3.6, t: time };
     }
     trace.push([s.x, s.y, s.psi + s.beta, Math.abs(s.beta), s.i]);
   }
-  return { least, peakDrift: (peakDrift * 180) / Math.PI, peakLat: peakLat / GRAV, top: top * 3.6, time, trace };
-}
-
-// The fastest pace at which the line still clears the edge by `keep` metres.
-export function paceLimit(road, profile, keep = 0.3) {
-  let lo = 0.7;
-  let hi = 1.8;
-  for (let k = 0; k < 22; k++) {
-    const mid = (lo + hi) / 2;
-    if (lapOf(road, profile, mid).least >= keep) lo = mid;
-    else hi = mid;
-  }
-  return lo;
+  return { pins, peakLat: peakLat / GRAV, top: top * 3.6, time, off, trace };
 }
 
 // ---- the sea -------------------------------------------------------------------------------------
@@ -462,11 +472,4 @@ export function readoutOf(s, sea = 0) {
   const g = (Math.abs(s.lat) / GRAV).toFixed(2);
   const edge = s.margin.toFixed(1);
   return `${kmh} km/h · drift ${drift}° · ${g} g · edge ${edge} m`;
-}
-
-export function wordsOf(s, share) {
-  if (s.air) return s.air.splash ? "The car has gone into the sea." : "Over the edge: the car is falling toward the sea.";
-  const deg = Math.round((Math.abs(s.beta) * 180) / Math.PI);
-  const where = s.dark > 0 ? "In the tunnel." : `${Math.round(s.v * 3.6)} kilometres an hour, drifting ${deg} ${deg === 1 ? "degree" : "degrees"}, ${s.margin.toFixed(1)} metres from the edge.`;
-  return `Pace ${Math.round(share * 100)} percent of the way from grip to the limit. ${where}`;
 }

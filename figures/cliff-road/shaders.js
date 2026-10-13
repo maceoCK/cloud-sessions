@@ -627,7 +627,8 @@ function gpuOf(D, stage, pale) {
         age: 0,
         life: 2.9,
         a0: Math.min(1, (slip - 0.12) * 3.4) * 0.95,
-        r0: 2.2,
+        // a car thrown fully sideways lays down a thicker cloud
+        r0: 2.2 + 3 * smooth(0.3, 0.9, slip),
       });
     }
     for (const p of smoke) {

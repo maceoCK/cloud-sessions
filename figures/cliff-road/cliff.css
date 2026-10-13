@@ -21,16 +21,6 @@
 
 .cr-stage {
   position: relative;
-  touch-action: pan-y;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  -webkit-user-select: none;
-  cursor: ew-resize;
-}
-
-.cr-stage:focus-visible {
-  outline: 1px solid var(--anatomy-muted);
-  outline-offset: 6px;
 }
 
 .cr-stage > svg,
@@ -149,15 +139,6 @@
 
 .cr-skids {
   opacity: 0.8;
-}
-
-.cr-said {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }
 
 .cr {
@@ -313,11 +294,6 @@
 .iso[data-theme="light"] .cr,
 .cr[data-theme="light"] {
   --cr-sock: #e0573c;
-}
-
-.cr-limit-dot circle {
-  fill: var(--anatomy-red);
-  opacity: 0.9;
 }
 
 /* what the headlights fall on: the item's own tones pulled toward lamp light */

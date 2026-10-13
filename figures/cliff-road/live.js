@@ -2,7 +2,6 @@ const D = __DATA__;
 const root = document.querySelector(".cr");
 const stage = root.querySelector(".cr-stage");
 const readout = root.querySelector("[data-readout]");
-const said = stage.querySelector(".cr-said");
 const front = stage.querySelector(".cr-front");
 const itemsNode = front.querySelector(".cr-items");
 const carNode = itemsNode.querySelector('[data-item="car"]');
@@ -19,27 +18,20 @@ const springTo = (state, target, dt, seconds, calm) => {
 
 const road = M.roadOf();
 const profile = D.profile;
-// 0 is grip, 1 the limit; past 1, to the red end of the knob, the driver overcooks it
-const SHARE_MAX = M.OVER.share;
-const paceOf = (share, i = 0) => M.paceAt(share, D.paceMin, D.limit, road, i);
 // what the car can fall onto: the drawn mountain, and the sea
 const world = { sea: D.sea, groundAt: (x, y) => heightAt(x, y), box: D.box };
 const twin = carNode.cloneNode(false);
 twin.removeAttribute("data-item");
 
-const state = { target: 1, clock: 0, tourLap: 0 };
+const state = { clock: 0 };
 const brake = { x: 0, v: 0 };
-const ease = { x: 1, v: 0 };
-let car = M.carStart(road, profile, paceOf(1));
-let touring = !still.matches;
-let idleTimer = 0;
-let sayTimer = 0;
+// the dial's needle has a little inertia of its own
+const needle = { x: 0, v: 0 };
+let car = M.carStart(road, profile);
 let visible = false;
 let frame = 0;
 let last = 0;
 let order = "";
-// the tour's second lap is overcooked: the car goes over the edge at the last hairpin
-const TOUR = [1, 1.2, 0.72, 1, 0.35, 0.85];
 const gpu = gpuOf(D, stage, pale);
 if (gpu) stage.setAttribute("data-gl", "");
 
@@ -78,13 +70,13 @@ function lightItems() {
     }
   }
 }
-const pointer = stage.querySelector('[data-part="pace-pointer"]');
+const pointer = stage.querySelector('[data-part="speed-pointer"]');
 let pointerAt = -1;
-function drawKnob() {
-  const share = Math.round(ease.x * 1000) / 1000;
-  if (!pointer || share === pointerAt) return;
-  pointerAt = share;
-  const deg = D.sweep[0] + ((D.sweep[1] - D.sweep[0]) * share) / SHARE_MAX;
+function drawDial() {
+  const kmh = Math.round(clampTo(needle.x, 0, D.dialMax) * 2) / 2;
+  if (!pointer || kmh === pointerAt) return;
+  pointerAt = kmh;
+  const deg = D.sweep[0] + ((D.sweep[1] - D.sweep[0]) * kmh) / D.dialMax;
   const a = (deg * Math.PI) / 180;
   const k0 = D.knob;
   pointer.setAttribute("d", pathOf([iso([k0.x + Math.sin(a) * 1.2, k0.y + 4.45, k0.z + Math.cos(a) * 1.2], D.P), iso([k0.x + Math.sin(a) * (k0.r - 0.8), k0.y + 4.45, k0.z + Math.cos(a) * (k0.r - 0.8)], D.P)]));
@@ -671,44 +663,14 @@ function placeCar() {
 
 function readoutOf() {
   if (car.air) return M.readoutOf(car, D.sea);
-  if (car.dark > 0 || car.x < D.portal - 6) return `in the tunnel · lap ${car.laps + 1} · ${ease.x > 1.005 ? "pace past the limit" : `pace ${Math.round(ease.x * 100)}% of the limit`}`;
+  if (car.dark > 0 || car.x < D.portal - 6) return `in the tunnel · lap ${car.laps + 1}`;
   return M.readoutOf(car);
 }
 
-// the slider reports the setting the reader chose, not the eased value on its way there
-function describe() {
-  const words = M.wordsOf(car, state.target);
-  const t = state.target;
-  stage.setAttribute("aria-valuenow", String(Math.round(t * 100)));
-  stage.setAttribute("aria-valuetext", t <= 1.005 ? `Pace ${Math.round(t * 100)} percent of the way from grip to the limit` : t < D.crashAny ? "Past the limit on the last hairpin: the outer wheels run onto the drop, but the car holds the road" : t < D.crashFrom ? "Past the limit on the last hairpin: the car may go over the edge" : "Past the limit on the last hairpin: the slide will carry the car over the edge and into the sea");
-  return words;
-}
-// the crash, said as it happens
-let crashSaid = "";
-function sayCrash() {
-  const phase = car.air ? (car.air.splash ? "sea" : "fall") : "";
-  if (phase === crashSaid) return;
-  crashSaid = phase;
-  if (phase && said) said.textContent = M.wordsOf(car, state.target);
-}
-
-function announce() {
-  clearTimeout(sayTimer);
-  sayTimer = setTimeout(() => {
-    const words = describe();
-    if (said && said.textContent !== words) said.textContent = words;
-  }, 700);
-}
-
-// under reduced motion: one still, representative frame, the slide at the tip at the chosen pace
+// under reduced motion: one still frame, the build's own (a moment before the car goes over the edge)
 function poseStill() {
-  const lap = M.lapOf(road, profile, paceOf(ease.x));
-  let best = 0;
-  lap.trace.forEach(([, , , beta, i], q) => {
-    if (road.hairpin[i] === 2 && beta >= lap.trace[best][3]) best = q;
-  });
-  car = M.carStart(road, profile, paceOf(ease.x));
-  for (let i = 0; i <= best; i++) M.stepCar(road, profile, car, paceOf(ease.x), 1 / 120);
+  car = M.carStart(road, profile);
+  for (let i = 0; i <= D.still; i++) M.stepCar(road, profile, car, 1 / 120);
 }
 
 function tick(now) {
@@ -716,11 +678,11 @@ function tick(now) {
   last = now;
   const calm = still.matches;
   state.clock += dt;
-  springTo(ease, state.target, dt, 0.5, calm);
   if (calm) {
     poseStill();
+    needle.x = car.v * 3.6;
     placeCar();
-    drawKnob();
+    drawDial();
     lightItems();
     drawDetail(poseOf(car), false);
     readout.textContent = readoutOf();
@@ -731,22 +693,16 @@ function tick(now) {
     frame = 0;
     return;
   }
-  const lapBefore = car.laps;
   const steps = Math.max(1, Math.round(dt * 240));
-  for (let i = 0; i < steps; i++) M.stepCar(road, profile, car, paceOf(ease.x, car.i), dt / steps, world);
-  if (car.laps !== lapBefore && touring) {
-    state.tourLap = (state.tourLap + 1) % TOUR.length;
-    state.target = TOUR[state.tourLap];
-    describe();
-  }
+  for (let i = 0; i < steps; i++) M.stepCar(road, profile, car, dt / steps, world);
   springTo(brake, car.brake, dt, 0.06);
   brake.x = clampTo(brake.x, 0, 1);
+  springTo(needle, car.v * 3.6, dt, 0.15);
   placeCar();
-  drawKnob();
+  drawDial();
   lightItems();
   if (car.dark <= 0 && !car.air) trackWheels(dt);
   drawDetail(poseOf(car), car.dark > 0 || (!car.air && car.x < D.portal - 6));
-  sayCrash();
   if (gpu) {
     gpu.step(dt, state.clock, car, false);
     gpu.draw(smooth(0, 1, (state.clock - 0.15) / 0.9), state.clock, { ...car, brake: brake.x }, state.clock);
@@ -763,23 +719,6 @@ function run() {
   }
 }
 
-function hold() {
-  touring = false;
-  clearTimeout(idleTimer);
-  idleTimer = setTimeout(() => {
-    if (still.matches) return;
-    touring = true;
-    run();
-  }, 3600);
-}
-
-function steer(share) {
-  state.target = clampTo(share, 0, SHARE_MAX);
-  hold();
-  announce();
-  run();
-}
-
 new IntersectionObserver(
   (entries) => {
     visible = entries[entries.length - 1].isIntersecting;
@@ -788,40 +727,6 @@ new IntersectionObserver(
   { rootMargin: "120px 0px" },
 ).observe(stage);
 
-stage.addEventListener("pointermove", (event) => {
-  if (event.pointerType === "touch" && !event.buttons) return;
-  const box = stage.getBoundingClientRect();
-  steer((((event.clientX - box.left) / box.width - 0.12) / 0.76) * SHARE_MAX);
-});
-stage.addEventListener("pointerdown", (event) => {
-  const box = stage.getBoundingClientRect();
-  steer((((event.clientX - box.left) / box.width - 0.12) / 0.76) * SHARE_MAX);
-});
-stage.addEventListener("keydown", (event) => {
-  const from = touring ? ease.x : state.target;
-  const big = event.shiftKey ? 0.25 : 0.1;
-  let to = null;
-  if (event.key === "ArrowRight" || event.key === "ArrowUp") to = from + big;
-  else if (event.key === "ArrowLeft" || event.key === "ArrowDown") to = from - big;
-  else if (event.key === "Home") to = 0;
-  else if (event.key === "End") to = SHARE_MAX;
-  if (to === null) return;
-  event.preventDefault();
-  if (touring) ease.v = 0;
-  steer(to);
-});
-stage.addEventListener("focus", () => {
-  if (said) said.textContent = describe();
-});
-still.addEventListener("change", () => {
-  touring = !still.matches;
-  run();
-});
-if (matchMedia("(hover: none)").matches) {
-  const hint = root.querySelector('[data-corner="hint"]');
-  if (hint) hint.textContent = "Drag left to right: grip, drift, over the edge";
-}
-if (still.matches) touring = false;
-describe();
+still.addEventListener("change", run);
 // read-only hook for the figure's own checks (where the car is along the road)
-Object.defineProperty(window, "__crState", { configurable: true, get: () => ({ i: car.i, n: road.n, x: car.x, y: car.y, z: car.z, dark: car.dark, share: ease.x, clock: state.clock, air: car.air ? (car.air.splash ? "sea" : "fall") : null }) });
+Object.defineProperty(window, "__crState", { configurable: true, get: () => ({ i: car.i, n: road.n, x: car.x, y: car.y, z: car.z, dark: car.dark, v: car.v, beta: car.beta, pin: road.hairpin[car.i], clock: state.clock, air: car.air ? (car.air.splash ? "sea" : "fall") : null }) });

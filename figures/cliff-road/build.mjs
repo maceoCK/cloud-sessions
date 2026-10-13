@@ -29,8 +29,8 @@ const PLINTH = { x: X0 - 16, y: Y0 - 16, w: X1 - X0 + 32, d: Y1 - Y0 + 32, r: 6 
 
 const road = M.roadOf();
 const profile = M.speedProfile(road);
-const LIMIT = M.paceLimit(road, profile);
-const LAP = M.lapOf(road, profile, LIMIT);
+// the drive, to where it leaves the road at the last hairpin
+const LAP = M.lapOf(road, profile);
 
 const P = k.fitProjection([...k.boxCorners(PLINTH, Z.base - 8, Z.bed), ...k.boxCorners(BLOCK, Z.bed, Z.sea), [X0, Y0, Z.crown], [X0 + 200, Y0, Z.crown - 30], [X0, Y0 + 120, Z.crown - 60]], W, H, { pad: 26, azimuth: AZIMUTH, elevation: ELEVATION });
 const V = G.viewOf(P);
@@ -258,9 +258,11 @@ back.push(Ln(k.planOutline(k.insetPlan(LABEL, 1.4), Z.bed + 0.9, P), { tone: "fa
 back.push(k.faceTextSvg(k.topMatrix([LABEL.x + 4.6, LABEL.y + LABEL.d - 6], Z.bed + 0.9, P, "y"), "CLIFF ROAD · 5A", { size: 3.2, tone: "lo" }));
 back.push(Dots([at([LABEL.x + LABEL.w / 2, LABEL.y + 2.4, Z.bed + 0.9]), at([LABEL.x + LABEL.w / 2, LABEL.y + LABEL.d - 2.4, Z.bed + 0.9])], { size: 0.4 }));
 
-// the pace knob on the plinth's front face: the driver's commitment, from grip (left) to the edge (right)
+// the speed dial on the plinth's front face: the car's speed, 0 to 120 km/h, live
 const KNOB = { x: X1 - 54, y: PLINTH.y + PLINTH.d, z: (Z.base + Z.bed) / 2, plate: 9.5, r: 5.4 };
 const KNOB_SWEEP = [-135, 135];
+const DIAL_MAX = 120;
+const dialDeg = (kmh) => KNOB_SWEEP[0] + ((KNOB_SWEEP[1] - KNOB_SWEEP[0]) * Math.min(kmh, DIAL_MAX)) / DIAL_MAX;
 {
   const F = G.frameOf([KNOB.x, KNOB.y, KNOB.z], [0, 1, 0], [1, 0, 0], [0, 0, 1]);
   const face = (r, deg, y = 0.6) => {
@@ -268,32 +270,26 @@ const KNOB_SWEEP = [-135, 135];
     return at([KNOB.x + Math.sin(a) * r, KNOB.y + y, KNOB.z + Math.cos(a) * r]);
   };
   back.push(S(G.disc(0, 0.6, KNOB.plate, F, P), { tone: "mid" }));
-  // a tick every eighth of the way from grip to the limit; the limit is a major tick with a red dot, and
-  // past it the dial runs on into a red arc: overcooked
-  const shareDeg = (share) => KNOB_SWEEP[0] + ((KNOB_SWEEP[1] - KNOB_SWEEP[0]) * share) / M.OVER.share;
+  // a tick every 10 km/h, a long one every 40
   let minor = "";
   let major = "";
-  for (let i = 0; i <= Math.round(M.OVER.share * 8); i++) {
-    const deg = shareDeg(i / 8);
-    const big = i % 4 === 0;
-    const d = k.pathOf([face(KNOB.plate - 0.6, deg), face(KNOB.plate - (big ? 3 : 1.8), deg)]);
+  for (let v = 0; v <= DIAL_MAX; v += 10) {
+    const big = v % 40 === 0;
+    const d = k.pathOf([face(KNOB.plate - 0.6, dialDeg(v)), face(KNOB.plate - (big ? 3 : 1.8), dialDeg(v))]);
     if (big) major += d;
     else minor += d;
   }
   back.push(Ln(minor, { tone: "lo" }), Ln(major, { tone: "mid" }));
   back.push(Ln(k.pathOf(Array.from({ length: 41 }, (_, i) => face(KNOB.plate - 0.6, KNOB_SWEEP[0] + ((KNOB_SWEEP[1] - KNOB_SWEEP[0]) * i) / 40))), { tone: "lo" }));
-  back.push(Dots([face(KNOB.plate - 4.1, shareDeg(1))], { size: 0.7, tone: "hi" }).replace('class="iso-dots"', 'class="iso-dots cr-limit-dot"'));
-  back.push(Ln(k.pathOf(Array.from({ length: 13 }, (_, i) => face(KNOB.plate - 1.1, shareDeg(1 + ((M.OVER.share - 1) * i) / 12)))), { tone: "red", className: "cr-over-arc" }));
   back.push(S(G.disc(0.6, 1.4, KNOB.r + 0.8, F, P), { tone: "mid" }));
   back.push(S(G.disc(1.4, 4.4, KNOB.r, F, P), { tone: "hi", crease: "lo", inner: k.fadedSvg(G.ribsOf(F, 1.7, 4.1, KNOB.r, 40, P, { fade: [0.1, 0.5] }), { tone: "lo" }) }));
   back.push(Dots([face(KNOB.plate + 3.2, -150, 0), face(KNOB.plate + 3.2, 150, 0)].map((p) => p), { size: 0.45 }));
 }
-const knobPointer = (share) => {
-  const deg = KNOB_SWEEP[0] + ((KNOB_SWEEP[1] - KNOB_SWEEP[0]) * share) / M.OVER.share;
-  const a = (deg * Math.PI) / 180;
+const knobPointer = (kmh) => {
+  const a = (dialDeg(kmh) * Math.PI) / 180;
   return k.pathOf([at([KNOB.x + Math.sin(a) * 1.2, KNOB.y + 4.45, KNOB.z + Math.cos(a) * 1.2]), at([KNOB.x + Math.sin(a) * (KNOB.r - 0.8), KNOB.y + 4.45, KNOB.z + Math.cos(a) * (KNOB.r - 0.8)])]);
 };
-back.push(`<path data-part="pace-pointer" class="iso-line" data-tone="lit" data-free="end" d="${knobPointer(1)}" style="stroke-width:1.2"/>`);
+back.push(`<path data-part="speed-pointer" class="iso-line" data-tone="lit" data-free="end" d="${knobPointer(0)}" style="stroke-width:1.2"/>`);
 
 // bedrock under the whole model: a sawn section with its strata
 back.push(T.layerSvg([BLOCK_RING], Z.bed, -Z.bed, P, { cut: onCut }));
@@ -314,7 +310,7 @@ const wheelsOf = (x, y, yaw) => {
   const half = (M.CAR.track / 2) * u;
   return [[x + backAxle * c - half * sn, y + backAxle * sn + half * c], [x + backAxle * c + half * sn, y + backAxle * sn - half * c]];
 };
-// tyre marks: the rear wheels' paths wherever the model's own lap at the limit held more than 10° of drift
+// tyre marks: the rear wheels' paths wherever the model's own lap held more than 10° of drift, to the edge
 const MARKS = [];
 {
   let cur = null;
@@ -674,11 +670,9 @@ for (let pin = 0; pin < 3; pin++) {
   put("trig", tg.at, tg.svg, 6, 6);
 }
 items.sort((a, b) => a.key - b.key);
+// the still frame (reduced motion): a quarter of a second before the car's centre goes over the edge
 const STILL = (() => {
-  let best = 0;
-  LAP.trace.forEach(([, , , beta, i], q) => {
-    if (road.hairpin[i] === 2 && beta > LAP.trace[best][3]) best = q;
-  });
+  const best = LAP.trace.length - 1 - 30;
   const [x, y, yaw, , i] = LAP.trace[best];
   return { x, y, z: road.z[i], yaw, steer: -0.3, best };
 })();
@@ -762,55 +756,46 @@ const SPRAY_AT = [];
 // the drawn height for the page: what hides the car, the lights and the smoke (tenths of a unit)
 const HEIGHT = { x0: groundGrid.x0, y0: groundGrid.y0, step: STEP, nx: groundGrid.nx, ny: groundGrid.ny, bytes: Buffer.from(new Uint16Array(Array.from(HQ, (h) => Math.round(h * 10))).buffer).toString("base64") };
 
-// the overcooked lap: the top of the control, with the mountain and the sea to fall into
-const CRASH = (() => {
-  const paceOf = (i) => M.paceAt(M.OVER.share, 0.85, LIMIT, road, i);
-  const s = M.carStart(road, profile, paceOf(0));
+// the crash: the drive with the mountain and the sea to fall into
+const crashOf = (dts) => {
+  const s = M.carStart(road, profile);
   const world = { sea: Z.sea, groundAt: (x, y) => heightAt(x, y), box: BOX };
   let t = 0;
   let from = null;
   let splash = null;
   let hits = 0;
-  // the lowest share past the limit that still goes over
-  while (t < 60 && !splash && s.laps === 0) {
-    M.stepCar(road, profile, s, paceOf(s.i), 1 / 240, world);
-    t += 1 / 240;
+  for (let q = 0; t < 60 && !splash && s.laps === 0; q++) {
+    const dt = dts(q);
+    M.stepCar(road, profile, s, dt, world);
+    t += dt;
     if (s.air && !from) from = { ...s.air.from, t, pin: road.hairpin[s.air.from.i] };
     if (s.air) hits = s.air.hits;
     if (s.air && s.air.splash) splash = s.air.splash;
   }
-  // the shares that go over: the first that can, and the one from which every share does
-  const goes = [];
-  for (let share = 1; share <= M.OVER.share + 1e-9; share += 0.01) {
-    const q = M.carStart(road, profile, M.paceAt(share, 0.85, LIMIT, road, 0));
-    let tt = 0;
-    while (tt < 60 && !q.air && q.dark <= 0) {
-      M.stepCar(road, profile, q, M.paceAt(share, 0.85, LIMIT, road, q.i), 1 / 240, world);
-      tt += 1 / 240;
-    }
-    goes.push([share, !!q.air]);
-  }
-  const any = goes.find(([, over]) => over)[0];
-  let all = M.OVER.share;
-  for (let q = goes.length - 1; q >= 0 && goes[q][1]; q--) all = goes[q][0];
-  return { from, splash, hits, any, all, lowest: all, fallTime: splash ? splash.t : 0 };
-})();
+  return { from, splash, hits, fallTime: splash ? splash.t : 0 };
+};
+const CRASH = crashOf(() => 1 / 240);
 if (process.env.CR_CRASH) {
-  console.log(JSON.stringify(CRASH));
-  // every share that goes over must land in the water inside the box
-  for (let share = CRASH.any; share <= M.OVER.share + 1e-9; share += 0.01) {
-    const q = M.carStart(road, profile, M.paceAt(share, 0.85, LIMIT, road, 0));
-    const world = { sea: Z.sea, groundAt: (x, y) => heightAt(x, y), box: BOX };
-    let tt = 0;
-    let sp = null;
-    let hits = 0;
-    while (tt < 60 && !sp && q.laps === 0) {
-      M.stepCar(road, profile, q, M.paceAt(share, 0.85, LIMIT, road, q.i), 1 / 240, world);
-      tt += 1 / 240;
-      if (q.air) hits = q.air.hits;
-      if (q.air && q.air.splash) sp = q.air.splash;
-    }
-    console.log(share.toFixed(2), q.air ? `left at pin ${road.hairpin[q.air.from.i]} ` : "", sp ? `splash at (${sp.x.toFixed(0)}, ${sp.y.toFixed(0)}) ${sp.fall.toFixed(0)} m at ${(sp.speed * 3.6).toFixed(0)} km/h, rock hits ${hits}${sp.x > X1 - 12 || sp.y < Y0 + 12 || sp.y > Y1 - 12 ? "  OUTSIDE" : ""}` : "no splash");
+  // the page steps at about 240 Hz, split evenly over each frame: every lap must go over at the last
+  // hairpin and land in the water inside the box, whatever the frame rate
+  let seed = 7;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const runs = [["240 Hz", () => 1 / 240], ["200 Hz", () => 1 / 200], ["288 Hz", () => 1 / 288]];
+  for (let r = 0; r < 6; r++) {
+    const frames = [];
+    runs.push([`ragged frames ${r + 1}`, (q) => {
+      while (frames.length <= q) {
+        const frame = 1 / (40 + rand() * 104);
+        const n = Math.max(1, Math.round(frame * 240));
+        for (let j = 0; j < n; j++) frames.push(frame / n);
+      }
+      return frames[q];
+    }]);
+  }
+  for (const [name, dts] of runs) {
+    const c = crashOf(dts);
+    const sp = c.splash;
+    console.log(name.padEnd(16), c.from ? `left at pin ${c.from.pin} at ${(c.from.v * 3.6).toFixed(0)} km/h, t ${c.from.t.toFixed(1)} s` : "never left", sp ? `splash at (${sp.x.toFixed(0)}, ${sp.y.toFixed(0)}) ${sp.fall.toFixed(0)} m at ${(sp.speed * 3.6).toFixed(0)} km/h, rock hits ${c.hits}${sp.x > X1 - 12 || sp.y < Y0 + 12 || sp.y > Y1 - 12 ? "  OUTSIDE" : ""}` : "no splash");
   }
 }
 
@@ -824,20 +809,17 @@ const DATA = {
   P,
   camera: glCamera(P),
   profile,
-  limit: LIMIT,
-  paceMin: 0.85,
   portal: PORTALS[0].plane,
   x0: X0,
   knob: KNOB,
   sweep: KNOB_SWEEP,
+  dialMax: DIAL_MAX,
   sea: Z.sea,
   box: BOX,
   still: STILL.best,
   detail: null,
   posts: POSTS,
   height: HEIGHT,
-  crashAny: Math.round(CRASH.any * 100) / 100,
-  crashFrom: Math.round(CRASH.all * 100) / 100,
 };
 
 // ---- Detail A: a 3:1 view that follows the car, in the card's empty top-right -----------------------------
@@ -875,18 +857,16 @@ const detailSvg = (() => {
 })();
 
 // ---- assemble ----------------------------------------------------------------------------------------
-const LABEL_TEXT = "A diorama of a mountain pass at night: a road with no guard rails winds down a sea cliff through three hairpins, between a tunnel at the summit and one at the foot, and the sea breaks against the rock below.";
+const LABEL_TEXT = "A diorama of a mountain pass at night: a road with no guard rails winds down a sea cliff through three hairpins, between a tunnel at the summit and one at the foot, and the sea breaks against the rock below. A car with its headlights on drifts down the pass, sideways through every bend. On the last hairpin it comes in far too fast, slides off the edge and falls into the sea, and the next car leaves the summit tunnel.";
 const backSvg = k.figureSvg({ width: W, height: H, label: LABEL_TEXT, body: back, className: "cr-back" });
 const layerSvg = (name, body) => `<svg xmlns="http://www.w3.org/2000/svg" class="iso-svg cr-layer ${name}" viewBox="0 0 ${W} ${H}" aria-hidden="true">${body.join("")}</svg>`;
-const stage = `<div class="cr-stage" tabindex="0" role="slider" aria-label="Cliff road. Move the pointer across the figure, or press the left and right arrow keys, to set how hard the driver pushes." aria-valuemin="0" aria-valuemax="${Math.round(M.OVER.share * 100)}" aria-valuenow="100"><span class="cr-said" aria-live="polite"></span>${backSvg}<canvas class="cr-layer cr-gl cr-sea-gl" aria-hidden="true"></canvas>${layerSvg("cr-terrain", terrain)}<canvas class="cr-layer cr-gl cr-light-gl" aria-hidden="true"></canvas>${layerSvg("cr-front", front)}<canvas class="cr-layer cr-gl cr-fx-gl" aria-hidden="true"></canvas>${layerSvg("cr-detail", [detailSvg])}</div>`;
+const stage = `<div class="cr-stage">${backSvg}<canvas class="cr-layer cr-gl cr-sea-gl" aria-hidden="true"></canvas>${layerSvg("cr-terrain", terrain)}<canvas class="cr-layer cr-gl cr-light-gl" aria-hidden="true"></canvas>${layerSvg("cr-front", front)}<canvas class="cr-layer cr-gl cr-fx-gl" aria-hidden="true"></canvas>${layerSvg("cr-detail", [detailSvg])}</div>`;
 
 const SWELL_SLANT_FOR_CAPTION = 0.35;
 // ---- the card: every number below is computed from the model ---------------------------------------
 const kmh = (v) => Math.round(v * 3.6);
 const PIN_R = M.ROUTE.find((r) => r[0] === "arc" && Math.abs(r[1]) === 180)[2];
 const vGrip = Math.sqrt(M.MU * M.GRAV * PIN_R);
-const lapAt = (pace) => M.lapOf(road, profile, pace);
-const CALM = lapAt(0.85);
 const swell6 = M.swellOf(6);
 const sweep = (SWELL_SLANT_FOR_CAPTION * (236 - M.PORTAL_X)) / u / swell6.c;
 const sprayTop = M.SPRAY.rise ** 2 / (2 * M.GRAV);
@@ -897,18 +877,19 @@ const pinZ = (pin) => {
   for (let i = 0; i < road.n; i++) if (road.hairpin[i] === pin) list.push(i);
   return Math.round((road.z[list[Math.round(list.length / 2)]] - Z.sea) / u);
 };
-const caption = `A mountain pass on a plinth, at night: ${Math.round(visible)} m of road with no guard rail winds down a sea cliff from the summit tunnel to the one at its foot, falling ${Math.round(fall)} m at ${(road.grade * 100).toFixed(0)}% through three ${PIN_R} m hairpins. Two of them sit on the cliff edge, ${pinZ(0)} m and ${pinZ(2)} m above the sea. Damp asphalt under sea mist grips at μ ${M.MU}, so a hairpin holds on grip up to √(μgR) = ${kmh(vGrip)} km/h. Downhill the car runs up to ${Math.round(LAP.top)} km/h on the legs, brakes hard, and turns in faster than grip allows. The rear tyres then slide at μ ${M.MU_SLIDE}, the path widens to v²/(μg), and the car drifts out toward the drop with its nose held into the bend, up to ${Math.round(LAP.peakDrift)}°. Near the edge the driver lifts, which tightens the line. At the top of the control the model's line clears the edge by ${LAP.least.toFixed(1)} m; at the bottom the car corners on grip, with ${Math.round(CALM.peakDrift)}° of tyre slip at most. The knolls inside the hairpins, three wooded humps on the face and the trees hide the car as it passes behind them, and on the third leg it runs through a rock rib in a short tunnel. The tyre marks are the rear wheels' path on that fastest lap. The swell has an ${M.SWELL.period} s period; in 6 m of water its crests are ${Math.round(swell6.lambda)} m apart and travel ${swell6.c.toFixed(1)} m/s. Refraction wraps them round the mountain, so each one breaks under the hairpins first and runs along the front cliff in about ${sweep.toFixed(0)} s, throwing spray up the rock at up to ${M.SPRAY.rise} m/s, ${sprayTop.toFixed(1)} m high. Turn the knob into its red end and the driver holds the limit down the pass and then overcooks the last hairpin: ${CRASH.any === CRASH.all ? `from ${Math.round(M.OVER.gain * (CRASH.all - 1) * 100)}% too fast the slide carries the car's centre of mass over the edge.` : `from ${Math.round(M.OVER.gain * (CRASH.any - 1) * 100)}% too fast the slide can carry the car's centre of mass over the edge, and from ${Math.round(M.OVER.gain * (CRASH.all - 1) * 100)}% it always does.`} It tips off, rolls and falls ${Math.round(CRASH.splash.fall)} m in ${CRASH.fallTime.toFixed(1)} s, and hits the sea at ${Math.round(CRASH.splash.speed * 3.6)} km/h; the tour does it on its second lap. Detail A follows the car at 3:1: the arrow is its path, the dashed line is where its nose points, and the red angle between them is the drift. The red dimension runs from the corner nearest the drop to the edge.`;
+const [PIN0, PIN1, PIN2] = LAP.pins;
+const round = Math.round(((LAP.off.i - road.pins[2][0]) / (road.pins[2][1] - road.pins[2][0])) * 3);
+const caption = `A mountain pass on a plinth, at night: ${Math.round(visible)} m of road with no guard rail winds down a sea cliff from the summit tunnel to the one at its foot, falling ${Math.round(fall)} m at ${(road.grade * 100).toFixed(0)}% through three ${PIN_R} m hairpins. Two of them sit on the cliff edge, ${pinZ(0)} m and ${pinZ(2)} m above the sea. Dry asphalt grips at μ ${M.MU.toFixed(1)}, so a hairpin holds on grip up to √(μgR) = ${kmh(vGrip)} km/h. The driver takes none of it on grip. Down the legs the car runs up to ${Math.round(LAP.top)} km/h, and through the S-bends, which the line could take straight, the driver swings the tail out into each bend in turn, up to ${M.SWING}°. They brake late and hard, sideways, and throw the car into the first two hairpins at ${Math.round(Math.min(PIN0.top, PIN1.top))}–${Math.round(Math.max(PIN0.top, PIN1.top))} km/h. The rear tyres slide at μ ${M.MU_SLIDE}, the path widens to v²/(μg), and the car drifts out toward the drop with its nose held into the bend, up to ${Math.round(Math.max(PIN0.drift, PIN1.drift))}°. Near the edge the driver lifts, which tightens the line: it clears the edge by ${PIN0.least.toFixed(1)} m and ${PIN1.least.toFixed(1)} m. Into the last hairpin they carry ${Math.round(PIN2.top)} km/h, ${Math.round((M.COMMIT.last - 1) * 100)}% more than they planned. ${["At the turn-in", "A third of the way round", "Two thirds of the way round", "On the exit"][round]} the slide carries the car's centre of mass over the edge at ${Math.round(LAP.off.v)} km/h, every lap. It tips off, rolls and falls ${Math.round(CRASH.splash.fall)} m in ${CRASH.fallTime.toFixed(1)} s, and hits the sea at ${Math.round(CRASH.splash.speed * 3.6)} km/h. Then the next car leaves the summit tunnel. The knolls inside the hairpins, three wooded humps on the face and the trees hide the car as it passes behind them, and on the third leg it runs through a rock rib in a short tunnel. The tyre marks are the rear wheels' path on that lap, to the edge. The swell has an ${M.SWELL.period} s period; in 6 m of water its crests are ${Math.round(swell6.lambda)} m apart and travel ${swell6.c.toFixed(1)} m/s. Refraction wraps them round the mountain, so each one breaks under the hairpins first and runs along the front cliff in about ${sweep.toFixed(0)} s, throwing spray up the rock at up to ${M.SPRAY.rise} m/s, ${sprayTop.toFixed(1)} m high. The dial on the plinth reads the car's speed. Detail A follows the car at 3:1: the arrow is its path, the dashed line is where its nose points, and the red angle between them is the drift. The red dimension runs from the corner nearest the drop to the edge.`;
 const body = `<div class="cr">${k.plateHtml({
   fig: "Fig 5A",
   title: "Cliff road at night",
-  hint: "Move left to right: grip, drift, over the edge",
-  readout: M.readoutOf({ ...M.carStart(road, profile, 1), margin: 3 }),
+  readout: M.readoutOf({ ...M.carStart(road, profile), margin: 3 }),
   keys: [
     { mark: "lit", label: "The car: a 1,150 kg rear-drive coupe, lamps up" },
-    { mark: "dashed", label: "Tyre marks from the model's fastest lap" },
+    { mark: "dashed", label: "Tyre marks from the model's lap, to the edge" },
     { mark: "raised", label: `The pass falls ${Math.round(fall)} m through three hairpins` },
     { mark: "flat", label: `Sea: ${M.SWELL.period} s swell breaking on the rock` },
-    { mark: "edge", label: "Knob on the plinth: how hard the driver pushes; red is past the limit" },
+    { mark: "edge", label: `Dial on the plinth: the car's speed, 0–${DIAL_MAX} km/h` },
   ],
   caption,
   body: stage,
@@ -939,7 +920,7 @@ if (theme === "dark") {
   const artifact = `<title>Cliff Road at Night</title><style>${k.ISO_CSS}${SITE_CSS}${CSS}</style><div class="iso" data-theme="dark"><main class="iso-page">${body}</main></div><script type="module">${SCRIPT.replace(/<\/(script)/gi, "<\\/$1")}</script>`;
   writeFileSync(join(HERE, "cliff-road-artifact.html"), artifact);
 }
-console.log("wrote", name, `${(page.length / 1024).toFixed(0)} KB`, `scale ${P.scale.toFixed(3)}`, `limit ${LIMIT.toFixed(3)}`, `${((Date.now() - t0) / 1000).toFixed(1)} s`);
+console.log("wrote", name, `${(page.length / 1024).toFixed(0)} KB`, `scale ${P.scale.toFixed(3)}`, `off at pin ${LAP.off.pin}, ${LAP.off.v.toFixed(0)} km/h`, `${((Date.now() - t0) / 1000).toFixed(1)} s`);
 // a check, not part of the figure: how much of the fastest lap the mountain hides (trees not counted)
 if (process.env.CR_OCCLUSION) {
   let hidden = 0;
