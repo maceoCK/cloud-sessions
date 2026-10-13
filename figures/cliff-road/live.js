@@ -19,7 +19,11 @@ const springTo = (state, target, dt, seconds, calm) => {
 
 const road = M.roadOf();
 const profile = D.profile;
-const paceOf = (share) => D.paceMin + share * (D.limit - D.paceMin);
+// 0 is grip, 1 the limit; past 1, to the red end of the knob, the driver overcooks it
+const SHARE_MAX = M.OVER.share;
+const paceOf = (share, i = 0) => M.paceAt(share, D.paceMin, D.limit, road, i);
+// what the car can fall onto: the drawn mountain, and the sea
+const world = { sea: D.sea, groundAt: (x, y) => heightAt(x, y), box: D.box };
 const twin = carNode.cloneNode(false);
 twin.removeAttribute("data-item");
 
@@ -34,7 +38,8 @@ let visible = false;
 let frame = 0;
 let last = 0;
 let order = "";
-const TOUR = [1, 0.72, 1, 0.35, 1, 0.85];
+// the tour's second lap is overcooked: the car goes over the edge at the last hairpin
+const TOUR = [1, 1.2, 0.72, 1, 0.35, 0.85];
 const gpu = gpuOf(D, stage, pale);
 if (gpu) stage.setAttribute("data-gl", "");
 
@@ -59,7 +64,7 @@ function lampOn(p, pose) {
   return e;
 }
 function lightItems() {
-  const on = car.dark <= 0;
+  const on = car.dark <= 0 && !car.air;
   const pose = poseOf(car);
   for (const it of items) {
     if (it.at.length < 3) continue;
@@ -79,7 +84,7 @@ function drawKnob() {
   const share = Math.round(ease.x * 1000) / 1000;
   if (!pointer || share === pointerAt) return;
   pointerAt = share;
-  const deg = D.sweep[0] + (D.sweep[1] - D.sweep[0]) * share;
+  const deg = D.sweep[0] + ((D.sweep[1] - D.sweep[0]) * share) / SHARE_MAX;
   const a = (deg * Math.PI) / 180;
   const k0 = D.knob;
   pointer.setAttribute("d", pathOf([iso([k0.x + Math.sin(a) * 1.2, k0.y + 4.45, k0.z + Math.cos(a) * 1.2], D.P), iso([k0.x + Math.sin(a) * (k0.r - 0.8), k0.y + 4.45, k0.z + Math.cos(a) * (k0.r - 0.8)], D.P)]));
@@ -260,7 +265,7 @@ function worldAround(P2, cx, cy, zc) {
   tops.forEach((T, n) => {
     const grid = TR.gridOf(box, 3, (x, y, edge) => (edge ? 1e3 : T - 0.5 - heightAt(x, y)));
     const rings = TR.contour(grid).map((r) => TR.simplifyRing(r, 0.7)).filter((r) => Math.abs(TR.ringArea(r)) > 10);
-    const deep = n === 0 ? 120 : LAYER;
+    const deep = n === 0 ? Math.max(120, T - D.sea) : LAYER;
     const faces = { 1: "", 2: "", 3: "" };
     let topD = "";
     for (const raw of rings) {
@@ -325,11 +330,65 @@ function worldAround(P2, cx, cy, zc) {
   return { svg: parts.join(""), floor, arches };
 }
 
+// in the main view: a ring round the car and a leader up to the inset, dashed while the car is out of sight
+function drawLead(zc, out) {
+  const [mx0, my0] = iso([car.x, car.y, zc + 3], D.P);
+  const ring = 15;
+  const ux = DT.cx - mx0;
+  const uy = DT.cy - my0;
+  const gap = Math.hypot(ux, uy) || 1;
+  const circle = Array.from({ length: 41 }, (_, i) => [mx0 + ring * Math.cos((i / 40) * Math.PI * 2), my0 + ring * Math.sin((i / 40) * Math.PI * 2)]);
+  detailLead.innerHTML = lineSvg(pathOf(circle, true), { tone: "mid", className: "cr-detail-mark", dashed: out }) + (gap > DT.r + ring + 8 ? lineSvg(pathOf([[mx0 + (ux / gap) * ring, my0 + (uy / gap) * ring], [DT.cx - (ux / gap) * (DT.r + 4), DT.cy - (uy / gap) * (DT.r + 4)]]), { tone: "faint", dashed: true }) : "") + faceTextSvg(`translate(${(mx0 - ring - 3).toFixed(1)} ${(my0 - ring + 2).toFixed(1)})`, "A", { size: 7.5, tone: "mid", anchor: "end" });
+}
+
+// over the edge: the inset follows the car down past the edge it left, tracing the fall
+let detailOrigin = null;
+const fallPath = [];
+function drawDetailCrash(pose) {
+  const a = car.air;
+  if (a.splash) {
+    if (detailIdle !== "sea") {
+      detailIdle = "sea";
+      detailView.classList.add("is-idle");
+      detailNotes.innerHTML = `<text class="iso-face-text cr-d-red" font-size="9" text-anchor="middle" x="${DT.cx}" y="${(DT.cy - DT.r * 0.55).toFixed(1)}">in the sea</text>`;
+      detailMoving.innerHTML = "";
+      fallPath.length = 0;
+    }
+    drawLead(D.sea, true);
+    return;
+  }
+  if (detailIdle) {
+    detailIdle = false;
+    detailView.classList.remove("is-idle");
+  }
+  if (!detailOrigin || !cache || !detailWorld) return;
+  // the view follows the car down, over the cliff face it drew at the edge
+  const P2 = { scale: DT.scale, azimuth: D.P.azimuth, elevation: D.P.elevation, origin: [0, 0] };
+  const [u0, v0] = iso([car.x, car.y, car.z], P2);
+  P2.origin = [DT.cx - u0, DT.cy - v0];
+  const at = (x, y, z) => iso([x, y, z], P2);
+  detailWorld.setAttribute("transform", `translate(${(P2.origin[0] - cache.origin[0]).toFixed(1)} ${(P2.origin[1] - cache.origin[1]).toFixed(1)})`);
+  if (!fallPath.length) fallPath.push([a.from.x, a.from.y, a.from.z + 3]);
+  fallPath.push([car.x, car.y, car.z + 3]);
+  const wet = car.z < D.sea + 9;
+  const clip = wet ? `<clipPath id="cr-detail-car"><path d="${waterClipD(car.x, car.y, (q) => q, P2)}"/></clipPath>` : "";
+  // the fall's trace: a dot where it left the road, a dashed line to the car, the car over its end
+  const [fx, fy] = at(...fallPath[0]);
+  const trace = clippedLine(fallPath.map((q) => at(...q)), { tone: "red", dashed: true });
+  const dot = (fx - DT.cx) ** 2 + (fy - DT.cy) ** 2 < DT.r * DT.r ? `<circle class="cr-d-red" cx="${fx.toFixed(1)}" cy="${fy.toFixed(1)}" r="1.8"/>` : "";
+  detailMoving.innerHTML = `${trace}${dot}${clip}<g${wet ? ' clip-path="url(#cr-detail-car)"' : ""}>${CARS.carSvg(pose, P2, G, K, { lamps: true, brake: 0, shadow: false })}</g>`;
+  const height = Math.max(0, Math.round((car.z - D.sea) / M.U));
+  detailNotes.innerHTML = `<text class="iso-face-text cr-d-red" font-size="9" text-anchor="middle" x="${DT.cx}" y="${(DT.cy - DT.r * 0.62).toFixed(1)}">over the edge</text><text class="iso-face-text cr-d-red" font-size="7.5" text-anchor="middle" x="${DT.cx}" y="${(DT.cy - DT.r * 0.62 + 11).toFixed(1)}">${height} m to the sea</text>`;
+  drawLead(car.z, false);
+}
+
 function drawDetail(pose, hidden) {
   if (!detailView || narrow.matches) return;
+  if (car.air) return drawDetailCrash(pose);
+  fallPath.length = 0;
   if (hidden) {
-    if (!detailIdle) {
-      detailIdle = true;
+    if (detailIdle !== "tunnel") {
+      detailIdle = "tunnel";
       detailLead.innerHTML = "";
       detailView.classList.add("is-idle");
       detailNotes.innerHTML = faceTextSvg(`translate(${DT.cx} ${DT.cy - DT.r * 0.55})`, "in the tunnel", { size: 9, tone: "hi", anchor: "middle" });
@@ -347,6 +406,7 @@ function drawDetail(pose, hidden) {
   const ahead = 4;
   const [u0, v0] = iso([car.x + Math.cos(car.psi) * ahead, car.y + Math.sin(car.psi) * ahead, zc], P2);
   P2.origin = [DT.cx - u0, DT.cy - v0];
+  detailOrigin = [...P2.origin];
   const at = (x, y, z) => iso([x, y, z], P2);
   const near = (x, y) => Math.abs(x - car.x) < 120 && Math.abs(y - car.y) < 120;
   // the world round the car is parsed once and slid; only the car and what moves with it are redrawn
@@ -524,17 +584,9 @@ function drawDetail(pose, hidden) {
   }
   detailNotes.innerHTML = notes.join("");
 
-  // in the main view: a ring round the car and a leader up to the inset
-  const [mx0, my0] = iso([car.x, car.y, zc + 3], D.P);
-  const ring = 15;
-  const ux = DT.cx - mx0;
-  const uy = DT.cy - my0;
-  const gap = Math.hypot(ux, uy) || 1;
-  const circle = Array.from({ length: 41 }, (_, i) => [mx0 + ring * Math.cos((i / 40) * Math.PI * 2), my0 + ring * Math.sin((i / 40) * Math.PI * 2)]);
   // the ring goes dashed while the car is out of sight behind the mountain
   const mid = cols ? cols[Math.floor(cols.length / 2)][1] : Infinity;
-  const out = mid < iso([car.x, car.y, zc + 2], D.P)[1];
-  detailLead.innerHTML = lineSvg(pathOf(circle, true), { tone: "mid", className: "cr-detail-mark", dashed: out }) + (gap > DT.r + ring + 8 ? lineSvg(pathOf([[mx0 + (ux / gap) * ring, my0 + (uy / gap) * ring], [DT.cx - (ux / gap) * (DT.r + 4), DT.cy - (uy / gap) * (DT.r + 4)]]), { tone: "faint", dashed: true }) : "") + faceTextSvg(`translate(${(mx0 - ring - 3).toFixed(1)} ${(my0 - ring + 2).toFixed(1)})`, "A", { size: 7.5, tone: "mid", anchor: "end" });
+  drawLead(zc, mid < iso([car.x, car.y, zc + 2], D.P)[1]);
 }
 
 // the rear wheels' track, for the inset's fresh tyre marks
@@ -550,7 +602,13 @@ function trackWheels(dt) {
 }
 
 function poseOf(s) {
+  if (s.air) return { x: s.x, y: s.y, z: s.z, yaw: s.air.yaw, roll: s.air.roll, pitch: s.air.pitch, steer: 0 };
   return { x: s.x, y: s.y, z: s.z, yaw: s.psi + s.beta, steer: s.steer };
+}
+// the region above the sea's surface at the car, in whatever screen frame `map` puts it
+function waterClipD(x, y, map = (p) => p, P = D.P) {
+  const [wx, wy] = map(iso([x, y, D.sea], P));
+  return pathOf([[wx - 4000, -4000], [wx + 4000, -4000], [wx + 4000, wy + 1], [wx - 4000, wy + 1]], true);
 }
 
 // which side of a portal's face the car is on: the far portal at the start of the road, the near one at the end
@@ -566,7 +624,8 @@ function placeCar() {
   const slot = car.i < road.n / 2 ? slots[0] : slots[1];
   let open = "";
   let inner = "";
-  if (!hidden) {
+  if (car.air) open = CARS.carSvg(pose, D.P, G, K, { lamps: true, brake: 0, shadow: false });
+  else if (!hidden) {
     const opts = { lamps: true, brake: brake.x };
     if (hi <= plane) inner = CARS.carSvg(pose, D.P, G, K, opts);
     else if (lo >= plane) open = CARS.carSvg(pose, D.P, G, K, opts);
@@ -582,8 +641,13 @@ function placeCar() {
   if (!inner && twin.parentNode) twin.remove();
   // the open car takes its place among the trees, posts and signs by depth
   // the slopes, knolls and spurs in front of the car hide it
+  // and at the sea, the water closes over it
   const cols = hidden ? null : hiddenBelow(car.x, car.y, car.z, 34);
-  if (cols) {
+  const wet = car.air && car.z < D.sea + 9;
+  if (wet) {
+    carClipPath.setAttribute("d", waterClipD(car.x, car.y));
+    carNode.setAttribute("clip-path", "url(#cr-car-live)");
+  } else if (cols) {
     carClipPath.setAttribute("d", clipD(cols));
     carNode.setAttribute("clip-path", "url(#cr-car-live)");
   } else carNode.removeAttribute("clip-path");
@@ -603,16 +667,26 @@ function placeCar() {
 }
 
 function readoutOf() {
-  if (car.dark > 0 || car.x < D.portal - 6) return `in the tunnel · lap ${car.laps + 1} · pace ${Math.round(ease.x * 100)}% of the limit`;
+  if (car.air) return M.readoutOf(car, D.sea);
+  if (car.dark > 0 || car.x < D.portal - 6) return `in the tunnel · lap ${car.laps + 1} · ${ease.x > 1.005 ? "pace past the limit" : `pace ${Math.round(ease.x * 100)}% of the limit`}`;
   return M.readoutOf(car);
 }
 
 // the slider reports the setting the reader chose, not the eased value on its way there
 function describe() {
   const words = M.wordsOf(car, state.target);
-  stage.setAttribute("aria-valuenow", String(Math.round(state.target * 100)));
-  stage.setAttribute("aria-valuetext", `Pace ${Math.round(state.target * 100)} percent of the way from grip to the limit`);
+  const t = state.target;
+  stage.setAttribute("aria-valuenow", String(Math.round(t * 100)));
+  stage.setAttribute("aria-valuetext", t <= 1.005 ? `Pace ${Math.round(t * 100)} percent of the way from grip to the limit` : t < D.crashAny ? "Past the limit on the last hairpin: the outer wheels run onto the drop, but the car holds the road" : t < D.crashFrom ? "Past the limit on the last hairpin: the car may go over the edge" : "Past the limit on the last hairpin: the slide will carry the car over the edge and into the sea");
   return words;
+}
+// the crash, said as it happens
+let crashSaid = "";
+function sayCrash() {
+  const phase = car.air ? (car.air.splash ? "sea" : "fall") : "";
+  if (phase === crashSaid) return;
+  crashSaid = phase;
+  if (phase && said) said.textContent = M.wordsOf(car, state.target);
 }
 
 function announce() {
@@ -656,7 +730,7 @@ function tick(now) {
   }
   const lapBefore = car.laps;
   const steps = Math.max(1, Math.round(dt * 240));
-  for (let i = 0; i < steps; i++) M.stepCar(road, profile, car, paceOf(ease.x), dt / steps);
+  for (let i = 0; i < steps; i++) M.stepCar(road, profile, car, paceOf(ease.x, car.i), dt / steps, world);
   if (car.laps !== lapBefore && touring) {
     state.tourLap = (state.tourLap + 1) % TOUR.length;
     state.target = TOUR[state.tourLap];
@@ -667,8 +741,9 @@ function tick(now) {
   placeCar();
   drawKnob();
   lightItems();
-  if (car.dark <= 0) trackWheels(dt);
-  drawDetail(poseOf(car), car.dark > 0 || car.x < D.portal - 6);
+  if (car.dark <= 0 && !car.air) trackWheels(dt);
+  drawDetail(poseOf(car), car.dark > 0 || (!car.air && car.x < D.portal - 6));
+  sayCrash();
   if (gpu) {
     gpu.step(dt, state.clock, car, false);
     gpu.draw(smooth(0, 1, (state.clock - 0.15) / 0.9), state.clock, { ...car, brake: brake.x }, state.clock);
@@ -696,7 +771,7 @@ function hold() {
 }
 
 function steer(share) {
-  state.target = clampTo(share, 0, 1);
+  state.target = clampTo(share, 0, SHARE_MAX);
   hold();
   announce();
   run();
@@ -713,11 +788,11 @@ new IntersectionObserver(
 stage.addEventListener("pointermove", (event) => {
   if (event.pointerType === "touch" && !event.buttons) return;
   const box = stage.getBoundingClientRect();
-  steer(((event.clientX - box.left) / box.width - 0.12) / 0.76);
+  steer((((event.clientX - box.left) / box.width - 0.12) / 0.76) * SHARE_MAX);
 });
 stage.addEventListener("pointerdown", (event) => {
   const box = stage.getBoundingClientRect();
-  steer(((event.clientX - box.left) / box.width - 0.12) / 0.76);
+  steer((((event.clientX - box.left) / box.width - 0.12) / 0.76) * SHARE_MAX);
 });
 stage.addEventListener("keydown", (event) => {
   const from = touring ? ease.x : state.target;
@@ -726,7 +801,7 @@ stage.addEventListener("keydown", (event) => {
   if (event.key === "ArrowRight" || event.key === "ArrowUp") to = from + big;
   else if (event.key === "ArrowLeft" || event.key === "ArrowDown") to = from - big;
   else if (event.key === "Home") to = 0;
-  else if (event.key === "End") to = 1;
+  else if (event.key === "End") to = SHARE_MAX;
   if (to === null) return;
   event.preventDefault();
   if (touring) ease.v = 0;
@@ -746,4 +821,4 @@ if (matchMedia("(hover: none)").matches) {
 if (still.matches) touring = false;
 describe();
 // read-only hook for the figure's own checks (where the car is along the road)
-Object.defineProperty(window, "__crState", { configurable: true, get: () => ({ i: car.i, n: road.n, x: car.x, y: car.y, dark: car.dark, share: ease.x, clock: state.clock }) });
+Object.defineProperty(window, "__crState", { configurable: true, get: () => ({ i: car.i, n: road.n, x: car.x, y: car.y, z: car.z, dark: car.dark, share: ease.x, clock: state.clock, air: car.air ? (car.air.splash ? "sea" : "fall") : null }) });

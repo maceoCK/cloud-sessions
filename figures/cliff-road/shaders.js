@@ -23,7 +23,7 @@ vec4 dithered(vec4 c){float n=(hash12(gl_FragCoord.xy+fract(uTime*.61)*91.)+hash
 `;
 
 const SEA_GLSL = `${COMMON_GLSL}
-uniform float uSea;uniform vec4 uSwell;uniform vec3 uMoon;uniform float uX0;
+uniform float uSea;uniform vec4 uSwell;uniform vec3 uMoon;uniform float uX0;uniform vec4 uSplash;
 const float G=49.05;
 float hashN(float n){return fract(sin(n*12.9898)*43758.5453);}
 void train(vec2 p,float t,vec2 dir,float lambda,float amp,float ph,inout float h,inout vec2 g){
@@ -104,6 +104,15 @@ void surface(vec2 p,out float h,out vec2 g,out float foam,out float d){
     float streak=exp(-pow(dq.x/(3.+4.*life),2.)-pow(dq.y/(.9+.6*life),2.));
     float tear=smoothstep(.35,.7,noise2(p*.45+vec2(t*.8,0.)));
     foam+=.85*on*streak*(.5+.5*tear)*smoothstep(10.,35.,d);
+  }
+  // where the car went in: a white boil, then a ring of broken water running out from it
+  if(uSplash.w>0.){
+    float sd=length(p-uSplash.xy);
+    float age=uSplash.z;
+    float ring=exp(-pow((sd-(5.+age*15.))/(2.5+age*1.6),2.))*exp(-age*.45);
+    float boil=exp(-sd*sd/(28.+age*70.))*exp(-age*.28);
+    foam=max(foam,clamp((ring*.85+boil*1.3)*uSplash.w*(.75+.25*noise2(p*.3+vec2(t,0.))),0.,1.));
+    h+=ring*1.8*exp(-age*.6)*uSplash.w;
   }
   float rb=min(psr,1.-psr)*lam;
   foam+=.35*exp(-pow(rb/4.,2.))*smoothstep(80.,6.,d)*smoothstep(.4,.75,noise2(p*.12+vec2(0.,t*.2)))*(back/.32);
@@ -522,7 +531,7 @@ function gpuOf(D, stage, pale) {
     const el = (56 * Math.PI) / 180;
     return [Math.cos(az) * Math.cos(el), Math.sin(az) * Math.cos(el), Math.sin(el)];
   })();
-  const sea = glLayer({ canvas: seaCanvas, fragment: SEA_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade"], fixed: { ...common, uSea: D.sea, uSwell: [SWELL_W, SWELL_K, SWELL_TIP, SWELL_SLANT], uMoon: moon, uX0: D.x0 } });
+  const sea = glLayer({ canvas: seaCanvas, fragment: SEA_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade", "uSplash"], fixed: { ...common, uSea: D.sea, uSwell: [SWELL_W, SWELL_K, SWELL_TIP, SWELL_SLANT], uMoon: moon, uX0: D.x0 } });
   const light = sea ? glLayer({ canvas: lightCanvas, fragment: LIGHT_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade", "uCarA", "uCarB", "uRoad", "uStud", "uTrail"], fixed: { ...common, uPortalX: D.portal } }) : null;
   // particle counts sized to the GPU's uniform budget: older phones get fewer, not none
   const budget = (() => {
@@ -573,6 +582,9 @@ function gpuOf(D, stage, pale) {
   let smokeAt = 0;
   let smokeSide = 1;
   const crests = new Float64Array(D.sprayAt.length).fill(NaN);
+  let lastHit = null;
+  let lastSplash = null;
+  let splashAt = null;
   const hashN = (n) => {
     const x = Math.sin(n * 12.9898) * 43758.5453;
     return x - Math.floor(x);
@@ -594,7 +606,7 @@ function gpuOf(D, stage, pale) {
     // tyre smoke from the rear wheels while the tail is out
     const slip = Math.abs(car.beta);
     smokeAt -= dt;
-    if (!calm && car.dark <= 0 && slip > 0.13 && car.v > 4 && smokeAt <= 0) {
+    if (!calm && car.dark <= 0 && !car.air && slip > 0.13 && car.v > 4 && smokeAt <= 0) {
       smokeAt = 0.065;
       smokeSide = -smokeSide;
       const yaw = car.psi + car.beta;
@@ -651,6 +663,29 @@ function gpuOf(D, stage, pale) {
       p.y += p.vy * dt;
       p.z = Math.max(D.sea + 1, p.z + p.vz * dt);
     }
+    // the crash: dust where the car strikes rock, and where it goes into the sea a burst of spray
+    if (car.air && car.air.hit && car.air.hit !== lastHit) {
+      lastHit = car.air.hit;
+      const h = car.air.hit;
+      for (let q = 0; q < 6; q++) {
+        const p = oldest(smoke);
+        const an = q * 1.047 + hashN(q + h.t * 7);
+        Object.assign(p, { x: h.x + Math.cos(an) * 2, y: h.y + Math.sin(an) * 2, z: h.z + 1, vx: Math.cos(an) * 6 + WIND[0], vy: Math.sin(an) * 6 + WIND[1], vz: 4, age: 0, life: 2.4, a0: 0.55, r0: 2.6 });
+      }
+    }
+    if (car.air && car.air.splash && car.air.splash !== lastSplash) {
+      lastSplash = car.air.splash;
+      const sp = car.air.splash;
+      splashAt = { x: sp.x, y: sp.y, clock, power: Math.min(1, sp.speed / 25) };
+      const count = Math.min(spray.length - 4, 30);
+      for (let q = 0; q < count; q++) {
+        const p = oldest(spray);
+        const an = (q / count) * Math.PI * 2 + hashN(q * 3.1) * 0.4;
+        const out = 1.5 + 4 * hashN(q * 5.7);
+        const up = (6 + 12 * hashN(q * 1.9)) * (0.6 + 0.4 * splashAt.power);
+        Object.assign(p, { x: sp.x + Math.cos(an) * 2, y: sp.y + Math.sin(an) * 2, z: D.sea + 2, vx: Math.cos(an) * out * M.U + WIND[0] * 0.4, vy: Math.sin(an) * out * M.U + WIND[1] * 0.4, vz: up * M.U, age: 0, life: 1.8 + hashN(q * 2.3) * 1.2, a0: 0.55 + 0.25 * hashN(q * 4.1), r0: 2.4 });
+      }
+    }
     // everything that hangs in the air fades before it leaves the block
     const inBlock = (x, y, r) => smooth(box[0] - r * 0.2, box[0] + r * 1.6 + 10, x) * smooth(box[2] + r * 0.2, box[2] - r * 1.6 - 10, x) * smooth(box[1] - r * 0.2, box[1] + r * 1.6 + 10, y) * smooth(box[3] + r * 0.2, box[3] - r * 1.6 - 10, y);
     smoke.forEach((p, i) => {
@@ -691,7 +726,7 @@ function gpuOf(D, stage, pale) {
   let markAt = 0;
   const trail = new Float32Array(96);
   function drawAll(fade, clock, car, time) {
-    const pose = car.dark > 0 ? [0, 0, 0, 0] : [car.x, car.y, car.psi + car.beta, 1];
+    const pose = car.dark > 0 || car.air ? [0, 0, 0, 0] : [car.x, car.y, car.psi + car.beta, 1];
     const carB = [car.brake || 0, car.v, 0, 0];
     const near = D.studs.map((s) => [Math.hypot(s[0] - car.x, s[1] - car.y), s]).sort((a, b) => a[0] - b[0]).slice(0, 24);
     studs.fill(-9999);
@@ -699,8 +734,8 @@ function gpuOf(D, stage, pale) {
     // the beams in the mist show only while the lamps themselves are in sight
     const c = Math.cos(car.psi + car.beta);
     const s = Math.sin(car.psi + car.beta);
-    const beams = pale || car.dark > 0 ? 0 : 0.5 * seen(car.x + c * 9, car.y + s * 9, car.z + 4.8) + 0.5 * seen(car.x + c * 30, car.y + s * 30, car.z + 6);
-    if (car.dark <= 0 && clock - markAt > 0.07) {
+    const beams = pale || car.dark > 0 || car.air ? 0 : 0.5 * seen(car.x + c * 9, car.y + s * 9, car.z + 4.8) + 0.5 * seen(car.x + c * 30, car.y + s * 30, car.z + 6);
+    if (car.dark <= 0 && !(car.air && car.air.splash) && clock - markAt > 0.07) {
       markAt = clock;
       [1, -1].forEach((side, n) => {
         marks[n].push([car.x - c * 10.6 - s * side * 3.4, car.y - s * 10.6 + c * side * 3.4, car.z + 3.1, clock]);
@@ -714,7 +749,8 @@ function gpuOf(D, stage, pale) {
       const p = k === 0 && car.dark <= 0 ? [car.x - c * 10.6 - s * (n ? -1 : 1) * 3.4, car.y - s * 10.6 + c * (n ? -1 : 1) * 3.4, car.z + 3.1, clock] : m;
       trail.set(p ? [p[0], p[1], p[2], clock - p[3]] : [0, 0, 0, 9], (n * 12 + k) * 4);
     }
-    sea.draw({ uFade: fade }, time);
+    const splashU = splashAt && clock - splashAt.clock < 10 ? [splashAt.x, splashAt.y, clock - splashAt.clock, splashAt.power] : [0, 0, 0, 0];
+    sea.draw({ uFade: fade, uSplash: splashU }, time);
     light.draw({ uFade: fade, uCarA: pose, uCarB: carB, uRoad: car.z, uStud: studs, uTrail: trail }, time);
     fx.draw({ uFade: fade, uCarA: pose, uCarB: carB, uSmk: smk, uSmkB: smkB, uSpr: spr, uSprB: sprB, uWind: WIND, uRoad: car.z, uBeams: beams }, time);
   }

@@ -30,16 +30,23 @@ export function clipF(poly, cut, keepAbove, offset = 0) {
   return out;
 }
 
-export function carSvg(pose, P, G, k, { lamps = true, brake = 0, cut = null, keepAbove = true } = {}) {
-  const { x, y, z, yaw, steer = 0 } = pose;
+export function carSvg(pose, P, G, k, { lamps = true, brake = 0, cut = null, keepAbove = true, shadow = true } = {}) {
+  const { x, y, z, yaw, steer = 0, roll = 0, pitch = 0 } = pose;
   const c = Math.cos(yaw);
   const s = Math.sin(yaw);
-  const F = [c, s, 0];
-  const Lf = [-s, c, 0];
-  const UP = [0, 0, 1];
+  // the car's own axes: yaw, then pitch (nose down is +), then roll about the nose (left side up is +)
+  const cp = Math.cos(pitch);
+  const sp = Math.sin(pitch);
+  const cr = Math.cos(roll);
+  const sr = Math.sin(roll);
+  const F0 = [c * cp, s * cp, -sp];
+  const U0 = [c * sp, s * sp, cp];
+  const L0 = [-s, c, 0];
+  const F = F0;
+  const Lf = G.add3(G.mul3(L0, cr), G.mul3(U0, sr));
+  const UP = G.add3(G.mul3(U0, cr), G.mul3(L0, -sr));
   const V = G.viewOf(P);
-  const Lt = G.lightOf(P);
-  const at = (f, l, u) => [x + c * f - s * l, y + s * f + c * l, z + u];
+  const at = (f, l, u) => [x + F[0] * f + Lf[0] * l + UP[0] * u, y + F[1] * f + Lf[1] * l + UP[1] * u, z + F[2] * f + Lf[2] * l + UP[2] * u];
   const scr = (f, l, u) => k.iso(at(f, l, u), P);
   const side = Math.sign(G.dot3(Lf, V)) || 1; // +1 when the car's left side faces the viewer
   const frame = (o) => G.frameOf(o, Lf, F, UP);
@@ -55,15 +62,15 @@ export function carSvg(pose, P, G, k, { lamps = true, brake = 0, cut = null, kee
   const H = CAR_SHAPE.half;
 
   // shadow on the road
-  const shadow = [[-10.6, -H - 0.4], [10.6, -H - 0.4], [10.9, 0], [10.6, H + 0.4], [-10.6, H + 0.4], [-10.9, 0]].map(([f, l]) => scr(f, l, 0));
-  const halo = cut === null ? `<path class="iso-halo cr-car-halo" d="${k.pathOf(shadow, true)}"/>` : "";
+  const shadowAt = [[-10.6, -H - 0.4], [10.6, -H - 0.4], [10.9, 0], [10.6, H + 0.4], [-10.6, H + 0.4], [-10.9, 0]].map(([f, l]) => scr(f, l, 0));
+  const halo = cut === null && shadow ? `<path class="iso-halo cr-car-halo" d="${k.pathOf(shadowAt, true)}"/>` : "";
 
   // wheels: far side first, then the arches' inner tubs
   const wheel = (fa, la, steerAngle) => {
-    const cs = Math.cos(yaw + steerAngle);
-    const sn = Math.sin(yaw + steerAngle);
+    const cs = Math.cos(steerAngle);
+    const sn = Math.sin(steerAngle);
     const centre = at(fa, la, CAR_SHAPE.wheel);
-    const Fw = G.frameOf(centre, [-sn, cs, 0], [cs, sn, 0], UP);
+    const Fw = G.frameOf(centre, G.add3(G.mul3(Lf, cs), G.mul3(F, -sn)), G.add3(G.mul3(F, cs), G.mul3(Lf, sn)), UP);
     const ring = Array.from({ length: 14 }, (_, i) => {
       const a = (i / 14) * Math.PI * 2;
       return [Math.cos(a) * CAR_SHAPE.wheel, Math.sin(a) * CAR_SHAPE.wheel];
@@ -85,14 +92,18 @@ export function carSvg(pose, P, G, k, { lamps = true, brake = 0, cut = null, kee
     return svg;
   };
   const near = (l) => Math.sign(l) === side;
+  // tumbling with the underside toward us, the stack turns over: cabin and roof first, then the body,
+  // the wheel tubs, and the wheels on top (the far pair still before the near pair)
+  const flip = G.dot3(UP, V) < 0;
   for (const fa of CAR_SHAPE.axles) {
     for (const l of [CAR_SHAPE.track, -CAR_SHAPE.track]) {
       const svg = wheel(fa, l, fa > 0 ? steer : 0);
-      if (!near(l)) parts.push({ key: -1e6 + depthOf(fa, l, 1), svg });
+      if (flip) parts.push({ key: (near(l) ? 2e6 : 1e6) + depthOf(fa, l, 1), svg });
+      else if (!near(l)) parts.push({ key: -1e6 + depthOf(fa, l, 1), svg });
       else put(depthOf(fa, l + side * 0.6, 1.5), svg);
     }
   }
-  for (const fa of CAR_SHAPE.axles) put(-5e5 + depthOf(fa, 0, 2), solid(prism([[fa - 1.8, 1.6], [fa + 1.8, 1.6], [fa + 1.8, 3.25], [fa - 1.8, 3.25]], -2.8, 2.8), { tone: "lo", className: "cr-tub" }));
+  for (const fa of CAR_SHAPE.axles) put((flip ? 5e5 : -5e5) + depthOf(fa, 0, 2), solid(prism([[fa - 1.8, 1.6], [fa + 1.8, 1.6], [fa + 1.8, 3.25], [fa - 1.8, 3.25]], -2.8, 2.8), { tone: "lo", className: "cr-tub" }));
 
   // lower body in three pieces between the wheel arches
   const front = CAR_SHAPE.axles[0];
@@ -108,7 +119,8 @@ export function carSvg(pose, P, G, k, { lamps = true, brake = 0, cut = null, kee
     put(depthOf(fc, 0, 2) + 0.01, solid(prism(poly, -H, H), { tone: "hi", lit: true, crease: "lo", className: "cr-lower" }));
   }
   parts.sort((a, b) => a.key - b.key);
-  const ordered = parts.map((p) => p.svg);
+  const below = parts.map((p) => p.svg);
+  const ordered = flip ? [] : below;
   parts.length = 0;
 
   // the beltline body over the arches, with door shut lines on the side we see
@@ -165,7 +177,10 @@ export function carSvg(pose, P, G, k, { lamps = true, brake = 0, cut = null, kee
   const stands = [2.6, -2.6].map((l) => solid(prism([[-9.8, 4.2], [-9.2, 4.2], [-9.2, 5.1], [-9.8, 5.1]], l - 0.25, l + 0.25), { tone: "mid" })).join("");
   group.push({ key: depthOf(-9.5, 0, 4.8), svg: stands + wing });
   group.sort((a, b) => a.key - b.key);
-  ordered.push(...group.map((g) => g.svg));
+  if (flip) {
+    const upperSvg = ordered.pop();
+    ordered.push(...group.map((g) => g.svg), upperSvg, ...below);
+  } else ordered.push(...group.map((g) => g.svg));
 
   // lamps on the body faces: grille lamps, tail lights, plates
   const faceOver = [];

@@ -150,7 +150,14 @@ export function roadOf(control = CONTROL) {
   const verge = out.map((_, i) => vergeAt(i * ds, hairpin[i]));
   // the road falls at a steady grade from the summit tunnel to the foot one (world units)
   const z = out.map((_, i) => (LEVEL.top - ((LEVEL.top - LEVEL.bottom) * i) / (n - 1)) * U);
-  return { pts: out, heading, kappa, verge, drop, hairpin, z, n, ds, length: (n - 1) * ds, first, last, grade: (LEVEL.top - LEVEL.bottom) / ((n - 1) * ds) };
+  // each hairpin's first and last sample
+  const pins = [];
+  for (let i = 0; i < n; i++) {
+    if (hairpin[i] < 0) continue;
+    if (!pins[hairpin[i]]) pins[hairpin[i]] = [i, i];
+    pins[hairpin[i]][1] = i;
+  }
+  return { pts: out, heading, kappa, verge, drop, hairpin, pins, z, n, ds, length: (n - 1) * ds, first, last, grade: (LEVEL.top - LEVEL.bottom) / ((n - 1) * ds) };
 }
 
 // A point on the road: (index, lateral metres to the left of travel) → world units
@@ -207,12 +214,18 @@ export function speedProfile(road, { cliff = 0.84, land = 1.0, vmax = 27, brake 
 
 export function carStart(road, profile, pace) {
   const i = 0;
-  return { x: road.pts[i][0], y: road.pts[i][1], z: road.z[i], psi: road.heading[i], v: profile[i] * pace, beta: 0, rate: 0, cmd: 0, i, d: 0, along: 0, lat: 0, lon: 0, steer: 0, slide: 0, margin: 9, brake: 0, laps: 0, dark: 0, odo: 0 };
+  return { x: road.pts[i][0], y: road.pts[i][1], z: road.z[i], psi: road.heading[i], v: profile[i] * pace, beta: 0, rate: 0, cmd: 0, i, d: 0, along: 0, lat: 0, lon: 0, steer: 0, slide: 0, margin: 9, brake: 0, laps: 0, dark: 0, odo: 0, air: null };
 }
 
 // One step of the driver and the car: pure pursuit toward a racing line, a friction circle shared by
 // braking and cornering, and a drift angle that opens when the demanded cornering exceeds the grip.
-export function stepCar(road, profile, s, pace, dt) {
+// With `world` ({ sea, groundAt(x, y) } in world units) the car can also leave the road: once its centre
+// of mass is past the unguarded edge it tips over and falls (fallStep).
+export function stepCar(road, profile, s, pace, dt, world = null) {
+  if (s.air) {
+    fallStep(road, profile, s, pace, dt, world);
+    return s;
+  }
   const at = project(road, s.x, s.y, s.i);
   s.i = at.i;
   s.d = at.d;
@@ -259,6 +272,115 @@ export function stepCar(road, profile, s, pace, dt) {
   s.odo += s.v * dt;
   s.margin = marginOf(road, s);
   if (s.i >= road.n - 2) s.dark = 1.6;
+  // past the edge: the centre of mass is over the drop, so the car tips off it
+  if (world && s.i > road.first && s.i < road.last) {
+    const c = project(road, s.x, s.y, s.i);
+    const centre = HALF_ROAD + road.verge[c.i] - road.drop[c.i] * c.d;
+    if (centre < 0) leaveRoad(road, s, c.i);
+  }
+  return s;
+}
+
+// The pace control: 0 is grip, 1 the limit. Past 1 (to OVER.share) the driver holds the limit down the
+// pass, then overcooks the last hairpin, from OVER.before metres out: up to 28% past the limit, where the
+// slide carries the car over the edge and into the sea.
+export const OVER = { share: 1.25, gain: 1.1, before: 30 };
+export function paceAt(share, min, limit, road = null, i = 0) {
+  if (share <= 1) return min + share * (limit - min);
+  if (road && i < road.pins[road.pins.length - 1][0] - OVER.before / road.ds) return limit;
+  return limit * (1 + OVER.gain * (share - 1));
+}
+
+// ---- over the edge ---------------------------------------------------------------------------------------
+// The car keeps its velocity, gains an outward shove from the tyres still biting as it tips, and rolls
+// toward the drop and pitches nose-down as the wheels on that side lose the road. Then it is a falling
+// body: gravity, a little air drag, rock strikes that bounce it off the cliff, and the sea.
+export const FALL = { roll: 2.4, pitch: 0.9, shove: 0.8, drag: 0.04, sinkTime: 3.2, bounce: 0.35 };
+function leaveRoad(road, s, i) {
+  const h = road.heading[i];
+  const out = [-Math.sin(h) * road.drop[i], Math.cos(h) * road.drop[i]];
+  const yaw = s.psi + s.beta;
+  // which way the car rolls: the side facing the drop goes down
+  const left = [-Math.sin(yaw), Math.cos(yaw)];
+  const toward = Math.sign(out[0] * left[0] + out[1] * left[1]) || 1;
+  s.air = {
+    t: 0,
+    vx: Math.cos(s.psi) * s.v + out[0] * FALL.shove,
+    vy: Math.sin(s.psi) * s.v + out[1] * FALL.shove,
+    vz: 0,
+    yaw,
+    yawRate: s.v * (s.lat / Math.max(s.v * s.v, 1)) + s.rate,
+    roll: 0,
+    rollRate: -toward * FALL.roll,
+    pitch: 0,
+    pitchRate: FALL.pitch,
+    from: { x: s.x, y: s.y, z: s.z, i, v: s.v },
+    hits: 0,
+    splash: null,
+  };
+  s.lat = 0;
+  s.lon = 0;
+  s.brake = 0;
+  s.steer = 0;
+}
+
+export function fallStep(road, profile, s, pace, dt, world) {
+  const a = s.air;
+  a.t += dt;
+  if (a.splash) {
+    // in the water: the way comes off at once, and the car settles and goes down nose first
+    const k = Math.exp(-dt / 0.15);
+    a.vx *= k;
+    a.vy *= k;
+    a.rollRate *= Math.exp(-dt / 0.6);
+    a.yawRate *= Math.exp(-dt / 0.6);
+    a.pitchRate = 0.5 * (1.1 - a.pitch);
+    const sunk = a.t - a.splash.t;
+    a.vz = -(0.35 + 0.9 * Math.min(1, sunk / a.sinkFor)) * U;
+  } else {
+    a.vz -= GRAV * dt;
+    const drag = Math.exp(-FALL.drag * dt);
+    a.vx *= drag;
+    a.vy *= drag;
+  }
+  s.x += a.vx * dt * U;
+  s.y += a.vy * dt * U;
+  s.z += a.vz * dt * U;
+  a.yaw += a.yawRate * dt;
+  a.roll += a.rollRate * dt;
+  a.pitch += a.pitchRate * dt;
+  s.psi = a.yaw;
+  s.beta = 0;
+  s.v = Math.hypot(a.vx, a.vy, a.vz);
+  if (!world) return s;
+  const ground = world.groundAt(s.x, s.y);
+  if (!a.splash && ground > world.sea + 1 && s.z < ground + 1) {
+    // a rock strike: thrown back up and outward, down the slope, spinning harder
+    const e = 2;
+    const gx = world.groundAt(s.x + e, s.y) - world.groundAt(s.x - e, s.y);
+    const gy = world.groundAt(s.x, s.y + e) - world.groundAt(s.x, s.y - e);
+    const gl = Math.hypot(gx, gy) || 1;
+    s.z = ground + 1;
+    a.vz = Math.abs(a.vz) * FALL.bounce;
+    a.vx = a.vx * 0.6 - (gx / gl) * 3;
+    a.vy = a.vy * 0.6 - (gy / gl) * 3;
+    a.rollRate *= -1.3;
+    a.pitchRate *= 1.2;
+    a.hits++;
+    a.hit = { t: a.t, x: s.x, y: s.y, z: s.z };
+  }
+  if (!a.splash && s.z <= world.sea && ground <= world.sea) {
+    a.splash = { t: a.t, x: s.x, y: s.y, speed: Math.hypot(a.vx, a.vy, a.vz), fall: (a.from.z - world.sea) / U };
+    a.sinkFor = FALL.sinkTime;
+    s.z = world.sea;
+  }
+  // the glass of the model's sea is as far as anything goes
+  if (world.box) {
+    s.x = Math.min(world.box[2] - 12, Math.max(world.box[0] + 12, s.x));
+    s.y = Math.min(world.box[3] - 12, Math.max(world.box[1] + 12, s.y));
+  }
+  // gone under (or, on land, come to rest): the next car leaves the summit tunnel
+  if ((a.splash && a.t - a.splash.t > FALL.sinkTime) || a.t > 12) Object.assign(s, carStart(road, profile, pace), { laps: s.laps + 1, odo: s.odo });
   return s;
 }
 
@@ -331,8 +453,10 @@ export const swellOf = (depth) => {
   return { k, lambda: TAU / k, c, group: n * c };
 };
 
-export function readoutOf(s) {
+export function readoutOf(s, sea = 0) {
   if (s.dark > 0) return "in the tunnel";
+  if (s.air && s.air.splash) return `in the sea · it fell ${Math.round(s.air.splash.fall)} m and hit the water at ${Math.round(s.air.splash.speed * 3.6)} km/h`;
+  if (s.air) return `over the edge · ${Math.max(0, Math.round((s.z - sea) / U))} m above the sea · ${Math.round(s.v * 3.6)} km/h`;
   const kmh = Math.round(s.v * 3.6);
   const drift = Math.round((Math.abs(s.beta) * 180) / Math.PI);
   const g = (Math.abs(s.lat) / GRAV).toFixed(2);
@@ -341,6 +465,7 @@ export function readoutOf(s) {
 }
 
 export function wordsOf(s, share) {
+  if (s.air) return s.air.splash ? "The car has gone into the sea." : "Over the edge: the car is falling toward the sea.";
   const deg = Math.round((Math.abs(s.beta) * 180) / Math.PI);
   const where = s.dark > 0 ? "In the tunnel." : `${Math.round(s.v * 3.6)} kilometres an hour, drifting ${deg} ${deg === 1 ? "degree" : "degrees"}, ${s.margin.toFixed(1)} metres from the edge.`;
   return `Pace ${Math.round(share * 100)} percent of the way from grip to the limit. ${where}`;
