@@ -216,9 +216,9 @@ void main(){
   gl_FragColor=dithered(col*land*uFade);
 }`;
 
-const FX_GLSL = `${COMMON_GLSL}
+const fxGlsl = (NS, NP) => `${COMMON_GLSL}
 uniform float uRoad;uniform float uPortalX;uniform vec4 uCarA;uniform vec4 uCarB;
-uniform vec4 uSmk[24];uniform vec4 uSmkB[24];uniform vec4 uSpr[48];uniform vec4 uSprB[48];
+uniform vec4 uSmk[${NS}];uniform vec4 uSmkB[${NS}];uniform vec4 uSpr[${NP}];uniform vec4 uSprB[${NP}];
 uniform vec4 uPortA;uniform vec4 uPortB;uniform float uBeams;
 // the car as an oriented box: returns where the pixel's ray enters it (larger t is nearer), or -1e9
 float carHit(vec3 p0,vec3 v){
@@ -268,7 +268,7 @@ void main(){
   vec4 col=vec4(0.);
   // spray thrown up the cliff, then tyre smoke, both as soft volumes
   float spray=0.;float under=0.;
-  for(int i=0;i<48;i++){
+  for(int i=0;i<${NP};i++){
     vec4 s=uSpr[i];vec4 sb=uSprB[i];
     if(sb.x<.002)continue;
     float b=sheet(p0,v,s.xyz,s.w,sb.z)*sb.x*sb.y;
@@ -276,7 +276,7 @@ void main(){
     under+=b*smoothstep(s.z+s.w*.2,s.z-s.w*.8,p0.z+v.z*dot(s.xyz-p0,v));
   }
   float smoke=0.;float heat=0.;
-  for(int i=0;i<24;i++){
+  for(int i=0;i<${NS};i++){
     vec4 s=uSmk[i];vec4 sb=uSmkB[i];
     if(sb.x<.002)continue;
     float b=blob(p0,v,s.xyz,s.w,tCar)*sb.x;
@@ -333,7 +333,7 @@ void main(){
     }
   }
   if(uPale<.5){
-    vec3 c=vec3(.52,.58,.64)*(1.-exp(-spray*1.1))*.85+vec3(.55,.56,.58)*smoke*.5+vec3(.9,.25,.15)*smoke*heat*.35;
+    vec3 c=vec3(.52,.58,.64)*(1.-exp(-spray*1.1))*.85+vec3(.6,.62,.65)*(1.-exp(-smoke*.9))*.75+vec3(.9,.25,.15)*smoke*heat*.18;
     c+=vec3(1.,.9,.72)*(wall+bore)+vec3(.95,.9,.78)*beam*.16+vec3(1.,.48,.12)*sodium*.11;
     c=tonemap(c,1.2);
     col=vec4(c,max(c.r,max(c.g,c.b)));
@@ -375,7 +375,18 @@ function gpuOf(D, stage, pale) {
   })();
   const sea = glLayer({ canvas: seaCanvas, fragment: SEA_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade"], fixed: { ...common, uSea: D.sea, uSwell: [SWELL_W, SWELL_K, SWELL_TIP, SWELL_SLANT], uMoon: moon, uX0: D.x0 } });
   const light = sea ? glLayer({ canvas: lightCanvas, fragment: LIGHT_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade", "uCarA", "uCarB"], fixed: { ...common, uRoad: D.road, uPortalX: D.portal, uStud: [...D.studs.flat(), ...Array(Math.max(0, 48 - D.studs.length * 2)).fill(-9999)].slice(0, 48) } }) : null;
-  const fx = light ? glLayer({ canvas: fxCanvas, fragment: FX_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 0.6, uniforms: ["uFade", "uCarA", "uCarB", "uSmk", "uSmkB", "uSpr", "uSprB"], fixed: { ...common, uRoad: D.road, uPortalX: D.portal, uPortA: [D.portals[0].yc, D.portals[0].half, D.portals[0].z, D.portals[0].spring], uPortB: [D.portals[1].yc, D.portals[1].half, D.portals[1].z, D.portals[1].spring], uBeams: pale ? 0 : 1 } }) : null;
+  // particle counts sized to the GPU's uniform budget: older phones get fewer, not none
+  const budget = (() => {
+    try {
+      const probe = document.createElement("canvas").getContext("webgl");
+      return probe ? probe.getParameter(probe.MAX_FRAGMENT_UNIFORM_VECTORS) : 0;
+    } catch (e) {
+      return 0;
+    }
+  })();
+  const NS = budget >= 224 ? 32 : 12;
+  const NP = budget >= 224 ? 48 : 16;
+  const fx = light ? glLayer({ canvas: fxCanvas, fragment: fxGlsl(NS, NP), view: [D.W, D.H], camera: D.camera, maxRatio: 0.6, uniforms: ["uFade", "uCarA", "uCarB", "uSmk", "uSmkB", "uSpr", "uSprB"], fixed: { ...common, uRoad: D.road, uPortalX: D.portal, uPortA: [D.portals[0].yc, D.portals[0].half, D.portals[0].z, D.portals[0].spring], uPortB: [D.portals[1].yc, D.portals[1].half, D.portals[1].z, D.portals[1].spring], uBeams: pale ? 0 : 1 } }) : null;
   if (!fx) return null;
   for (const layer of [sea, light, fx]) {
     const gl = layer.gl;
@@ -406,8 +417,8 @@ function gpuOf(D, stage, pale) {
   };
 
   // ---- particles ------------------------------------------------------------------------------------
-  const smoke = Array.from({ length: 24 }, () => ({ a0: 0, age: 9, life: 1 }));
-  const spray = Array.from({ length: 48 }, () => ({ a0: 0, age: 9, life: 1 }));
+  const smoke = Array.from({ length: NS }, () => ({ a0: 0, age: 9, life: 1 }));
+  const spray = Array.from({ length: NP }, () => ({ a0: 0, age: 9, life: 1 }));
   let smokeAt = 0;
   let smokeSide = 1;
   const crests = new Float64Array(D.sprayAt.length).fill(NaN);
@@ -416,10 +427,10 @@ function gpuOf(D, stage, pale) {
     return x - Math.floor(x);
   };
   const oldest = (list) => list.reduce((best, p) => (p.age / p.life > best.age / best.life ? p : best), list[0]);
-  const smk = new Float32Array(96);
-  const smkB = new Float32Array(96);
-  const spr = new Float32Array(192);
-  const sprB = new Float32Array(192);
+  const smk = new Float32Array(NS * 4);
+  const smkB = new Float32Array(NS * 4);
+  const spr = new Float32Array(NP * 4);
+  const sprB = new Float32Array(NP * 4);
   const windNow = (t) => {
     const w = CARS.windOf(t);
     // droplets and smoke ride at about 40% of the wind
@@ -433,7 +444,7 @@ function gpuOf(D, stage, pale) {
     const slip = Math.abs(car.beta);
     smokeAt -= dt;
     if (!calm && car.dark <= 0 && slip > 0.13 && car.v > 4 && smokeAt <= 0) {
-      smokeAt = 0.05;
+      smokeAt = 0.065;
       smokeSide = -smokeSide;
       const yaw = car.psi + car.beta;
       const c = Math.cos(yaw);
@@ -447,9 +458,9 @@ function gpuOf(D, stage, pale) {
         vy: Math.sin(car.psi) * car.v * 5 * 0.22 + WIND[1],
         vz: 3.2,
         age: 0,
-        life: 2.6,
-        a0: Math.min(1, (slip - 0.13) * 3.2) * 0.75,
-        r0: 1.6,
+        life: 2.9,
+        a0: Math.min(1, (slip - 0.12) * 3.4) * 0.95,
+        r0: 2.2,
       });
     }
     for (const p of smoke) {

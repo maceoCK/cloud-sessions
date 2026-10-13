@@ -23,7 +23,7 @@ const u = M.U;
 
 // ---- world -----------------------------------------------------------------------------------------
 const Z = { base: -42, bed: -18, floor: 0, sea: M.LEVEL.sea * u, toe: M.LEVEL.toe * u, road: M.LEVEL.road * u, crown: M.LEVEL.crown * u };
-const BOX = [-196, -178, 294, 184];
+const BOX = [-196, -178, 338, 184];
 const [X0, Y0, X1, Y1] = BOX;
 const BLOCK = { x: X0, y: Y0, w: X1 - X0, d: Y1 - Y0, r: 0 };
 const PLINTH = { x: X0 - 16, y: Y0 - 16, w: X1 - X0 + 32, d: Y1 - Y0 + 32, r: 6 };
@@ -47,9 +47,10 @@ const HILL_FRONT = Y1 - 36;
 const { coast, polygon } = T.coastOf(road, M, BOX, HILL_FRONT);
 const sdfCoast = T.sdfOf(coast, polygon);
 const STACKS = [
-  { x: 262, y: 84, r: 15, top: 132, seed: 3 },
-  { x: 250, y: -104, r: 7, top: 49, seed: 5 },
+  { x: 276, y: 82, r: 15, top: 132, seed: 3 },
+  { x: 262, y: -98, r: 7, top: 49, seed: 5 },
   { x: 36, y: 140, r: 6, top: 43, seed: 7 },
+  { x: 312, y: 6, r: 5, top: 45, seed: 11 },
 ];
 const stackSdf = (x, y, z) => {
   let d = Infinity;
@@ -404,7 +405,8 @@ for (const [i, t] of [[66, -12, 30, 1], [82, -26, 22, 2], [48, -30, 18, 3], [-10
   const tree = SC.cypress({ P, x, y, z: Z.road + (KNOLL(x, y) < -0.42 ? 4.8 : KNOLL(x, y) < 0 ? 2.6 : 0), height: h, seed });
   put(`tree${i}`, tree.at, tree.svg);
 }
-for (const [i, [x, y, h, seed]] of [[-150, -130, 26, 6], [-176, -60, 30, 7], [-168, 10, 22, 8], [-182, 70, 28, 9], [-160, 132, 20, 10], [-140, -20, 16, 11]].entries()) {
+// the line runs along x ≈ -184; the trees keep clear of its wires, as a linesman would see to
+for (const [i, [x, y, h, seed]] of [[-148, -130, 24, 6], [-152, -58, 28, 7], [-150, 12, 20, 8], [-154, 74, 26, 9], [-150, 132, 18, 10], [-206, -10, 16, 11], [-208, 120, 14, 12]].entries()) {
   const z = heightAt(x, y);
   const tree = SC.cypress({ P, x, y, z, height: h, seed, lean: 0.7 });
   put(`hilltree${i}`, tree.at, tree.svg);
