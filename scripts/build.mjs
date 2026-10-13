@@ -3,7 +3,7 @@
 //
 //   node scripts/build.mjs                 everything
 //   node scripts/build.mjs --only ed1th    one figure's standalone pages (and skip the site)
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as k from "../kit/iso-kit.mjs";
@@ -98,5 +98,7 @@ if (!only) {
   const html = sitePage({ figures: rendered, script: scriptOf(rendered) });
   writeFileSync(join(DIST, "index.html"), html);
   writeFileSync(join(DIST, "fragment.html"), sitePage({ figures: rendered, script: scriptOf(rendered), fragment: true }));
+  // static files (the share image) ship next to the page
+  if (existsSync(join(ROOT, "public"))) cpSync(join(ROOT, "public"), DIST, { recursive: true });
   console.log(`index.html ${(html.length / 1024).toFixed(0)} KB`);
 }

@@ -131,8 +131,8 @@ const FONTS = `
 // Theme tokens: light on bare :root, dark when the system prefers it and no
 // explicit choice says otherwise, and dark again for an explicit choice.
 const isoBlock = (selector) => ISO_CSS.slice(ISO_CSS.indexOf(selector + "{") + selector.length + 1, ISO_CSS.indexOf("}", ISO_CSS.indexOf(selector + "{"))).replace(/\s+/g, "");
-const DARK = isoBlock(".iso") + "--ink:#ecebe6;--rule:#2b2b2b;color-scheme:dark;";
-const LIGHT = isoBlock('.iso[data-theme="light"]') + "--anatomy-page:#edede9;--anatomy-card:#f8f8f5;--anatomy-paper:#f8f8f5;--ink:#141414;--rule:#cfcfc8;";
+const DARK = isoBlock(".iso") + "--anatomy-muted:#8f8f8f;--anatomy-text:#b4b4b4;--ink:#ecebe6;--rule:#2b2b2b;color-scheme:dark;";
+const LIGHT = isoBlock('.iso[data-theme="light"]') + "--anatomy-page:#edede9;--anatomy-card:#f8f8f5;--anatomy-paper:#f8f8f5;--anatomy-muted:#646469;--anatomy-text:#4a4a4e;--ink:#141414;--rule:#cfcfc8;";
 const THEME = `:root{${isoBlock(".iso")}${LIGHT}--anatomy-mono:var(--mono)}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){${DARK}}}:root[data-theme="dark"]{${DARK}}`;
 
 // A figure's dark rules, written [data-theme="dark"] #fig-x{…}, also apply
@@ -456,7 +456,7 @@ export function sitePage({ figures, script, fragment = false }) {
 `;
 
   const STYLE = `${FONTS}${ISO_CSS}${THEME}${CSS}${figures.map((f) => darkify(f.css)).join("")}`;
-  const head = `<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(META.title)}</title><meta name="description" content="${esc(META.description)}"><link rel="canonical" href="${PERSON.url}"><meta property="og:type" content="website"><meta property="og:title" content="${esc(PERSON.name)}"><meta property="og:description" content="${esc(META.description)}"><meta property="og:url" content="${PERSON.url}"><meta name="theme-color" content="#070807"><link rel="icon" href="data:image/svg+xml,${encodeURIComponent(
+  const head = `<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(META.title)}</title><meta name="description" content="${esc(META.description)}"><link rel="canonical" href="${PERSON.url}"><meta property="og:type" content="website"><meta property="og:title" content="${esc(PERSON.name)}"><meta property="og:description" content="${esc(META.description)}"><meta property="og:url" content="${PERSON.url}"><meta property="og:image" content="${PERSON.url}og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="#070807"><link rel="icon" href="data:image/svg+xml,${encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#070807"/><g transform="translate(16 25.5) scale(.026) translate(${-(OUTLINES.lines["cover.M"].box[0] + OUTLINES.lines["cover.M"].box[2]) / 2} 0)"><path fill="#f4f0e8" d="${OUTLINES.lines["cover.M"].d}"/></g></svg>`,
   )}"><script>${THEME_INIT}</script><script type="application/ld+json">${JSON.stringify(ld)}</script><style>${STYLE}</style>`;
 
