@@ -365,11 +365,13 @@ function residue() {
   out.push(L(onPlate(die, 0, false), { tone: "lo" }));
   return `<g class="nt-residue">${out.join("")}</g>`;
 }
+// The piece that stayed. Along the tear the top layer of paper went with the flap, ink and all, so
+// the pale under layer is laid over the scribble's torn ends.
 function stuck() {
   const paint = PEEL.stuckPaint(P);
   const band = onPlate(STUCK_EDGE.band, PEEL.TAG_T);
   const fibres = STUCK_EDGE.fibres.map((f) => onPlate(f, PEEL.TAG_T * 0.5, false)).join("");
-  return `<g class="nt-stuck" data-band="${paint.band}"><path class="nt-under" d="${paint.under}"/>${paint.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${paint.fill}"/><path class="nt-tex" d="${paint.fill}" fill="url(#nt-paper-img)"/><path class="nt-delam" d="${band}"/><path class="nt-tex" d="${band}" fill="url(#nt-fuzz-img)"/><path class="nt-bleed" d="${paint.ink}"/><path class="nt-ink" d="${paint.ink}" style="stroke-width:${INK_W}px"/>${L(fibres, { tone: "lo", className: "nt-fibre" })}<path class="nt-tear" d="${paint.tear}"/><path class="nt-edge" d="${paint.edge}"/></g>`;
+  return `<g class="nt-stuck" data-band="${paint.band}"><path class="nt-under" d="${paint.under}"/>${paint.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${paint.fill}"/><path class="nt-tex" d="${paint.fill}" fill="url(#nt-paper-img)"/><path class="nt-bleed" d="${paint.ink}"/><path class="nt-ink" d="${paint.ink}" style="stroke-width:${INK_W}px"/><path class="nt-delam" d="${band}"/><path class="nt-tex" d="${band}" fill="url(#nt-fuzz-img)"/>${L(fibres, { tone: "lo", className: "nt-fibre" })}<path class="nt-tear" d="${paint.tear}"/><path class="nt-edge" d="${paint.edge}"/></g>`;
 }
 
 // ---- The label: a pool of paths the page rewrites every frame; the build fills it once --------------
