@@ -90,7 +90,6 @@ function seal(className) {
 
 const FONTS = `
 @font-face{font-family:"Text";src:local("Michelangelus"),local("Michelangelus-Regular"),${font("CrimsonPro-Regular.woff2")};font-weight:400;font-display:swap}
-@font-face{font-family:"Text";src:local("Michelangelus Italic"),local("Michelangelus-Italic"),${font("CrimsonPro-Italic.woff2")};font-weight:400;font-style:italic;font-display:swap}
 @font-face{font-family:"Geist Mono";src:${font("GeistMono-Regular.woff2")};font-weight:400;font-display:swap}
 `;
 
