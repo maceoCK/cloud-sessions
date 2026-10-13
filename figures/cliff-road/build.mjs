@@ -400,7 +400,8 @@ for (const layer of LAYERS) {
     const inSlot = road.z[i] >= layer.z1 - LAYER_STEP && road.z[i] < layer.z1;
     if (inSlot && a < 0) a = i;
     if ((!inSlot || i === road.n - 1) && a >= 0) {
-      terrain.push(roadPiece(Math.max(0, a - 1), inSlot ? i : i - 1));
+      // pieces overlap by a metre so no hairline shows where they meet
+      terrain.push(roadPiece(Math.max(0, a - 2 * per), Math.min(road.n - 1, (inSlot ? i : i - 1) + per)));
       a = -1;
     }
   }
@@ -542,6 +543,13 @@ const put = (name, at3, svg, high = 4, half = 14) => items.push({ name, key: dep
   }
 }
 const POSTS = [];
+// a tree on the crown of each hairpin's knoll, like the wooded humps a pass winds round
+for (const [q, b] of BUMPS.slice(0, 3).entries()) {
+  let best = [b.x, b.y, heightAt(b.x, b.y)];
+  for (let dx = -8; dx <= 8; dx += 2) for (let dy = -8; dy <= 8; dy += 2) if (heightAt(b.x + dx, b.y + dy) > best[2]) best = [b.x + dx, b.y + dy, heightAt(b.x + dx, b.y + dy)];
+  const tree = SC.cypress({ P, x: best[0], y: best[1], z: best[2], height: 24, seed: 700 + q, lean: 0.3 });
+  put(`knolltree${q}`, tree.at, `<g>${tree.svg}</g>`, 4, 20);
+}
 // delineators round the inside of each hairpin, a chevron board on the outside of the two over the sea,
 // and a bend sign on the hill side before each one
 for (let pin = 0; pin < 3; pin++) {

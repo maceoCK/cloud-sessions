@@ -85,21 +85,6 @@ function drawKnob() {
   pointer.setAttribute("d", pathOf([iso([k0.x + Math.sin(a) * 1.2, k0.y + 4.45, k0.z + Math.cos(a) * 1.2], D.P), iso([k0.x + Math.sin(a) * (k0.r - 0.8), k0.y + 4.45, k0.z + Math.cos(a) * (k0.r - 0.8)], D.P)]));
 }
 
-// the trees stir: a slow lean and a shiver, so the forest isn't painted on
-const swaying = items.filter((it) => /^tree/.test(it.node.dataset.item || "")).map((it) => {
-  const base = iso([it.at[0], it.at[1], it.at[2] - 4], D.P);
-  return { node: it.node, base, phase: (it.at[0] * 0.13 + it.at[1] * 0.07) % (Math.PI * 2) };
-});
-let swayDrawn = -1;
-function swayTrees(t) {
-  const slot = Math.floor(t * 20);
-  if (slot === swayDrawn) return;
-  swayDrawn = slot;
-  for (const tree of swaying) {
-    const lean = 0.5 * Math.sin(t * 0.9 + tree.phase) + 0.25 * Math.sin(t * 2.3 + tree.phase * 2);
-    tree.node.firstElementChild?.setAttribute("transform", `rotate(${lean.toFixed(2)} ${tree.base[0].toFixed(1)} ${tree.base[1].toFixed(1)})`);
-  }
-}
 const V = G.viewOf(D.P);
 const depthAt = (x, y, z) => x * V[0] + y * V[1] + z * V[2];
 
@@ -173,6 +158,8 @@ const trail = [];
 let detailIdle = false;
 let trailClock = 0;
 let cache = null;
+let detailWorld = null;
+let detailMoving = null;
 
 // a polyline cut to the inset's circle: pieces that end exactly on the rim
 function inCircle(points) {
@@ -358,13 +345,20 @@ function drawDetail(pose, hidden) {
   P2.origin = [DT.cx - u0, DT.cy - v0];
   const at = (x, y, z) => iso([x, y, z], P2);
   const near = (x, y) => Math.abs(x - car.x) < 120 && Math.abs(y - car.y) < 120;
+  // the world round the car is parsed once and slid; only the car and what moves with it are redrawn
+  if (!detailWorld) {
+    detailWorld = document.createElementNS(SVGNS, "g");
+    detailMoving = document.createElementNS(SVGNS, "g");
+    detailView.replaceChildren(detailWorld, detailMoving);
+  }
   if (!cache || Math.hypot(car.x - cache.x, car.y - cache.y) > 34 || Math.abs(zc - cache.z) > 6) {
     const world = worldAround(P2, car.x, car.y, zc);
     cache = { x: car.x, y: car.y, z: zc, origin: [...P2.origin], ...world };
-    cache.html = `<g class="cr-d-world">${world.svg}</g>`;
+    detailWorld.innerHTML = world.svg;
   }
   const shift = `translate(${(P2.origin[0] - cache.origin[0]).toFixed(1)} ${(P2.origin[1] - cache.origin[1]).toFixed(1)})`;
-  const parts = [`<g transform="${shift}">${cache.html}</g>`];
+  detailWorld.setAttribute("transform", shift);
+  const parts = [];
 
   // fresh tyre marks: the rear wheels' last three seconds, darker where the tail was out
   if (trail.length) {
@@ -459,7 +453,7 @@ function drawDetail(pose, hidden) {
   things.sort((a, b) => a.key - b.key);
   if (inner && cache.arches) parts.push(`<clipPath id="cr-detail-arch"><path transform="${shift}" d="${cache.arches}"/></clipPath><g clip-path="url(#cr-detail-arch)">${inner}</g>`);
   parts.push(things.map((t) => t.svg).join(""));
-  detailView.innerHTML = parts.join("");
+  detailMoving.innerHTML = parts.join("");
 
   // the notes: where the car is going (its path), where it points (its nose), the angle between, and the edge
   const zn = zc + 7;
@@ -662,7 +656,6 @@ function tick(now) {
   springTo(brake, car.brake, dt, 0.06);
   brake.x = clampTo(brake.x, 0, 1);
   placeCar();
-  swayTrees(state.clock);
   drawKnob();
   lightItems();
   if (car.dark <= 0) trackWheels(dt);
