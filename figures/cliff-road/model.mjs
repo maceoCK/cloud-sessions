@@ -455,7 +455,7 @@ export const swellOf = (depth) => {
 
 export function readoutOf(s, sea = 0) {
   if (s.dark > 0) return "in the tunnel";
-  if (s.air && s.air.splash) return `in the sea · it fell ${Math.round(s.air.splash.fall)} m and hit the water at ${Math.round(s.air.splash.speed * 3.6)} km/h`;
+  if (s.air && s.air.splash) return `in the sea · fell ${Math.round(s.air.splash.fall)} m, hit at ${Math.round(s.air.splash.speed * 3.6)} km/h`;
   if (s.air) return `over the edge · ${Math.max(0, Math.round((s.z - sea) / U))} m above the sea · ${Math.round(s.v * 3.6)} km/h`;
   const kmh = Math.round(s.v * 3.6);
   const drift = Math.round((Math.abs(s.beta) * 180) / Math.PI);

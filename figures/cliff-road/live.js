@@ -246,7 +246,9 @@ function worldAround(P2, cx, cy, zc) {
       faces += pathOf([p3(i, e0), p3(i2, e1), at(...rp(i2, e1), road.z[i2] - 12), at(...rp(i, e0), road.z[i] - 12)], true);
     }
     if (faces) out.push(`<path class="cr-d-face" data-shade="2" d="${faces}"/>`);
-    out.push(`<path class="cr-d-land" d="${strip(list, (i) => bench(i, 1), (i) => -bench(i, -1))}"/>`);
+    const benchD = strip(list, (i) => bench(i, 1), (i) => -bench(i, -1));
+    benches.push(benchD);
+    out.push(`<path class="cr-d-land" d="${benchD}"/>`);
     out.push(`<path class="cr-asphalt" d="${strip(list, () => -M.HALF_ROAD, () => M.HALF_ROAD)}"/>`);
     out.push(`<path class="cr-paint" d="${strip(list, () => -M.HALF_ROAD + 0.15, () => -M.HALF_ROAD + 0.3)}${strip(list, () => M.HALF_ROAD - 0.3, () => M.HALF_ROAD - 0.15)}"/>`);
     let dashes = "";
@@ -261,6 +263,7 @@ function worldAround(P2, cx, cy, zc) {
     return out.join("");
   };
   const parts = [];
+  const benches = [];
   let floor = "";
   tops.forEach((T, n) => {
     const grid = TR.gridOf(box, 3, (x, y, edge) => (edge ? 1e3 : T - 0.5 - heightAt(x, y)));
@@ -327,7 +330,7 @@ function worldAround(P2, cx, cy, zc) {
     parts.push(`<path class="cr-d-wall" data-shade="3" d="${pathOf(lid.map((p) => at(...p)), true)}"/>`);
     parts.push(lineSvg(pathOf(frontWall.map((p) => at(...p)), true), { tone: "mid" }) + lineSvg(arch, { tone: "mid" }));
   }
-  return { svg: parts.join(""), floor, arches };
+  return { svg: parts.join(""), floor, arches, bench: benches.join("") };
 }
 
 // in the main view: a ring round the car and a leader up to the inset, dashed while the car is out of sight
@@ -450,7 +453,7 @@ function drawDetail(pose, hidden) {
     });
   }
 
-  // the headlights on the ground, kept to the terrace the car is on
+  // the headlights on the road ahead, kept to its bench
   const c = Math.cos(pose.yaw);
   const s = Math.sin(pose.yaw);
   let beams = "";
@@ -477,7 +480,7 @@ function drawDetail(pose, hidden) {
     }
     for (const spread of [0.42, 0.3, 0.17]) beams += `<path class="cr-d-beam" fill="url(#cr-beam-${n})" opacity="0.4" d="${fanOf(spread)}"/>`;
   });
-  parts.push(`<g class="cr-d-beams"><clipPath id="cr-detail-land"><path transform="${shift}" d="${cache.floor}"/></clipPath><g clip-path="url(#cr-detail-land)">${beams}</g></g>`);
+  parts.push(`<g class="cr-d-beams"><clipPath id="cr-detail-land"><path transform="${shift}" d="${cache.bench}"/></clipPath><g clip-path="url(#cr-detail-land)">${beams}</g></g>`);
 
   // the delineators round the inside of the hairpins, the car, and the tyre smoke, in depth order
   const things = [];
@@ -816,7 +819,7 @@ still.addEventListener("change", () => {
 });
 if (matchMedia("(hover: none)").matches) {
   const hint = root.querySelector('[data-corner="hint"]');
-  if (hint) hint.textContent = "Drag across to push harder";
+  if (hint) hint.textContent = "Drag left to right: grip, drift, over the edge";
 }
 if (still.matches) touring = false;
 describe();

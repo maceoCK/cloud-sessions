@@ -720,7 +720,10 @@ for (let j = 0; j < TEX.ny; j++) {
     const y = Y0 + j * TEX.step;
     const o = (j * TEX.nx + i) * 4;
     texBytes[o] = enc(waterSdf(x, y));
-    texBytes[o + 1] = enc(coastSdf(x, y));
+    // the road's own height near it (to 8 m either side), so the lamps light the road ahead at its true
+    // height and not the terrace under the car: 1..255 over 100..300 units, 0 where there's no road
+    const near = nearestRoad(x, y, 3);
+    texBytes[o + 1] = near && near.dist < 40 ? 1 + Math.round(Math.min(1, Math.max(0, (road.z[near.i] - 100) / 200)) * 254) : 0;
     // the drawn height, 0..512 units
     texBytes[o + 2] = Math.round(Math.min(255, (heightAt(x, y) / 512) * 255));
     // the distance the swell refracts round: the mountain and the tall stack, not the small rocks (-16..240)
@@ -898,7 +901,7 @@ const caption = `A mountain pass on a plinth, at night: ${Math.round(visible)} m
 const body = `<div class="cr">${k.plateHtml({
   fig: "Fig 5A",
   title: "Cliff road at night",
-  hint: "Move across to push harder",
+  hint: "Move left to right: grip, drift, over the edge",
   readout: M.readoutOf({ ...M.carStart(road, profile, 1), margin: 3 }),
   keys: [
     { mark: "lit", label: "The car: a 1,150 kg rear-drive coupe, lamps up" },

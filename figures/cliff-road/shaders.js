@@ -15,7 +15,8 @@ const COMMON_GLSL = `
 uniform sampler2D uCoast;uniform vec4 uTexA;uniform vec2 uTexB;uniform vec4 uBox;uniform float uPale;uniform float uFade;
 vec4 coastTex(vec2 p){vec2 uv=((p-uTexA.xy)/uTexA.z+.5)/uTexB;return texture2D(uCoast,uv);}
 float dWater(vec2 p){return coastTex(p).r*128.-32.;}
-float dTop(vec2 p){return coastTex(p).g*128.-32.;}
+// the road's height near it (from the build), or -1 where there's no road
+float roadZ(vec2 p){float g=coastTex(p).g*255.;return g<.5?-1.:100.+(g-1.)/254.*200.;}
 float dSwell(vec2 p){return coastTex(p).a*256.-16.;}
 vec4 inkFor(vec3 seen,float cover){vec3 ab=1.-clamp(seen,0.,1.);float a=max(max(ab.r,max(ab.g,ab.b)),cover);return vec4(vec3(a)-ab,a);}
 vec4 over(vec4 top,vec4 under){return top+under*(1.-top.a);}
@@ -278,11 +279,14 @@ void main(){
       streak=vec4(c,max(c.r,max(c.g,c.b)));
     }
   }
+  // find the road under this pixel: start at the car's height, then settle onto the road's own height,
+  // which falls ahead of the car down the grade (and up behind it)
   vec3 q=onFloor(vb,uRoad);
-  // only the ground at the car's own height catches the pool: the road, its bench, the hairpin's floor
-  // the terraces under a road sit up to a layer (7 units) below it; anything lower is the drop, anything
-  // higher the bank
-  float hq=heightOf(q.xy)-uRoad;
+  float zr=roadZ(q.xy);
+  if(zr>0.){q=onFloor(vb,zr);zr=roadZ(q.xy);if(zr>0.)q=onFloor(vb,zr);}
+  // only the road's bench and the ground level with it catch the pool: the terraces under a road sit up to
+  // a layer (7 units) below it; anything lower is the drop, anything higher the bank
+  float hq=heightOf(q.xy)-q.z;
   float land=smoothstep(-10.,-8.,hq)*(1.-smoothstep(1.,3.,hq));
   land*=smoothstep(uPortalX-.5*px,uPortalX+.5*px,q.x);
   land*=window(q.x,uBox.x,uBox.z,.7*px)*window(q.y,uBox.y,uBox.w,.7*px);

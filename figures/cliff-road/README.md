@@ -4,7 +4,7 @@
 
 An interactive isometric figure built with the [Anatomy](https://github.com/wheresryan22/anatomy) skill. It's a diorama of a mountain pass on a plinth, seen from the sea, laid out like a pass from Initial D. The road winds down the mountain's face from a tunnel at the summit to one at its foot. It has four legs stacked one above the other and three tight hairpins, two of them on the edge of the sea cliff, and no guard rail anywhere. A car drifts down it with its lamps up and drops out of sight behind the knolls, spurs and trees. Below, the swell breaks on the rock. Push past the limit and the drift goes wrong on the last hairpin: the car slides off the edge, tumbles 24 m down the cliff and goes into the sea.
 
-Open `cliff-road.html` (night) or `cliff-road-light.html` (paper). Move the pointer across the figure, drag on a phone, or press ← → to set how hard the driver pushes. The knob on the plinth's front face shows the setting. At the red dot, the limit, the car's outer corner clears the unguarded edge by 0.3 m. Past it, into the red arc (the right-hand end of the figure, or End), the driver overcooks the last hairpin and the car goes over. Left alone, the figure tours through paces, and its second lap goes over the edge. Detail A, at the top right, follows the car at 3:1. It shows where the car is going, where its nose points, the drift angle between them, and the gap to the edge.
+Open `cliff-road.html` (night) or `cliff-road-light.html` (paper). The pointer's position from left to right across the figure sets how hard the driver pushes: at the left the car corners on grip, toward the right it drifts, and at the far right it goes over the edge. Drag on a phone, or press ← → (Home and End for the two ends). The knob on the plinth's front face shows the setting. At the red dot, the limit, the car's outer corner clears the unguarded edge by 0.3 m. Past it, into the red arc (the right-hand end of the figure, or End), the driver overcooks the last hairpin and the car goes over. Left alone, the figure tours through paces, and its second lap goes over the edge. Detail A, at the top right, follows the car at 3:1. It shows where the car is going, where its nose points, the drift angle between them, and the gap to the edge.
 
 ## Build
 
@@ -33,7 +33,7 @@ The mountain is a heightfield. It's built from a slope that falls toward the sea
 
 - Terraces are drawn bottom to top. Each piece of road is drawn just after the first terrace above it, so the slope in front of it is already down and the bank behind it comes after.
 - Trees, signs, posts and the car stand in a separate layer. Each shows only above the terrain between it and the eye: across its screen width, the highest terrain in front is a line, and it is clipped to above that line. The build does this once for the static things; the page does it every frame for the car, from the drawn height. That's what takes the car out of view behind a knoll and brings it back.
-- The headlight pool lights only ground at the car's own height, and it's hidden where terrain stands in front of it. The beams in the mist show in proportion to how much of the lamps is in sight.
+- The headlight pool lies on the road itself: the build stores the road's height beside it in the shader's texture, and each pixel settles onto it. So the pool runs on down the grade ahead of the car, across the terrace steps, and is hidden where terrain stands in front of it. The beams in the mist show in proportion to how much of the lamps is in sight.
 
 ## Layers
 
