@@ -13,7 +13,7 @@ export const PERSON = {
 export const META = {
   title: "Maceo Cardinale Kwik",
   description:
-    "Engineer and founder in New York City, building ED1TH at Datost: glasses that put a quiet, capable computer in the corner of your eye.",
+    "Engineer and founder in New York City, building E1O at Datost: glasses that put a quiet, capable computer in the corner of your eye.",
 };
 
 // The cover: a monogram. The M in outline, the name, one quiet line.
@@ -22,24 +22,24 @@ export const COVER = {
 };
 
 export const LEDE = [
-  "Building ED1TH at Datost: glasses that put a quiet, capable computer in the corner of your eye.",
+  "Building E1O at Datost: glasses that put a quiet, capable computer in the corner of your eye.",
   "Everything below works. Poke it.",
 ];
 
 // Page order: groups of figures. Each entry is keyed by figure id.
 export const GROUPS = [
-  { id: "now", title: "Now", figures: ["ed1th", "datost"] },
+  { id: "now", title: "Now", figures: ["e1o", "datost"] },
   { id: "before", title: "Before", figures: ["traba", "simon"] },
   { id: "school", title: "School", figures: ["school"] },
 ];
 
 export const ENTRIES = {
-  ed1th: {
+  e1o: {
     kicker: "Datost",
-    name: "ED1TH",
+    name: "E1O",
     line: "The computers that come after the screen.",
     body: [],
-    links: [["ed1th.com", "https://ed1th.com"]],
+    links: [["e1o.com", "https://e1o.com"]],
   },
   datost: {
     kicker: "Founder",

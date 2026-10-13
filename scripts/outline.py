@@ -40,6 +40,42 @@ FILES = {
 }
 
 
+# Michelangelus draws its 1 as a stem with a short flag, so in a name like
+# E1O it reads as an l. In all-caps words with figures we draw the one
+# ourselves: the font's own stem and foot, with a longer wedge flag at the
+# font's own angle. Units are the regular face's.
+ONE_SHIFT = 50
+ONE_ADVANCE = 286 + ONE_SHIFT
+
+
+def draw_one(pen):
+    P = lambda x, y: (x + ONE_SHIFT, y)
+    pen.moveTo(P(111, 65))
+    pen.lineTo(P(111, 600))
+    pen.lineTo(P(-30, 548))
+    pen.qCurveTo(P(-38, 552), P(-36, 566))
+    pen.lineTo(P(181, 710))
+    pen.lineTo(P(181, 65))
+    pen.qCurveTo(P(181, 46), P(191, 28), P(221, 20), P(251, 20))
+    pen.lineTo(P(251, 0))
+    pen.lineTo(P(41, 0))
+    pen.lineTo(P(41, 20))
+    pen.qCurveTo(P(71, 20), P(101, 28), P(111, 46), P(111, 65))
+    pen.closePath()
+
+
+def caps_mask(text):
+    """True for every character of an all-caps word that has a figure in it."""
+    caps = [False] * len(text)
+    at = 0
+    for word in text.split(" "):
+        core = word.strip(".,:;!?()'\"")
+        if core and core.upper() == core and any(c.isdigit() for c in core) and any(c.isalpha() for c in core):
+            caps[at:at + len(word)] = [True] * len(word)
+        at += len(word) + 1
+    return caps
+
+
 def find_dir():
     candidates = [os.environ.get("MICHELANGELUS_DIR"), str(Path.home() / "Library" / "Fonts"), str(Path.home() / ".fonts"), "/usr/share/fonts/truetype/michelangelus"]
     for c in candidates:
@@ -75,6 +111,28 @@ class Face:
         self.glyphs[name].draw(TransformPen(pen, (1, 0, 0, -1, dx, dy)))
         return pen.getCommands()
 
+    def figure(self, name, transform):
+        """A lining figure from this (upright) face through `transform`; the one is draw_one."""
+        pen = SVGPathPen(self.glyphs, ntos=lambda v: str(rnd(v)))
+        tp = TransformPen(pen, transform)
+        if name == "one":
+            draw_one(tp)
+        else:
+            self.glyphs[name].draw(tp)
+        return pen.getCommands()
+
+    def figure_advance(self, name):
+        return ONE_ADVANCE if name == "one" else self.tt["hmtx"][name][0]
+
+    def figure_bounds(self, name, dx):
+        pen = BoundsPen(self.glyphs)
+        if name == "one":
+            draw_one(pen)
+        else:
+            self.glyphs[name].draw(pen)
+        x0, y0, x1, y1 = pen.bounds
+        return (x0 + dx, -y1, x1 + dx, -y0)
+
     def bounds(self, name, dx):
         pen = BoundsPen(self.glyphs)
         self.glyphs[name].draw(pen)
@@ -90,16 +148,10 @@ class Face:
         advance; the glyph outlines go to a shared atlas at the origin, so a
         page can draw any word with <use> and let the words wrap freely.
 
-        The italic's figures are old-style, so in an all-caps word (ED1TH)
+        The italic's figures are old-style, so in an all-caps word (E1O)
         its 1 would read as an i: there the figure comes from the upright
         face, slanted to the italic angle."""
-        caps = [False] * len(text)
-        at = 0
-        for word in text.split(" "):
-            core = word.strip(".,:;!?()'\"")
-            if core and core.upper() == core and any(c.isdigit() for c in core) and any(c.isalpha() for c in core):
-                caps[at:at + len(word)] = [True] * len(word)
-            at += len(word) + 1
+        caps = caps_mask(text)
         slant = math.tan(math.radians(-self.tt["post"].italicAngle))
         buf = hb.Buffer()
         buf.add_str(text)
@@ -116,14 +168,14 @@ class Face:
                 continue
             name = self.order[info.codepoint]
             advance = pos.x_advance
-            if upright and slant and caps[info.cluster] and name in DIGITS:
+            if caps[info.cluster] and name in DIGITS:
+                src = upright or self
+                tilt = slant if upright else 0
                 k = key("l" + name)
                 if k not in atlas:
-                    pen = SVGPathPen(upright.glyphs, ntos=lambda v: str(rnd(v)))
-                    lift = slant * upright.metrics["cap"] / 2
-                    upright.glyphs[name].draw(TransformPen(pen, (1, 0, slant, -1, -lift, 0)))
-                    atlas[k] = pen.getCommands()
-                advance = upright.tt["hmtx"][name][0]
+                    lift = tilt * src.metrics["cap"] / 2
+                    atlas[k] = src.figure(name, (1, 0, tilt, -1, -lift, 0))
+                advance = src.figure_advance(name)
             else:
                 k = key(info.codepoint)
                 if k not in atlas:
@@ -141,17 +193,25 @@ class Face:
         buf.add_str(text)
         buf.guess_segment_properties()
         hb.shape(self.hb, buf, features)
+        caps = caps_mask(text)
         x = 0.0
         glyphs = []
         box = None
         for info, pos in zip(buf.glyph_infos, buf.glyph_positions):
             name = self.order[info.codepoint]
-            d = self.outline(name, x + pos.x_offset, -pos.y_offset)
-            glyphs.append({"d": d, "x": rnd(x + pos.x_offset), "w": rnd(pos.x_advance)})
-            b = self.bounds(name, x + pos.x_offset)
+            ox = x + pos.x_offset
+            if caps[info.cluster] and name in DIGITS:
+                d = self.figure(name, (1, 0, 0, -1, ox, -pos.y_offset))
+                advance = self.figure_advance(name)
+                b = self.figure_bounds(name, ox)
+            else:
+                d = self.outline(name, ox, -pos.y_offset)
+                advance = pos.x_advance
+                b = self.bounds(name, ox)
+            glyphs.append({"d": d, "x": rnd(ox), "w": rnd(advance)})
             if b:
                 box = b if box is None else (min(box[0], b[0]), min(box[1], b[1]), max(box[2], b[2]), max(box[3], b[3]))
-            x += pos.x_advance + tracking
+            x += advance + tracking
         width = x - tracking if glyphs else 0
         # ink bounds [x0, y0, x1, y1] in svg units (y down), for optical alignment
         return glyphs, rnd(width), [rnd(v) for v in (box or (0, 0, 0, 0))]

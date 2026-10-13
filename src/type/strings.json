@@ -56,9 +56,9 @@
   "text": "School"
  },
  {
-  "id": "name.ed1th",
+  "id": "name.e1o",
   "style": "regular",
-  "text": "ED1TH",
+  "text": "E1O",
   "tracking": 0.03
  },
  {
@@ -106,7 +106,7 @@
  {
   "id": "flow.lede",
   "style": "regular",
-  "text": "Building ED1TH at Datost: glasses that put a quiet, capable computer in the corner of your eye.",
+  "text": "Building E1O at Datost: glasses that put a quiet, capable computer in the corner of your eye.",
   "flow": true
  },
  {
@@ -116,7 +116,7 @@
   "flow": true
  },
  {
-  "id": "flow.kicker.ed1th",
+  "id": "flow.kicker.e1o",
   "style": "regular",
   "text": "DATOST",
   "tracking": 0.14,
@@ -169,7 +169,7 @@
   "flow": true
  },
  {
-  "id": "flow.line.ed1th",
+  "id": "flow.line.e1o",
   "style": "italic",
   "text": "The computers that come after the screen.",
   "flow": true
@@ -199,9 +199,9 @@
   "flow": true
  },
  {
-  "id": "flow.name.ed1th",
+  "id": "flow.name.e1o",
   "style": "italic",
-  "text": "ED1TH",
+  "text": "E1O",
   "flow": true
  },
  {

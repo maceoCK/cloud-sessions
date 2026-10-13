@@ -1,4 +1,4 @@
-// Fig. I · ED1TH. A pair of round glasses on a fitting stand, seen from the
+// Fig. I · E1O. A pair of round glasses on a fitting stand, seen from the
 // wearer's side: a nose rest and two ear rests hold the frame, two model eyes
 // sit where a wearer's would, and a small display lives in the upper outer
 // corner of the right lens. The eyes follow the pointer; when the right eye's
@@ -346,34 +346,34 @@ const EYES = [-1, 1].map((side) => [side * IPD, EYE_Y, ZG]);
 const display0 = display();
 
 export default {
-  id: "ed1th",
+  id: "e1o",
   fig: "Fig 1",
-  title: "ED1TH fitting stand",
+  title: "E1O fitting stand",
   hint: "Look around",
   width: WIDTH,
   height: HEIGHT,
   label:
     "A pair of round glasses on a fitting stand, seen from the wearer's side. A nose rest and two ear rests hold the frame, two model eyes on cups sit where a wearer's eyes would be, a small computer pod rides the right temple, and a small display window sits in the upper outer corner of the right lens.",
-  stage: { role: "group", label: "ED1TH fitting stand. Move the pointer or use the arrow keys to turn the model eyes; Enter glances into the corner of the right lens.", attrs: {} },
+  stage: { role: "group", label: "E1O fitting stand. Move the pointer or use the arrow keys to turn the model eyes; Enter glances into the corner of the right lens.", attrs: {} },
   css: `
-#fig-ed1th{--ed-light:#18181a;--ed-glass:#ececea;--ed-window:#ffffff}
-[data-theme="dark"] #fig-ed1th{--ed-light:#ededea;--ed-glass:#1c1c1c;--ed-window:#0b0b0b}
-#fig-ed1th .ed-glass .iso-fill{fill:var(--ed-glass);fill-opacity:.42}
-#fig-ed1th .ed-glass .iso-shade,#fig-ed1th .ed-glass .iso-top{opacity:.35}
-#fig-ed1th .ed-glass .iso-edge{stroke:var(--anatomy-mid)}
-#fig-ed1th .ed-window{fill:var(--ed-window);fill-opacity:calc(.06 + var(--on,0) * .5);stroke:var(--ed-light);stroke-width:.25;stroke-opacity:calc(.25 + var(--on,0) * .6)}
-#fig-ed1th .ed-glow{opacity:calc(var(--on,0) * .9)}
-#fig-ed1th .ed-screen{opacity:calc(.08 + var(--on,0) * .92)}
-#fig-ed1th .ed-time{font:600 4.3px/1 var(--anatomy-mono);fill:var(--ed-light);letter-spacing:.02em}
-#fig-ed1th .ed-rule{stroke:var(--ed-light);stroke-opacity:.3;stroke-width:.35;fill:none}
-#fig-ed1th .ed-bar{stroke:var(--ed-light);stroke-width:.5;fill:none;stroke-linecap:round}
-#fig-ed1th .ed-dot{fill:var(--ed-light)}
-#fig-ed1th .ed-gaze{stroke:var(--anatomy-mid);stroke-width:.6;stroke-dasharray:2 2.4;fill:none}
-#fig-ed1th .ed-gaze[data-on]{stroke:var(--ed-light)}
-#fig-ed1th .ed-hit{fill:var(--anatomy-mid)}
-#fig-ed1th .ed-hit[data-on]{fill:var(--ed-light)}
-#fig-ed1th .ed-lamp{fill:var(--anatomy-lo)}
-#fig-ed1th .ed-lamp[data-lamp="1"]{fill:var(--ed-light);opacity:calc(.25 + var(--on,0) * .75)}
+#fig-e1o{--ed-light:#18181a;--ed-glass:#ececea;--ed-window:#ffffff}
+[data-theme="dark"] #fig-e1o{--ed-light:#ededea;--ed-glass:#1c1c1c;--ed-window:#0b0b0b}
+#fig-e1o .ed-glass .iso-fill{fill:var(--ed-glass);fill-opacity:.42}
+#fig-e1o .ed-glass .iso-shade,#fig-e1o .ed-glass .iso-top{opacity:.35}
+#fig-e1o .ed-glass .iso-edge{stroke:var(--anatomy-mid)}
+#fig-e1o .ed-window{fill:var(--ed-window);fill-opacity:calc(.06 + var(--on,0) * .5);stroke:var(--ed-light);stroke-width:.25;stroke-opacity:calc(.25 + var(--on,0) * .6)}
+#fig-e1o .ed-glow{opacity:calc(var(--on,0) * .9)}
+#fig-e1o .ed-screen{opacity:calc(.08 + var(--on,0) * .92)}
+#fig-e1o .ed-time{font:600 4.3px/1 var(--anatomy-mono);fill:var(--ed-light);letter-spacing:.02em}
+#fig-e1o .ed-rule{stroke:var(--ed-light);stroke-opacity:.3;stroke-width:.35;fill:none}
+#fig-e1o .ed-bar{stroke:var(--ed-light);stroke-width:.5;fill:none;stroke-linecap:round}
+#fig-e1o .ed-dot{fill:var(--ed-light)}
+#fig-e1o .ed-gaze{stroke:var(--anatomy-mid);stroke-width:.6;stroke-dasharray:2 2.4;fill:none}
+#fig-e1o .ed-gaze[data-on]{stroke:var(--ed-light)}
+#fig-e1o .ed-hit{fill:var(--anatomy-mid)}
+#fig-e1o .ed-hit[data-on]{fill:var(--ed-light)}
+#fig-e1o .ed-lamp{fill:var(--anatomy-lo)}
+#fig-e1o .ed-lamp[data-lamp="1"]{fill:var(--ed-light);opacity:calc(.25 + var(--on,0) * .75)}
 `,
   build() {
     nose();

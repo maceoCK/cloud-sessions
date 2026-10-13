@@ -2,7 +2,7 @@
 // standalone page per figure in dist/fig/ (light and dark) for close checks.
 //
 //   node scripts/build.mjs                 everything
-//   node scripts/build.mjs --only ed1th    one figure's standalone pages (and skip the site)
+//   node scripts/build.mjs --only e1o    one figure's standalone pages (and skip the site)
 import { compactSvg } from "./compact.mjs";
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";

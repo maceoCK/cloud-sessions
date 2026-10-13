@@ -273,7 +273,7 @@ export function sitePage({ figures, script, fragment = false }) {
     if (!ids.length) return "";
     const entries = ids
       .map((id) => {
-        const wide = id === "ed1th";
+        const wide = id === "e1o";
         const html = entryHtml(byId[id], numberOf(id), !wide && flip, wide);
         if (!wide) flip = !flip;
         return html;

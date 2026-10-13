@@ -9,7 +9,7 @@ model whose numbers show in the card's corner.
 
 | Fig. | Entry | The machine |
 | --- | --- | --- |
-| I | ED1TH, Datost | Glasses on a fitting stand: model eyes follow the pointer, and the display in the corner of the right lens comes up when the eye glances into it |
+| I | E1O, Datost | Glasses on a fitting stand: model eyes follow the pointer, and the display in the corner of the right lens comes up when the eye glances into it |
 | II | Datost | A card cabinet of sixteen drawers, one per private repository, every one locked |
 | III | Traba | A punch time clock and a rack of eight shift cards, filled at market speed |
 | IV | SimonComputing | An indexing production line: measured, then stamped, then counted (rev 02 to rev 07) |
@@ -65,7 +65,7 @@ stores only outlines in `src/type/outlines.json`. A line becomes one outline.
 Wrapping text is cut into words over a shared glyph atlas: the page draws each
 word as a small inline svg of `<use>` glyphs, with real spaces between words
 so they wrap, and the words themselves beside it for screen readers. In
-all-caps words set in the italic (ED1TH) the figures come from the upright,
+all-caps words set in the italic (E1O) the figures come from the upright,
 slanted to the italic's 20 degrees, because the italic's old-style 1 reads as
 an i. If copy changes without a re-outline, the build warns and sets that text
 in a system serif rather than showing stale outlines. To change a display

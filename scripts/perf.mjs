@@ -49,7 +49,7 @@ const scroll = page.evaluate(
 );
 stats("scrolling", await sample(11500));
 await scroll;
-for (const id of ["ed1th", "traba", "simon", "school"]) {
+for (const id of ["e1o", "traba", "simon", "school"]) {
   await page.evaluate((id) => document.getElementById(id).scrollIntoView({ block: "center", behavior: "instant" }), id);
   await page.waitForTimeout(1600);
   stats(`at ${id}`, await sample(2500));
