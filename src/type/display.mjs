@@ -13,8 +13,8 @@ export const DISPLAY = [
   ...GROUPS.map((g) => ({ id: `group.${g.id}`, style: "italic", text: g.title })),
   ...Object.entries(ENTRIES).map(([id, e]) => ({ id: `name.${id}`, style: "regular", text: e.name.toUpperCase(), tracking: 0.03 })),
   { id: "contact.mail", style: "italic", text: PERSON.email },
-  { id: "seal.ring", style: "regular", text: "MACEO · CARDINALE · KWIK · NEW YORK CITY · ", tracking: 0.12, glyphs: true },
-  { id: "seal.mck", style: "regular", text: "MCK", tracking: 0.04 },
+  { id: "seal.ring", style: "regular", text: [...PERSON.name.split(" "), PERSON.city].join(" · ").toUpperCase() + " · ", tracking: 0.12, glyphs: true },
+  { id: "seal.mck", style: "regular", text: PERSON.short, tracking: 0.04 },
 ];
 
 // Running text, set as words that wrap (see "flow" in outline.py): the
