@@ -9,7 +9,7 @@
   --nt-steel-face: #e8e9e8; --nt-steel-top: #f4f5f4; --nt-steel-end: #d2d3d2; --nt-screw: #dfe0df;
   --nt-face-0: #e0e0dd; --nt-face-1: #efefec; --nt-face-2: #ffffff; --nt-face-3: #ffffff; --nt-face-4: #ffffff;
   --nt-back-0: #ccc9bf; --nt-back-1: #d8d5cc; --nt-back-2: #e2dfd7; --nt-back-3: #e9e6df; --nt-back-4: #eeebe5;
-  --nt-ink: #17171b; --nt-ghost: 18%;
+  --nt-ink: #17171b; --nt-ghost: 18%; --nt-edge: var(--anatomy-lit);
   --nt-film: #dad9d2; --nt-island: #fbfaf6; --nt-speck: #5f5e57;
   --nt-delam: #f0eee7; --nt-tear: #8c8a84; --nt-fuzzfibre: #fbfaf5;
   --nt-halo: #5c5b54;
@@ -26,16 +26,16 @@
   --nt-sand: #121110; --nt-sand-light: #33322f;
   --nt-chip: #1a1411;
   --nt-steel-face: #1e1f1f; --nt-steel-top: #282929; --nt-steel-end: #161717; --nt-screw: #252626;
-  --nt-face-0: #1a1a1a; --nt-face-1: #222222; --nt-face-2: #2c2c2c; --nt-face-3: #303030; --nt-face-4: #343434;
-  --nt-back-0: #151514; --nt-back-1: #1a1a19; --nt-back-2: #20201e; --nt-back-3: #252523; --nt-back-4: #292927;
-  --nt-ink: #ededed; --nt-ghost: 15%;
-  --nt-film: #2d2d2a; --nt-island: #45443f; --nt-speck: #0a0a0a;
-  --nt-delam: #3a3936; --nt-tear: #8e8d88; --nt-fuzzfibre: #5a5954;
+  --nt-face-0: #8e8c85; --nt-face-1: #a6a49d; --nt-face-2: #bdbbb4; --nt-face-3: #c8c6bf; --nt-face-4: #d1cfc8;
+  --nt-back-0: #6b6964; --nt-back-1: #797771; --nt-back-2: #86847e; --nt-back-3: #918f89; --nt-back-4: #9b9993;
+  --nt-ink: #151517; --nt-ghost: 20%; --nt-edge: #0b0b0b;
+  --nt-film: #2d2d2a; --nt-island: #9a9891; --nt-speck: #0a0a0a;
+  --nt-delam: #a9a7a0; --nt-tear: #55534e; --nt-fuzzfibre: #c4c2bb;
   --nt-halo: #000000;
   --nt-sheen-hi: #9aa0a3; --nt-sheen-hi-o: .16; --nt-sheen-lo: #000000; --nt-sheen-lo-o: .3;
   --nt-flash: #000000; --nt-flash-o: .35; --nt-bloom: #6b6a64; --nt-bloom-o: .22;
   --nt-grime: #000000; --nt-plug: #3a3a38; --nt-plughole: #0b0908;
-  --nt-clay-o: .7; --nt-sand-o: .9; --nt-sandlight-o: .18; --nt-fuzz-o: .24; --nt-drift-o: .8; --nt-paper-o: .3;
+  --nt-clay-o: .7; --nt-sand-o: .9; --nt-sandlight-o: .18; --nt-fuzz-o: .24; --nt-drift-o: .8; --nt-paper-o: .16;
 }
 
 /* the wall */
@@ -124,7 +124,7 @@
 .nt-side[data-shade="3"] { fill: var(--nt-face-2); }
 .nt-delam { fill: var(--nt-delam); stroke: none; }
 .nt-halo { fill: var(--nt-halo); stroke: none; }
-.nt-edge { fill: none; stroke: var(--anatomy-lit); stroke-width: .7px; stroke-linecap: round; stroke-linejoin: round; }
+.nt-edge { fill: none; stroke: var(--nt-edge); stroke-width: .7px; stroke-linecap: round; stroke-linejoin: round; }
 .nt-crease { fill: none; stroke: color-mix(in srgb, var(--nt-tear) 55%, var(--nt-paper)); stroke-width: .55px; stroke-linecap: round; }
 .nt-tear { fill: none; stroke: var(--nt-tear); stroke-width: .6px; stroke-linecap: round; stroke-linejoin: round; }
 .nt-ink { fill: none; stroke: var(--nt-ink); stroke-linecap: round; stroke-linejoin: round; }
