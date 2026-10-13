@@ -6,9 +6,9 @@ An interactive isometric figure, built with the [Anatomy](https://github.com/whe
 
 | | Light | Dark |
 |---|---|---|
-| A foot presses in, heel first, ringed by pale drained sand | <img src="shots/light-press.webp" width="360" alt=""> | <img src="shots/dark-press.webp" width="360" alt=""> |
+| A foot presses in while the sea laps at the back | <img src="shots/light-press.webp" width="360" alt=""> | <img src="shots/dark-press.webp" width="360" alt=""> |
 | Four prints, water pooled in the heels and balls | <img src="shots/light-prints.webp" width="360" alt=""> | <img src="shots/dark-prints.webp" width="360" alt=""> |
-| The swash slides in with its foam front | <img src="shots/light-swash.webp" width="360" alt=""> | <img src="shots/dark-swash.webp" width="360" alt=""> |
+| The bore crosses the shallows and its swash slides up | <img src="shots/light-swash.webp" width="360" alt=""> | <img src="shots/dark-swash.webp" width="360" alt=""> |
 | Backwash: the prints are gone, foam is stranded | <img src="shots/light-backwash.webp" width="360" alt=""> | <img src="shots/dark-backwash.webp" width="360" alt=""> |
 | Smooth again, the glossy film draining | <img src="shots/light-smooth.webp" width="360" alt=""> | <img src="shots/dark-smooth.webp" width="360" alt=""> |
 
