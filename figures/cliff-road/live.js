@@ -11,6 +11,11 @@ const still = matchMedia("(prefers-reduced-motion: reduce)");
 const pale = root.closest("[data-theme]")?.getAttribute("data-theme") === "light";
 const K = { iso, pathOf, solidSvg, lineSvg, dotsSvg };
 const clampTo = (value, low, high) => Math.min(high, Math.max(low, value));
+// the kit's spring is stable for steps under about a third of its time: split a long frame into short ones
+const springTo = (state, target, dt, seconds, calm) => {
+  const n = Math.max(1, Math.ceil(dt / (seconds / 3)));
+  for (let i = 0; i < n; i++) settle(state, target, dt / n, seconds, calm);
+};
 
 const road = M.roadOf();
 const profile = D.profile;
@@ -46,7 +51,9 @@ function lampOn(p, pose) {
     const dy = p[1] - ly;
     const r = Math.hypot(dx, dy) || 1;
     const ah = Math.acos(Math.max(-1, Math.min(1, (dx * c + dy * s) / r)));
-    const pattern = Math.exp(-((ah / 0.4) ** 2)) * (1 + 2.2 * Math.exp(-((ah / 0.12) ** 2)));
+    // low beams are cut off a little above the horizontal: nothing up on the hill catches them
+    const up = Math.atan2(p[2] - D.road - 0.8, r);
+    const pattern = Math.exp(-((ah / 0.4) ** 2)) * (1 + 2.2 * Math.exp(-((ah / 0.12) ** 2))) * Math.exp(-((Math.max(0, up - 0.06) / 0.12) ** 2));
     e += (pattern / (r * r)) * smooth(1, 6, r);
   }
   return e;
@@ -172,7 +179,7 @@ function tick(now) {
   last = now;
   const calm = still.matches;
   state.clock += dt;
-  settle(ease, state.target, dt, 0.5, calm);
+  springTo(ease, state.target, dt, 0.5, calm);
   if (calm) {
     poseStill();
     placeCar();
@@ -193,7 +200,8 @@ function tick(now) {
     state.tourLap = (state.tourLap + 1) % TOUR.length;
     state.target = TOUR[state.tourLap];
   }
-  settle(brake, car.brake, dt, 0.06);
+  springTo(brake, car.brake, dt, 0.06);
+  brake.x = clampTo(brake.x, 0, 1);
   placeCar();
   drawSock(state.clock);
   drawKnob();
@@ -274,3 +282,5 @@ if (matchMedia("(hover: none)").matches) {
 }
 if (still.matches) touring = false;
 describe();
+// read-only hook for the figure's own checks (where the car is along the road)
+Object.defineProperty(window, "__crState", { configurable: true, get: () => ({ i: car.i, n: road.n, x: car.x, y: car.y, dark: car.dark, share: ease.x, clock: state.clock }) });

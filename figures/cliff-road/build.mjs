@@ -511,17 +511,24 @@ for (let j = 0; j < TEX.ny; j++) {
     texBytes[o] = enc(waterSdf(x, y));
     texBytes[o + 1] = enc(Math.min(sdfCoast(x, y), stackSdf(x, y, Z.road)));
     texBytes[o + 2] = Math.round(Math.min(255, (heightAt(x, y) / 256) * 255));
-    texBytes[o + 3] = 255;
+    // the distance the swell refracts round: the headland and the tall stack, not the small rocks (-16..240)
+    texBytes[o + 3] = Math.round(Math.min(1, Math.max(0, (Math.min(sdfCoast(x, y) - Math.max(platformOff(x, y), notchOff(x, y)), stackSdf(x, y, 100)) + 16) / 256)) * 255);
   }
 }
-// where crests hit: the waterline, sampled every 5 units with its outward normal
+// where crests hit: the waterline, sampled every 7 units of its length with its outward normal
 const SPRAY_AT = [];
 {
+  const EVERY = 7;
+  let carry = 0;
   for (let i = 0; i < coast.length - 1; i++) {
     const [ax, ay] = coast[i];
     const [bx, by] = coast[i + 1];
     const len = Math.hypot(bx - ax, by - ay);
-    for (let t = 0; t < len; t += 5) {
+    if (len < 1e-6) continue;
+    const from = carry;
+    carry = (carry - len) % EVERY;
+    if (carry < 0) carry += EVERY;
+    for (let t = from; t < len; t += EVERY) {
       const x = ax + ((bx - ax) * t) / len;
       const y = ay + ((by - ay) * t) / len;
       if (x < X0 + 4 || x > X1 - 4 || y < Y0 + 4 || y > Y1 - 4) continue;

@@ -23,7 +23,7 @@ Every number the figure shows comes from this one module: the readout, the tyre 
 - **The driver** steers by pure pursuit toward a line that clips the apexes. They plan each corner by what lies on its outside: 84% of the grip where the outside is the drop, all of it where it's rock or grass. They brake before turning in and lift when a slide carries the car toward the edge.
 - **The car** is a point mass on a friction circle: damp asphalt under sea mist, μ 0.78 peak and 0.72 sliding. Braking and cornering share the grip. When the demanded cornering exceeds it, the path widens to v²/(μg). The driver then holds the tail out by up to 32°, plus a few degrees of tyre slip, and countersteers.
 - **The pace limit** is found by bisection: the fastest pace at which a whole lap clears the edge by 0.3 m.
-- **The swell** has an 11 s period, its wavelength from linear dispersion ω² = gk·tanh(kh). Crests are refracted round the headland: their phase follows the distance to the coast plus a slant, so each crest hits the tip first and runs back along both cliffs.
+- **The swell** has an 11 s period, its wavelength from linear dispersion ω² = gk·tanh(kh), and stands 2.4 m from trough to crest at the rock. Crests are refracted round the headland: their phase follows the distance to the coast plus a slant, so each crest comes in from the open sea, hits the tip first and runs back along both cliffs. Small rocks don't bend the swell, so they're left out of that distance. Crests peak as they shoal, and the cliff sends a weaker one back out after each hit. Every visible point of the waterline throws a jet of spray as the crest reaches it.
 
 ## Layers
 

@@ -16,6 +16,7 @@ uniform sampler2D uCoast;uniform vec4 uTexA;uniform vec2 uTexB;uniform vec4 uBox
 vec4 coastTex(vec2 p){vec2 uv=((p-uTexA.xy)/uTexA.z+.5)/uTexB;return texture2D(uCoast,uv);}
 float dWater(vec2 p){return coastTex(p).r*128.-32.;}
 float dTop(vec2 p){return coastTex(p).g*128.-32.;}
+float dSwell(vec2 p){return coastTex(p).a*256.-16.;}
 vec4 inkFor(vec3 seen,float cover){vec3 ab=1.-clamp(seen,0.,1.);float a=max(max(ab.r,max(ab.g,ab.b)),cover);return vec4(vec3(a)-ab,a);}
 vec4 over(vec4 top,vec4 under){return top+under*(1.-top.a);}
 vec4 dithered(vec4 c){float n=(hash12(gl_FragCoord.xy+fract(uTime*.61)*91.)+hash12(gl_FragCoord.yx*1.37+fract(uTime*.37)*57.)-1.)/255.;return max(c+n*smoothstep(0.,1.5/255.,c.a),0.);}
@@ -30,9 +31,9 @@ void train(vec2 p,float t,vec2 dir,float lambda,float amp,float ph,inout float h
   h+=amp*sin(th);g+=amp*k*cos(th)*dir;
 }
 // the swell: phase from the distance to the coast (refraction wraps the crests round the headland)
-// plus a slant, so each crest reaches the tip first and runs back along both cliffs
-float swellPhase(vec2 p,float d){return uSwell.x*uTime-uSwell.y*(d+uSwell.w*(uSwell.z-p.x));}
-float crest;
+// plus a slant, so each crest comes in from the open sea, reaches the tip first and runs back along both cliffs
+float swellPhase(vec2 p,float d){return uSwell.x*uTime+uSwell.y*(d-uSwell.w*(uSwell.z-p.x));}
+float crest;float face;
 void surface(vec2 p,out float h,out vec2 g,out float foam,out float d){
   d=dWater(p);
   float t=uTime;
@@ -43,32 +44,55 @@ void surface(vec2 p,out float h,out vec2 g,out float foam,out float d){
   train(p,t,vec2(-.99,.12),52.,.38*calm,4.1,h,g);
   train(p,t,vec2(-.71,-.70),33.,.22*calm,2.3,h,g);
   train(p,t,vec2(-.6,.8),21.,.12*calm,5.2,h,g);
-  // swell with shoaling near the cliffs
+  // swell with shoaling near the cliffs: a peaked crest over a long flat trough, sharper as it shoals,
+  // 2.4 m from trough to crest at the rock
   float e=1.5;
   vec2 gd=vec2(dWater(p+vec2(e,0.))-dWater(p-vec2(e,0.)),dWater(p+vec2(0.,e))-dWater(p-vec2(0.,e)))/(2.*e);
-  float th=swellPhase(p,d);
-  float grow=1.+1.4*smoothstep(60.,4.,d);
-  float amp=2.6*grow;
-  h+=amp*sin(th);
-  g+=amp*uSwell.y*cos(th)*(-(gd-vec2(uSwell.w,0.)));
-  // whitewater: where a crest breaks (inside ~30 units of the rock) and behind it as it runs in
+  float ds=dSwell(p);
+  vec2 gs=vec2(dSwell(p+vec2(e,0.))-dSwell(p-vec2(e,0.)),dSwell(p+vec2(0.,e))-dSwell(p-vec2(0.,e)))/(2.*e);
+  float th=swellPhase(p,ds);
   float c=(th-1.5708)/6.2832;
   float n=floor(c);
   float psi=c-n;
   float an=.55+.45*hashN(n);
-  float zone=smoothstep(36.,6.,d)*smoothstep(-1.,1.5,d);
+  float grow=1.+1.4*smoothstep(60.,4.,ds);
+  float amp=2.5*grow*(.75+.25*an);
+  float pk=1.6+2.2*smoothstep(90.,6.,ds);
+  float s1=max(.5+.5*sin(th),1e-4);
+  h+=amp*2.*(pow(s1,pk)-.3);
+  g+=amp*pk*pow(s1,pk-1.)*cos(th)*uSwell.y*(gs+vec2(uSwell.w,0.));
+  // after each crest slams into the rock, a weaker one goes back out: the cliff reflects the swell
+  float thr=uSwell.x*uTime-uSwell.y*(ds+uSwell.w*(uSwell.z-p.x));
+  float cr=(thr-1.5708)/6.2832;
+  float nr=floor(cr);
+  float psr=cr-nr;
+  float back=.32*smoothstep(110.,0.,ds)*(.55+.45*hashN(nr));
+  h+=back*amp*sin(thr);
+  // whitewater: where a crest breaks (inside ~30 units of the rock) and behind it as it runs in
+  float lam=6.2832/uSwell.y;
+  // how big the nearest rock is: a boulder breaks a small wave, the cliff and the stacks a big one
+  float big=smoothstep(50.,110.,coastTex(p-gd*(d+3.)).b*256.);
+  float zone=smoothstep(mix(14.,36.,big),mix(2.,6.,big),d)*smoothstep(-1.,1.5,d)*mix(.45,1.,big);
   // the broken crest runs in with the swell: a band just behind the crest line, then its trail
   float fresh=exp(-psi*9.)+.28*exp(-psi*2.6);
   vec2 streak=vec2(gd.y,-gd.x);
   float lace=noise2(p*.16+streak*psi*3.+vec2(t*.4,t*.1))*.6+noise2(p*.37-vec2(t*.2,0.))*.4;
-  float wash=smoothstep(5.,.3,d)*(.45+.55*an)*(.35+.65*exp(-psi*2.5));
-  foam=zone*an*(1.5*exp(-psi*7.)+.4*exp(-psi*2.))*smoothstep(.3,.7,lace+.3*fresh);
+  float wash=smoothstep(5.,.3,d)*(.45+.55*an)*(.35+.65*exp(-psi*2.5))*mix(.5,1.,big);
+  foam=zone*an*(1.2*exp(-psi*7.)+.35*exp(-psi*2.))*smoothstep(.4,.78,lace+.28*fresh);
   foam+=wash*(.55+.45*smoothstep(.3,.7,lace+.25));
   float trails=noise2(p*.06+streak*.3+vec2(.02*t,-.03*t));
   foam+=.22*smoothstep(.7,.86,trails)*smoothstep(48.,10.,d)*smoothstep(.5,.9,noise2(p*.21+vec2(t*.05,0.)));
   foam=clamp(foam,0.,1.);
-  // the swell's crest line, catching the moon as it steepens over the shelf
-  crest=exp(-pow(min(psi,1.-psi)*6.,2.))*smoothstep(90.,20.,d)*(.4+.6*an);
+  // the swell's crest line, a few units wide, and the steep face just ahead of it (toward the rock)
+  float behind=psi*lam;float ahead=(1.-psi)*lam;
+  crest=exp(-pow(min(behind,ahead)/(2.5+3.*smoothstep(10.,80.,d)),2.))*(.45+.55*an)*smoothstep(-1.,4.,d);
+  face=exp(-ahead/(4.+6.*smoothstep(10.,80.,d)))*smoothstep(-1.,4.,d)*(.45+.55*an);
+  // wind whitecaps tear off the crest, then the reflected crest's backwash line heads out to sea
+  float caps=smoothstep(.55,.8,noise2(p*vec2(.09,.05)+vec2(n*3.7,t*.3)));
+  foam+=.75*caps*exp(-behind/6.)*(.3+.7*smoothstep(90.,15.,d))*an;
+  float rb=min(psr,1.-psr)*lam;
+  foam+=.35*exp(-pow(rb/4.,2.))*smoothstep(80.,6.,d)*smoothstep(.4,.75,noise2(p*.12+vec2(0.,t*.2)))*(back/.32);
+  foam=clamp(foam,0.,1.);
 }
 vec3 skyOf(vec3 r){
   float up=smoothstep(-.15,.9,r.z);
@@ -99,7 +123,9 @@ vec4 waterAt(vec2 p,float hgt,vec2 g,float foam,float d){
     vec3 body=mix(vec3(.018,.04,.05),vec3(.006,.012,.018),deep);
     vec3 col=mix(body,skyOf(r),f)+vec3(.85,.9,1.)*spark;
     col+=vec3(.05,.07,.08)*smoothstep(.5,2.6,hgt)*(1.-deep*.5);
-    col+=vec3(.07,.09,.11)*crest;
+    // the crest catches the moon; the face beyond it, toward the rock, turns away from us
+    col*=1.-.45*face*(1.-crest);
+    col+=vec3(.15,.19,.23)*crest;
     col=mix(col,vec3(.55,.6,.65),foam);
     col=tonemap(col,1.25);
     float a=mix(.62,.95,deep);
@@ -110,7 +136,8 @@ vec4 waterAt(vec2 p,float hgt,vec2 g,float foam,float d){
   vec3 deepC=vec3(.64,.725,.77);
   vec3 seen=mix(shallow,deepC,deep);
   seen*=1.-.045*smoothstep(-2.,-.2,-hgt*.6);
-  seen=mix(seen,vec3(.9,.94,.95),crest*.35);
+  seen=mix(seen,vec3(.52,.62,.68),face*.42*(1.-crest));
+  seen=mix(seen,vec3(.93,.96,.97),crest*.6);
   seen=mix(seen,vec3(.95,.97,.98),f*.55);
   seen=mix(seen,vec3(1.),min(1.,spark*.6));
   float cover=mix(.5,.86,deep);
@@ -219,7 +246,24 @@ void main(){
 const fxGlsl = (NS, NP) => `${COMMON_GLSL}
 uniform float uRoad;uniform float uPortalX;uniform vec4 uCarA;uniform vec4 uCarB;
 uniform vec4 uSmk[${NS}];uniform vec4 uSmkB[${NS}];uniform vec4 uSpr[${NP}];uniform vec4 uSprB[${NP}];
-uniform vec4 uPortA;uniform vec4 uPortB;uniform float uBeams;
+uniform vec4 uPortA;uniform vec4 uPortB;uniform float uBeams;uniform vec2 uWind;uniform float uSea;
+float landAt(vec2 p){return coastTex(p).b*256.;}
+// sea mist: a slab from the water to ~6 m up, in drifting wisps; marched from the top down, it stops at the
+// first sample inside the land, so the cliff hides whatever mist lies behind it
+float mistAt(vec2 vb){
+  float sum=0.;
+  float j=hash12(gl_FragCoord.xy)*.8;
+  for(int i=0;i<6;i++){
+    float z=uSea+30.-(float(i)+j)*5.;
+    vec3 p=onFloor(vb,z);
+    if(landAt(p.xy)>z)break;
+    float inBox=window(p.x,uBox.x,uBox.z,8.)*window(p.y,uBox.y,uBox.w,8.);
+    float wisp=fbm2(p.xy*.018-uWind*uTime*.018+vec2(z*.03,0.));
+    float thin=smoothstep(.45,.85,wisp)*(1.-smoothstep(uSea,uSea+30.,z));
+    sum+=thin*inBox;
+  }
+  return sum/6.;
+}
 // the car as an oriented box: returns where the pixel's ray enters it (larger t is nearer), or -1e9
 float carHit(vec3 p0,vec3 v){
   float c=cos(uCarA.z);float s=sin(uCarA.z);
@@ -278,6 +322,9 @@ void main(){
   // spray is threads of water flung upward: streaks that climb; smoke billows
   float threads=.5+.5*noise2(vec2(vb.x*.42,vb.y*.045+uTime*1.4))*(.7+.3*noise2(vec2(vb.x*1.3,vb.y*.12+uTime*2.1)));
   spray*=threads*1.25;under*=threads*1.25;
+  // droplets flung out round the edge of the spray, drifting up
+  vec2 dq=(vb+vec2(0.,uTime*30.))/1.5;
+  float drops=step(.965,hash12(floor(dq)))*smoothstep(.42,.12,length(fract(dq)-.5))*smoothstep(.03,.2,spray)*(1.-smoothstep(.45,1.1,spray));
   float smoke=0.;float heat=0.;
   for(int i=0;i<${NS};i++){
     vec4 s=uSmk[i];vec4 sb=uSmkB[i];
@@ -287,6 +334,7 @@ void main(){
   }
   heat/=max(smoke,1e-4);
   smoke*=.55+.6*fbm2(vb*.06+vec2(uTime*.25,-uTime*.4));
+  float mist=mistAt(vb);
   // light on the portal walls and down the bores
   float wall=0.;float bore=0.;float sodium=0.;
   {
@@ -337,13 +385,20 @@ void main(){
     }
   }
   if(uPale<.5){
-    vec3 c=vec3(.56,.62,.68)*(1.-exp(-spray*1.3))*.9+vec3(.62,.64,.67)*(1.-exp(-smoke*1.2))*.95+vec3(.95,.18,.1)*(1.-exp(-smoke*heat*1.6))*.6;
-    c+=vec3(1.,.9,.72)*(wall+bore)+vec3(.95,.9,.78)*beam*.16+vec3(1.,.48,.12)*sodium*.11;
+    vec3 c=vec3(.58,.64,.7)*(1.-exp(-spray*1.8))*.92+vec3(.7,.76,.82)*drops*.7+vec3(.62,.64,.67)*(1.-exp(-smoke*1.2))*.95+vec3(.95,.18,.1)*(1.-exp(-smoke*heat*1.6))*.6;
+    c+=vec3(1.,.9,.72)*(wall+bore)+vec3(.95,.9,.78)*beam*.16+vec3(1.,.48,.12)*sodium*.11+vec3(.3,.36,.42)*mist*.5;
     c=tonemap(c,1.2);
     col=vec4(c,max(c.r,max(c.g,c.b)));
   }else{
-    float sa=.9*(1.-exp(-spray*.9));
-    vec4 sp=inkFor(mix(vec3(.9,.94,.965),vec3(.78,.84,.88),clamp(under/max(spray,1e-3),0.,1.)),sa);
+    // spray on paper: a white body that hides the rock's lines, blue-grey where it is thick and low,
+    // and a stipple of droplets round its thin edge
+    float low=clamp(under/max(spray,1e-3),0.,1.);
+    float thick=smoothstep(.7,2.4,spray);
+    vec3 tone=mix(vec3(.985,.99,.995),vec3(.7,.78,.84),max(low*.85,thick*.5));
+    float sa=.95*(1.-exp(-spray*2.2));
+    tone=mix(tone,vec3(.6,.69,.75),drops);
+    sa=max(sa,.6*drops);
+    vec4 sp=inkFor(tone,sa);
     sp*=sa/max(sp.a,1e-4);
     float ma=.85*(1.-exp(-smoke*.9));
     vec4 sm=inkFor(mix(vec3(.86,.87,.88),vec3(.93,.84,.8),heat*.5),ma);
@@ -352,7 +407,8 @@ void main(){
     vec4 wl=vec4(vec3(1.,.78,.34)*wa,wa);
     float na=.16*sodium;
     wl=over(wl,vec4(vec3(.95,.55,.12)*na,na));
-    col=over(sm,over(sp,wl));
+    float mi=.32*mist;
+    col=over(sm,over(sp,over(wl,inkFor(vec3(.9,.93,.95),mi)*(mi/max(inkFor(vec3(.9,.93,.95),mi).a,1e-4)))));
   }
   gl_FragColor=dithered(col*uFade);
 }`;
@@ -395,7 +451,7 @@ function gpuOf(D, stage, pale) {
   })();
   const NS = budget >= 224 ? 32 : 12;
   const NP = budget >= 224 ? 48 : 16;
-  const fx = light ? glLayer({ canvas: fxCanvas, fragment: fxGlsl(NS, NP), view: [D.W, D.H], camera: D.camera, maxRatio: 0.6, uniforms: ["uFade", "uCarA", "uCarB", "uSmk", "uSmkB", "uSpr", "uSprB"], fixed: { ...common, uRoad: D.road, uPortalX: D.portal, uPortA: [D.portals[0].yc, D.portals[0].half, D.portals[0].z, D.portals[0].spring], uPortB: [D.portals[1].yc, D.portals[1].half, D.portals[1].z, D.portals[1].spring], uBeams: pale ? 0 : 1 } }) : null;
+  const fx = light ? glLayer({ canvas: fxCanvas, fragment: fxGlsl(NS, NP), view: [D.W, D.H], camera: D.camera, maxRatio: 0.6, uniforms: ["uFade", "uCarA", "uCarB", "uSmk", "uSmkB", "uSpr", "uSprB", "uWind"], fixed: { ...common, uRoad: D.road, uPortalX: D.portal, uPortA: [D.portals[0].yc, D.portals[0].half, D.portals[0].z, D.portals[0].spring], uPortB: [D.portals[1].yc, D.portals[1].half, D.portals[1].z, D.portals[1].spring], uBeams: pale ? 0 : 1, uSea: D.sea } }) : null;
   if (!fx) return null;
   for (const layer of [sea, light, fx]) {
     const gl = layer.gl;
@@ -426,6 +482,8 @@ function gpuOf(D, stage, pale) {
   };
 
   // ---- particles ------------------------------------------------------------------------------------
+  // only the waterline we can see throws spray: the far side of the headland would spend the particles
+  const sprayVis = D.sprayAt.map(([x, y]) => seen(x, y, D.sea + 12) || seen(x, y, D.sea + 40));
   const smoke = Array.from({ length: NS }, () => ({ a0: 0, age: 9, life: 1 }));
   const spray = Array.from({ length: NP }, () => ({ a0: 0, age: 9, life: 1 }));
   let smokeAt = 0;
@@ -490,9 +548,9 @@ function gpuOf(D, stage, pale) {
       const n = Math.floor((th - Math.PI / 2) / (Math.PI * 2));
       const was = crests[j];
       crests[j] = n;
-      if (calm || Number.isNaN(was) || n === was) return;
+      if (calm || Number.isNaN(was) || n === was || !sprayVis[j]) return;
       const an = 0.55 + 0.45 * hashN(n);
-      if (an < 0.5 || hashN(n * 7.1 + j * 1.37) > 0.6) return;
+      if (hashN(n * 7.1 + j * 1.37) > 0.8) return;
       const p = oldest(spray);
       // each point of the waterline throws its own jet: height from the crest's size and a little luck
       const v0 = M.SPRAY.rise * M.U * (0.45 + 0.55 * an) * (0.6 + 0.7 * hashN(j + n * 3.3));
@@ -545,7 +603,7 @@ function gpuOf(D, stage, pale) {
     const carB = [car.brake || 0, car.v, 0, 0];
     sea.draw({ uFade: fade }, time);
     light.draw({ uFade: fade, uCarA: pose, uCarB: carB }, time);
-    fx.draw({ uFade: fade, uCarA: pose, uCarB: carB, uSmk: smk, uSmkB: smkB, uSpr: spr, uSprB: sprB }, time);
+    fx.draw({ uFade: fade, uCarA: pose, uCarB: carB, uSmk: smk, uSmkB: smkB, uSpr: spr, uSprB: sprB, uWind: WIND }, time);
   }
   return { step, draw };
 }
