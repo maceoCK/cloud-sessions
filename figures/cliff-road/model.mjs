@@ -6,23 +6,31 @@ export const U = 5;
 export const GRAV = 9.81;
 export const MU = 0.78; // peak grip of damp asphalt under sea mist
 export const MU_SLIDE = 0.72; // kinetic grip while the rear tyres slide
-export const HALF_ROAD = 3.5; // two 3.5 m lanes
+export const HALF_ROAD = 3.0; // a mountain pass: two 3 m lanes
 export const CAR = { length: 4.3, width: 1.68, height: 1.28, base: 2.4, track: 1.42, wheel: 0.31, lamp: 0.62, mass: 1150 };
 export const SWELL = { period: 11, height: 2.4, chop: 4.2 };
-export const LEVEL = { sea: 8, toe: 5, road: 33, crown: 47 }; // metres above the plinth top
-export const SPRAY = { rise: 11.5 };
-export const DRIFT_MAX = 32; // degrees the driver holds the tail out at full commitment // m/s at the foot of the cliff when a crest hits
+export const LEVEL = { sea: 8, toe: 5, top: 54, bottom: 24 }; // metres above the plinth top: the road at the summit tunnel and at the foot
+export const SPRAY = { rise: 11.5 }; // m/s at the foot of the cliff when a crest hits
+export const DRIFT_MAX = 32; // degrees the driver holds the tail out at full commitment
 
-// Road centreline control polygon (world units). The car leaves the far portal heading +x, runs the far leg,
-// turns left round the tip of the headland and comes back along the near leg into the near portal.
-export const PORTAL_X = -120;
-// The road as a driver would survey it: straights and arcs (metres of radius, degrees of turn), walked
-// from inside the far tunnel. A left turn is +, a right turn −. It closes on the near portal by construction.
+// Both tunnel mouths are in one rock face at x = PORTAL_X, at the left of the model: the road leaves the
+// summit tunnel heading +x and comes back down into the foot tunnel heading -x.
+export const PORTAL_X = -210;
+// The pass as a surveyor would walk it from inside the summit tunnel: straights and arcs (metres of radius,
+// degrees of turn; + turns toward the sea, which is the front of the model). Four legs, each with a pair of
+// S-bends, stacked down the mountain's face and joined by three 9 m hairpins: two on the sea cliff at the
+// right, one on the hillside at the left.
+const HAIRPIN = 9;
 export const ROUTE = [
-  ["line", 25], ["arc", -12, 44], ["line", 8], ["arc", 12, 44], ["line", 13.9], ["arc", 180, 16.8],
-  ["arc", 45, 16], ["line", 2], ["arc", -90, 15], ["line", 2], ["arc", 45, 16], ["line", 18.3],
+  ["line", 14], ["arc", 14, 32], ["arc", -14, 32], ["line", 30], ["arc", -10, 40], ["arc", 10, 40], ["line", 11.6],
+  ["arc", 180, HAIRPIN],
+  ["line", 8], ["arc", 12, 36], ["arc", -12, 36], ["line", 14], ["arc", -12, 36], ["arc", 12, 36], ["line", 11.06],
+  ["arc", -180, HAIRPIN],
+  ["line", 8], ["arc", -12, 36], ["arc", 12, 36], ["line", 14], ["arc", 12, 36], ["arc", -12, 36], ["line", 11.06],
+  ["arc", 180, HAIRPIN],
+  ["line", 16], ["arc", 10, 40], ["arc", -10, 40], ["line", 55.1],
 ];
-export const START = [-205, -75];
+export const START = [-250, -152];
 
 export function controlOf(route = ROUTE, start = START, step = 13) {
   const out = [[...start]];
@@ -97,9 +105,10 @@ function resampled(points, spacing) {
   return { out, total };
 }
 
-// Verge (m) between the outer road edge and the cliff edge, as a function of the share of the visible road.
-// Wide by the portals, narrowest where the cliff has eaten into the tip and the cove.
-export const vergeAt = (share) => 2.4 - 1.5 * Math.exp(-(((share - 0.5) / 0.07) ** 2)) - 0.9 * Math.exp(-(((share - 0.79) / 0.05) ** 2)) - 0.5 * Math.exp(-(((share - 0.24) / 0.05) ** 2));
+// Verge (m) between the road edge and the unguarded drop, as a function of distance along the road (m):
+// a metre and a half of gravel on the legs, narrower in the hairpins, and least on the lowest one, where
+// the sea cliff has eaten in.
+export const vergeAt = (s, hairpin) => (hairpin === 2 ? 0.9 : hairpin >= 0 ? 1.1 : 1.5 + 0.35 * Math.sin(s / 11) + 0.2 * Math.sin(s / 4.3 + 1));
 
 export function roadOf(control = CONTROL) {
   const dense = bspline(control, 12);
@@ -122,12 +131,26 @@ export function roadOf(control = CONTROL) {
     }
     return sum / weight;
   });
-  // the visible stretch runs portal to portal; shares measure along it
+  // the visible stretch runs portal to portal
   const first = out.findIndex(([x]) => x >= PORTAL_X);
   let last = n - 1;
   while (last > 0 && out[last][0] < PORTAL_X) last--;
-  const verge = out.map((_, i) => vergeAt((i - first) / (last - first)));
-  return { pts: out, heading, kappa, verge, n, ds, length: (n - 1) * ds, first, last };
+  // which hairpin a sample is in (0, 1, 2 from the top; -1 on the legs), by its curvature
+  const hairpin = new Int8Array(n).fill(-1);
+  let count = -1;
+  let inside = false;
+  for (let i = 0; i < n; i++) {
+    const tight = Math.abs(kappa[i]) > 0.075;
+    if (tight && !inside) count++;
+    inside = tight;
+    if (tight) hairpin[i] = count;
+  }
+  // the drop is on the downhill side, toward the sea at the front; round a hairpin it is the outside
+  const drop = heading.map((h, i) => (hairpin[i] >= 0 ? -Math.sign(kappa[i]) : Math.cos(h) >= 0 ? 1 : -1));
+  const verge = out.map((_, i) => vergeAt(i * ds, hairpin[i]));
+  // the road falls at a steady grade from the summit tunnel to the foot one (world units)
+  const z = out.map((_, i) => (LEVEL.top - ((LEVEL.top - LEVEL.bottom) * i) / (n - 1)) * U);
+  return { pts: out, heading, kappa, verge, drop, hairpin, z, n, ds, length: (n - 1) * ds, first, last, grade: (LEVEL.top - LEVEL.bottom) / ((n - 1) * ds) };
 }
 
 // A point on the road: (index, lateral metres to the left of travel) → world units
@@ -139,7 +162,7 @@ export function roadPoint(road, i, d) {
 }
 
 export function cliffEdge(road, i) {
-  return roadPoint(road, i, -(HALF_ROAD + road.verge[i]));
+  return roadPoint(road, i, road.drop[i] * (HALF_ROAD + road.verge[i]));
 }
 
 export function project(road, x, y, hint) {
@@ -164,8 +187,8 @@ export function project(road, x, y, hint) {
 // Speed the driver aims for at each sample, before the pace multiplier: the grip-limited corner speed
 // (with a small attack factor), then braking and traction limits run back and forth along the road.
 export function speedProfile(road, { cliff = 0.84, land = 1.0, vmax = 27, brake = 0.82, push = 0.34 } = {}) {
-  // the driver plans each corner by what lies on its outside: the drop (left-handers, the cliff is always on
-  // the right) gets 84% of the grip; a corner whose outside is rock or grass gets all of it
+  // the driver plans each corner by what lies on its outside: where that is the drop, 84% of the grip;
+  // where it is the hillside, all of it
   const n = road.n;
   const v = new Float64Array(n);
   for (let i = 0; i < n; i++) {
@@ -174,7 +197,7 @@ export function speedProfile(road, { cliff = 0.84, land = 1.0, vmax = 27, brake 
       const kj = road.kappa[clampTo(i + j, 0, n - 1)];
       if (Math.abs(kj) > Math.abs(k)) k = kj;
     }
-    const attack = k > 0 ? cliff : land;
+    const attack = -Math.sign(k) === road.drop[i] ? cliff : land;
     v[i] = Math.min(vmax, Math.sqrt((attack * MU * GRAV) / Math.max(Math.abs(k), 1e-4)));
   }
   for (let i = n - 2; i >= 0; i--) v[i] = Math.min(v[i], Math.sqrt(v[i + 1] ** 2 + 2 * brake * GRAV * road.ds));
@@ -184,7 +207,7 @@ export function speedProfile(road, { cliff = 0.84, land = 1.0, vmax = 27, brake 
 
 export function carStart(road, profile, pace) {
   const i = 0;
-  return { x: road.pts[i][0], y: road.pts[i][1], psi: road.heading[i], v: profile[i] * pace, beta: 0, rate: 0, cmd: 0, i, d: 0, along: 0, lat: 0, lon: 0, steer: 0, slide: 0, margin: 9, brake: 0, laps: 0, dark: 0, odo: 0 };
+  return { x: road.pts[i][0], y: road.pts[i][1], z: road.z[i], psi: road.heading[i], v: profile[i] * pace, beta: 0, rate: 0, cmd: 0, i, d: 0, along: 0, lat: 0, lon: 0, steer: 0, slide: 0, margin: 9, brake: 0, laps: 0, dark: 0, odo: 0 };
 }
 
 // One step of the driver and the car: pure pursuit toward a racing line, a friction circle shared by
@@ -216,7 +239,8 @@ export function stepCar(road, profile, s, pace, dt) {
   const asked = v * v * s.cmd;
   const lat = clampTo(asked, -lateralCap, lateralCap);
   s.slide += (Math.abs(asked) / (MU * GRAV) - s.slide) * (1 - Math.exp(-dt / 0.3));
-  s.v = Math.max(0, s.v + lon * dt);
+  // downhill the grade adds g·sin θ, which the tyres don't pay for
+  s.v = Math.max(0, s.v + (lon + GRAV * road.grade) * dt);
   s.psi = wrapAngle(s.psi + (lat / v) * dt);
   s.x += Math.cos(s.psi) * s.v * dt * U;
   s.y += Math.sin(s.psi) * s.v * dt * U;
@@ -231,6 +255,7 @@ export function stepCar(road, profile, s, pace, dt) {
   // front wheels follow the velocity at the front axle: countersteer when the tail is out
   s.steer = clampTo(Math.atan((CAR.base * lat) / (v * v)) - s.beta, -0.6, 0.6);
   s.along = s.i * road.ds;
+  s.z = road.z[s.i];
   s.odo += s.v * dt;
   s.margin = marginOf(road, s);
   if (s.i >= road.n - 2) s.dark = 1.6;
@@ -251,12 +276,12 @@ export function cornersOf(s) {
   ].map(([a, b]) => [s.x + a * c - b * n, s.y + a * n + b * c]);
 }
 
-// metres from the car's outermost corner to the unguarded cliff edge
+// metres from the car's outermost corner to the unguarded edge, on whichever side the drop is
 export function marginOf(road, s) {
   let least = Infinity;
   for (const [x, y] of cornersOf(s)) {
     const at = project(road, x, y, s.i);
-    least = Math.min(least, at.d + HALF_ROAD + road.verge[at.i]);
+    least = Math.min(least, HALF_ROAD + road.verge[at.i] - road.drop[at.i] * at.d);
   }
   return least;
 }
@@ -316,6 +341,6 @@ export function readoutOf(s) {
 }
 
 export function wordsOf(s, share) {
-  const where = s.dark > 0 ? "In the tunnel." : `${Math.round(s.v * 3.6)} kilometres an hour, drifting ${Math.round((Math.abs(s.beta) * 180) / Math.PI)} degrees, ${s.margin.toFixed(1)} metres from the cliff edge.`;
+  const where = s.dark > 0 ? "In the tunnel." : `${Math.round(s.v * 3.6)} kilometres an hour, drifting ${Math.round((Math.abs(s.beta) * 180) / Math.PI)} degrees, ${s.margin.toFixed(1)} metres from the edge.`;
   return `Pace ${Math.round(share * 100)} percent of the way from grip to the limit. ${where}`;
 }

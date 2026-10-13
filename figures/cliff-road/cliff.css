@@ -478,3 +478,12 @@
 .cr-buoy-back {
   fill: color-mix(in srgb, var(--cr-sock) 68%, #000000);
 }
+
+.cr-d-edge {
+  fill: var(--anatomy-mid);
+  stroke: none;
+}
+
+.cr-bench {
+  fill: var(--anatomy-top);
+}

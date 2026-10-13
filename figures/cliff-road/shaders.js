@@ -90,6 +90,21 @@ void surface(vec2 p,out float h,out vec2 g,out float foam,out float d){
   // wind whitecaps tear off the crest, then the reflected crest's backwash line heads out to sea
   float caps=smoothstep(.55,.8,noise2(p*vec2(.09,.05)+vec2(n*3.7,t*.3)));
   foam+=.75*caps*exp(-behind/6.)*(.3+.7*smoothstep(90.,15.,d))*an;
+  // whitecaps across the open water: short streaks along the wind that flare, drift downwind and fade
+  {
+    vec2 wd=vec2(-.987,-.159);
+    vec2 q=vec2(dot(p,wd),dot(p,vec2(-wd.y,wd.x)));
+    q.x+=t*6.;
+    vec2 cell=vec2(28.,13.);
+    vec2 id=floor(q/cell);
+    float h1=hash12(id);float h2=hash12(id+17.3);
+    vec2 dq=(fract(q/cell)-.5-(vec2(h1,h2)-.5)*.45)*cell;
+    float life=fract(t*.31+h1*7.);
+    float on=smoothstep(0.,.06,life)*(1.-smoothstep(.12,.45,life))*step(.5,h2);
+    float streak=exp(-pow(dq.x/(3.+4.*life),2.)-pow(dq.y/(.9+.6*life),2.));
+    float tear=smoothstep(.35,.7,noise2(p*.45+vec2(t*.8,0.)));
+    foam+=.85*on*streak*(.5+.5*tear)*smoothstep(10.,35.,d);
+  }
   float rb=min(psr,1.-psr)*lam;
   foam+=.35*exp(-pow(rb/4.,2.))*smoothstep(80.,6.,d)*smoothstep(.4,.75,noise2(p*.12+vec2(0.,t*.2)))*(back/.32);
   foam=clamp(foam,0.,1.);
@@ -185,7 +200,18 @@ void main(){
 }`;
 
 const LIGHT_GLSL = `${COMMON_GLSL}
-uniform float uRoad;uniform float uPortalX;uniform vec4 uCarA;uniform vec4 uCarB;uniform vec2 uStud[24];
+uniform float uRoad;uniform float uPortalX;uniform vec4 uCarA;uniform vec4 uCarB;uniform vec3 uStud[24];
+float heightOf(vec2 p){return coastTex(p).b*512.;}
+// does anything of the mountain stand between this point and the eye?
+float clearOf(vec3 q){
+  vec3 v=towardViewer();
+  float open=1.;
+  for(int i=1;i<=30;i++){
+    vec3 p=q+v*(float(i)*7.);
+    open*=smoothstep(-1.,1.,p.z-heightOf(p.xy)+.5);
+  }
+  return open;
+}
 vec3 lampAt(float side,out vec3 dir){
   float c=cos(uCarA.z);float s=sin(uCarA.z);
   dir=normalize(vec3(c,s,-.022));
@@ -214,7 +240,8 @@ void main(){
   vec2 vb=viewOf(gl_FragCoord.xy);
   float px=pixelOf()/uCam.z;
   vec3 q=onFloor(vb,uRoad);
-  float land=1.-smoothstep(-.7*px,.7*px,dTop(q.xy));
+  // only the ground at the car's own height catches the pool: the road, its bench, the hairpin's floor
+  float land=1.-smoothstep(1.5,4.5,abs(heightOf(q.xy)-uRoad));
   land*=smoothstep(uPortalX-.5*px,uPortalX+.5*px,q.x);
   land*=window(q.x,uBox.x,uBox.z,.7*px)*window(q.y,uBox.y,uBox.w,.7*px);
   if(land<.001){gl_FragColor=vec4(0.);return;}
@@ -222,10 +249,13 @@ void main(){
   float t=tailAt(q)*.5;
   float stud=0.;
   for(int i=0;i<24;i++){
-    vec2 s=uStud[i];
-    float d2=dot(q.xy-s,q.xy-s);
-    if(d2<4.)stud+=exp(-d2/.36)*min(headAt(vec3(s,uRoad))*60000.,6.);
+    vec3 s=uStud[i];
+    vec3 qs=onFloor(vb,s.z);
+    float d2=dot(qs.xy-s.xy,qs.xy-s.xy);
+    if(d2<4.)stud+=exp(-d2/.36)*min(headAt(s)*60000.,6.);
   }
+  // the spur or knoll in front hides the pool
+  if(e+t+stud>.002)land*=clearOf(q);
   vec4 col;
   if(uPale<.5){
     vec3 c=vec3(1.,.9,.74)*e+vec3(1.,.1,.05)*t+vec3(1.,.95,.82)*stud;
@@ -247,7 +277,7 @@ const fxGlsl = (NS, NP) => `${COMMON_GLSL}
 uniform float uRoad;uniform float uPortalX;uniform vec4 uCarA;uniform vec4 uCarB;
 uniform vec4 uSmk[${NS}];uniform vec4 uSmkB[${NS}];uniform vec4 uSpr[${NP}];uniform vec4 uSprB[${NP}];
 uniform vec4 uPortA;uniform vec4 uPortB;uniform float uBeams;uniform vec2 uWind;uniform float uSea;
-float landAt(vec2 p){return coastTex(p).b*256.;}
+float landAt(vec2 p){return coastTex(p).b*512.;}
 // sea mist: a slab from the water to ~6 m up, in drifting wisps; marched from the top down, it stops at the
 // first sample inside the land, so the cliff hides whatever mist lies behind it
 float mistAt(vec2 vb){
@@ -372,7 +402,7 @@ void main(){
   }
   // beams in the sea mist: soft volumes along each lamp's axis (dark theme only)
   float beam=0.;
-  if(uBeams>.5&&uCarA.w>.5){
+  if(uBeams>.01&&uCarA.w>.5){
     for(int k=0;k<2;k++){
       vec3 dir;vec3 L=lampAt(k==0?1.:-1.,dir);
       for(int j=0;j<8;j++){
@@ -386,7 +416,7 @@ void main(){
   }
   if(uPale<.5){
     vec3 c=vec3(.58,.64,.7)*(1.-exp(-spray*1.8))*.92+vec3(.7,.76,.82)*drops*.7+vec3(.62,.64,.67)*(1.-exp(-smoke*1.2))*.95+vec3(.95,.18,.1)*(1.-exp(-smoke*heat*1.6))*.6;
-    c+=vec3(1.,.9,.72)*(wall+bore)+vec3(.95,.9,.78)*beam*.16+vec3(1.,.48,.12)*sodium*.11+vec3(.3,.36,.42)*mist*.5;
+    c+=vec3(1.,.9,.72)*(wall+bore)+vec3(.95,.9,.78)*beam*.16*uBeams+vec3(1.,.48,.12)*sodium*.11+vec3(.3,.36,.42)*mist*.5;
     c=tonemap(c,1.2);
     col=vec4(c,max(c.r,max(c.g,c.b)));
   }else{
@@ -410,6 +440,9 @@ void main(){
     float mi=.32*mist;
     col=over(sm,over(sp,over(wl,inkFor(vec3(.9,.93,.95),mi)*(mi/max(inkFor(vec3(.9,.93,.95),mi).a,1e-4)))));
   }
+  // nothing reaches the canvas's own border
+  vec2 rim=min(gl_FragCoord.xy,uCanvas-gl_FragCoord.xy);
+  col*=smoothstep(10.,18.,min(rim.x,rim.y));
   gl_FragColor=dithered(col*uFade);
 }`;
 
@@ -439,7 +472,7 @@ function gpuOf(D, stage, pale) {
     return [Math.cos(az) * Math.cos(el), Math.sin(az) * Math.cos(el), Math.sin(el)];
   })();
   const sea = glLayer({ canvas: seaCanvas, fragment: SEA_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade"], fixed: { ...common, uSea: D.sea, uSwell: [SWELL_W, SWELL_K, SWELL_TIP, SWELL_SLANT], uMoon: moon, uX0: D.x0 } });
-  const light = sea ? glLayer({ canvas: lightCanvas, fragment: LIGHT_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade", "uCarA", "uCarB"], fixed: { ...common, uRoad: D.road, uPortalX: D.portal, uStud: [...D.studs.flat(), ...Array(Math.max(0, 48 - D.studs.length * 2)).fill(-9999)].slice(0, 48) } }) : null;
+  const light = sea ? glLayer({ canvas: lightCanvas, fragment: LIGHT_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade", "uCarA", "uCarB", "uRoad", "uStud"], fixed: { ...common, uPortalX: D.portal } }) : null;
   // particle counts sized to the GPU's uniform budget: older phones get fewer, not none
   const budget = (() => {
     try {
@@ -451,7 +484,7 @@ function gpuOf(D, stage, pale) {
   })();
   const NS = budget >= 224 ? 32 : 12;
   const NP = budget >= 224 ? 48 : 16;
-  const fx = light ? glLayer({ canvas: fxCanvas, fragment: fxGlsl(NS, NP), view: [D.W, D.H], camera: D.camera, maxRatio: 0.6, uniforms: ["uFade", "uCarA", "uCarB", "uSmk", "uSmkB", "uSpr", "uSprB", "uWind"], fixed: { ...common, uRoad: D.road, uPortalX: D.portal, uPortA: [D.portals[0].yc, D.portals[0].half, D.portals[0].z, D.portals[0].spring], uPortB: [D.portals[1].yc, D.portals[1].half, D.portals[1].z, D.portals[1].spring], uBeams: pale ? 0 : 1, uSea: D.sea } }) : null;
+  const fx = light ? glLayer({ canvas: fxCanvas, fragment: fxGlsl(NS, NP), view: [D.W, D.H], camera: D.camera, maxRatio: 0.6, uniforms: ["uFade", "uCarA", "uCarB", "uSmk", "uSmkB", "uSpr", "uSprB", "uWind", "uRoad", "uBeams"], fixed: { ...common, uPortalX: D.portal, uPortA: [D.portals[0].yc, D.portals[0].half, D.portals[0].z, D.portals[0].spring], uPortB: [D.portals[1].yc, D.portals[1].half, D.portals[1].z, D.portals[1].spring], uSea: D.sea } }) : null;
   if (!fx) return null;
   for (const layer of [sea, light, fx]) {
     const gl = layer.gl;
@@ -470,7 +503,7 @@ function gpuOf(D, stage, pale) {
     const i = Math.round((x - tex.x0) / tex.step);
     const j = Math.round((y - tex.y0) / tex.step);
     if (i < 0 || j < 0 || i >= tex.nx || j >= tex.ny) return 0;
-    return (raw[(j * tex.nx + i) * 4 + 2] / 255) * 256;
+    return (raw[(j * tex.nx + i) * 4 + 2] / 255) * 512;
   };
   const V = G.viewOf(D.P);
   const seen = (x, y, z) => {
@@ -520,7 +553,7 @@ function gpuOf(D, stage, pale) {
       Object.assign(p, {
         x: car.x - c * 6 - s * smokeSide * 3.55,
         y: car.y - s * 6 + c * smokeSide * 3.55,
-        z: D.road + 1.2,
+        z: car.z + 1.2,
         vx: Math.cos(car.psi) * car.v * 5 * 0.22 + WIND[0],
         vy: Math.sin(car.psi) * car.v * 5 * 0.22 + WIND[1],
         vz: 3.2,
@@ -600,12 +633,21 @@ function gpuOf(D, stage, pale) {
       frames = 0;
     }
   }
+  // the 24 road studs nearest the car, which are the only ones its lamps can reach
+  const studs = new Float32Array(72).fill(-9999);
   function drawAll(fade, clock, car, time) {
     const pose = car.dark > 0 ? [0, 0, 0, 0] : [car.x, car.y, car.psi + car.beta, 1];
     const carB = [car.brake || 0, car.v, 0, 0];
+    const near = D.studs.map((s) => [Math.hypot(s[0] - car.x, s[1] - car.y), s]).sort((a, b) => a[0] - b[0]).slice(0, 24);
+    studs.fill(-9999);
+    near.forEach(([, s], i) => studs.set(s, i * 3));
+    // the beams in the mist show only while the lamps themselves are in sight
+    const c = Math.cos(car.psi + car.beta);
+    const s = Math.sin(car.psi + car.beta);
+    const beams = pale || car.dark > 0 ? 0 : 0.5 * seen(car.x + c * 9, car.y + s * 9, car.z + 4.8) + 0.5 * seen(car.x + c * 30, car.y + s * 30, car.z + 6);
     sea.draw({ uFade: fade }, time);
-    light.draw({ uFade: fade, uCarA: pose, uCarB: carB }, time);
-    fx.draw({ uFade: fade, uCarA: pose, uCarB: carB, uSmk: smk, uSmkB: smkB, uSpr: spr, uSprB: sprB, uWind: WIND }, time);
+    light.draw({ uFade: fade, uCarA: pose, uCarB: carB, uRoad: car.z, uStud: studs }, time);
+    fx.draw({ uFade: fade, uCarA: pose, uCarB: carB, uSmk: smk, uSmkB: smkB, uSpr: spr, uSprB: sprB, uWind: WIND, uRoad: car.z, uBeams: beams }, time);
   }
   // the smoke as it stands, for the detail view
   const puffs = () => smoke.filter((p) => p.shown > 0.01).map((p) => ({ x: p.x, y: p.y, z: p.z, r: p.rr, a: p.shown }));

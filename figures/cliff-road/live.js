@@ -51,9 +51,9 @@ function lampOn(p, pose) {
     const dy = p[1] - ly;
     const r = Math.hypot(dx, dy) || 1;
     const ah = Math.acos(Math.max(-1, Math.min(1, (dx * c + dy * s) / r)));
-    // low beams are cut off a little above the horizontal: nothing up on the hill catches them
-    const up = Math.atan2(p[2] - D.road - 0.8, r);
-    const pattern = Math.exp(-((ah / 0.4) ** 2)) * (1 + 2.2 * Math.exp(-((ah / 0.12) ** 2))) * Math.exp(-((Math.max(0, up - 0.06) / 0.12) ** 2));
+    // low beams are cut off a little above the horizontal, and the road takes them before anything far below
+    const up = Math.atan2(p[2] - pose.z - 0.8, r);
+    const pattern = Math.exp(-((ah / 0.4) ** 2)) * (1 + 2.2 * Math.exp(-((ah / 0.12) ** 2))) * Math.exp(-((Math.max(0, up - 0.06) / 0.12) ** 2)) * Math.exp(-((Math.min(0, up + 0.08) / 0.1) ** 2));
     e += (pattern / (r * r)) * smooth(1, 6, r);
   }
   return e;
@@ -73,7 +73,6 @@ function lightItems() {
     }
   }
 }
-const sockNode = itemsNode.querySelector('[data-item="sock"]');
 const pointer = stage.querySelector('[data-part="pace-pointer"]');
 let pointerAt = -1;
 function drawKnob() {
@@ -85,30 +84,82 @@ function drawKnob() {
   const k0 = D.knob;
   pointer.setAttribute("d", pathOf([iso([k0.x + Math.sin(a) * 1.2, k0.y + 4.45, k0.z + Math.cos(a) * 1.2], D.P), iso([k0.x + Math.sin(a) * (k0.r - 0.8), k0.y + 4.45, k0.z + Math.cos(a) * (k0.r - 0.8)], D.P)]));
 }
-let sockDrawn = -1;
-// the trees lean away from the wind, more in the gusts (as the square of the speed), and shiver
-const swaying = items.filter((it) => /^(tree|hilltree)/.test(it.node.dataset.item || "")).map((it) => {
+
+// the trees stir: a slow lean and a shiver, so the forest isn't painted on
+const swaying = items.filter((it) => /^tree/.test(it.node.dataset.item || "")).map((it) => {
   const base = iso([it.at[0], it.at[1], it.at[2] - 4], D.P);
-  return { node: it.node, base, phase: (it.at[0] * 0.13 + it.at[1] * 0.07) % (Math.PI * 2), give: 0.8 + 0.4 * Math.abs(Math.sin(it.at[0] * 1.7)) };
+  return { node: it.node, base, phase: (it.at[0] * 0.13 + it.at[1] * 0.07) % (Math.PI * 2) };
 });
-function drawSock(t) {
-  // redraw at 20 Hz: the sock's flutter is slow and its paths are not cheap
+let swayDrawn = -1;
+function swayTrees(t) {
   const slot = Math.floor(t * 20);
-  if (!sockNode || slot === sockDrawn) return;
-  sockDrawn = slot;
-  const wind = CARS.windOf(t);
-  sockNode.innerHTML = CARS.sockSvg(D.sock, wind, D.P, G, K);
-  const [ax, ay] = iso([0, 0, 0], D.P);
-  const [bx] = iso([Math.cos(wind.heading), Math.sin(wind.heading), 0], D.P);
-  const side = Math.sign(bx - ax) || 1;
-  const push = (wind.speed / 10.5) ** 2;
+  if (slot === swayDrawn) return;
+  swayDrawn = slot;
   for (const tree of swaying) {
-    const lean = side * tree.give * (2.4 * push + 1.0 * push * Math.sin(t * 4.4 + tree.phase) + 0.4 * Math.sin(t * 9.1 + tree.phase * 2));
-    tree.node.setAttribute("transform", `rotate(${lean.toFixed(2)} ${tree.base[0].toFixed(1)} ${tree.base[1].toFixed(1)})`);
+    const lean = 0.5 * Math.sin(t * 0.9 + tree.phase) + 0.25 * Math.sin(t * 2.3 + tree.phase * 2);
+    tree.node.firstElementChild?.setAttribute("transform", `rotate(${lean.toFixed(2)} ${tree.base[0].toFixed(1)} ${tree.base[1].toFixed(1)})`);
   }
 }
 const V = G.viewOf(D.P);
 const depthAt = (x, y, z) => x * V[0] + y * V[1] + z * V[2];
+
+// on a phone the inset is hidden (its labels would be too small to read), so it isn't drawn either
+const narrow = matchMedia("(max-width: 560px)");
+// ---- what hides the car ----------------------------------------------------------------------------------
+// The mountain's drawn height, as the build cut it into terraces. Across the car's screen width, the highest
+// terrain between it and the eye is a line; the car shows only above it.
+const HG = D.height;
+const HQ = (() => {
+  const raw = Uint8Array.from(atob(HG.bytes), (c) => c.charCodeAt(0));
+  return Float32Array.from(new Uint16Array(raw.buffer), (h) => h / 10);
+})();
+const heightAt = (x, y) => {
+  const i = Math.max(0, Math.min(HG.nx - 1, Math.round((x - HG.x0) / HG.step)));
+  const j = Math.max(0, Math.min(HG.ny - 1, Math.round((y - HG.y0) / HG.step)));
+  return HQ[j * HG.nx + i];
+};
+const CAM = cameraOf(D.P);
+const SIDE = [CAM.sinA, -CAM.cosA];
+const TOWARD = (() => {
+  const l = Math.hypot(V[0], V[1]);
+  return [V[0] / l, V[1] / l];
+})();
+function hiddenBelow(x, y, z, half) {
+  const cols = [];
+  let any = false;
+  const base = iso([x, y, z], D.P);
+  const [bx0, by0, bx1, by1] = D.box;
+  for (let c = -half; c <= half + 0.01; c += 3) {
+    const ox = x + (SIDE[0] * c) / CAM.k;
+    const oy = y + (SIDE[1] * c) / CAM.k;
+    let top = Infinity;
+    for (let t = 3; t < 460; t += 3) {
+      const px = ox + TOWARD[0] * t;
+      const py = oy + TOWARD[1] * t;
+      if (px < bx0 || px > bx1 || py < by0 || py > by1) break;
+      const h = heightAt(px, py);
+      if (h <= z + 0.5) continue;
+      top = Math.min(top, iso([px, py, h], D.P)[1]);
+    }
+    if (top < base[1] + 1) any = true;
+    cols.push([base[0] + c, top]);
+  }
+  return any ? cols : null;
+}
+// the region above that line, as a clip path (in whatever screen frame `map` puts it)
+function clipD(cols, map = (p) => p) {
+  const big = 4000;
+  const edge = cols.map(([sx, sy]) => map([sx, Math.min(sy, big)]));
+  const first = edge[0];
+  const last = edge[edge.length - 1];
+  return pathOf([[first[0] - big, -big], [last[0] + big, -big], [last[0] + big, last[1]], ...[...edge].reverse(), [first[0] - big, first[1]]], true);
+}
+const SVGNS = "http://www.w3.org/2000/svg";
+const carClip = document.createElementNS(SVGNS, "clipPath");
+carClip.id = "cr-car-live";
+const carClipPath = document.createElementNS(SVGNS, "path");
+carClip.appendChild(carClipPath);
+front.appendChild(carClip);
 
 // ---- Detail A: the car at 3:1, following it, with its path, its nose and the clearance to the edge -----
 const DT = D.detail;
@@ -117,22 +168,11 @@ const detailNotes = stage.querySelector(".cr-detail-notes");
 const detailLead = stage.querySelector(".cr-detail-lead");
 const beamGrads = [0, 1].map((i) => stage.querySelector(`#cr-beam-${i}`));
 const LT = G.lightOf(D.P);
-// each ring of the cliff top, with the outward normal of every edge (rings run either way round)
-const TOP = D.top.map((ring) => {
-  const area = ring.reduce((sum, [x, y], i) => {
-    const [nx, ny] = ring[(i + 1) % ring.length];
-    return sum + x * ny - nx * y;
-  }, 0);
-  const turn = area > 0 ? 1 : -1;
-  return ring.map(([x, y], i) => {
-    const [bx, by] = ring[(i + 1) % ring.length];
-    const len = Math.hypot(bx - x, by - y) || 1;
-    return { x, y, bx, by, nx: (turn * (by - y)) / len, ny: (-turn * (bx - x)) / len };
-  });
-});
+const LAYER = 7;
 const trail = [];
 let detailIdle = false;
 let trailClock = 0;
+let cache = null;
 
 // a polyline cut to the inset's circle: pieces that end exactly on the rim
 function inCircle(points) {
@@ -173,8 +213,127 @@ function inCircle(points) {
 }
 const clippedLine = (points, opts) => inCircle(points).map((piece) => lineSvg(pathOf(piece), opts)).join("");
 
-// on a phone the inset is hidden (its labels would be too small to read), so it isn't drawn either
-const narrow = matchMedia("(max-width: 560px)");
+// The world round the car, drawn once in a fixed frame and slid under the circle as the car moves: the
+// terraces bottom to top, each road piece after the first terrace above it, then the portal if it's near.
+function worldAround(P2, cx, cy, zc) {
+  const at = (x, y, z) => iso([x, y, z], P2);
+  const win = 96;
+  const box = [cx - win, cy - win, cx + win, cy + win];
+  const tops = [];
+  for (let T = 61; T < 420; T += LAYER) if (T >= zc - 34 && T <= zc + 48) tops.push(T);
+  const rp = (i, d) => M.roadPoint(road, i, d);
+  const bench = (i, side) => M.HALF_ROAD + (side === road.drop[i] ? road.verge[i] : 0.8);
+  // road samples in the window, in runs
+  const runs = [];
+  let run = null;
+  for (let i = 0; i < road.n; i += 3) {
+    const [x, y] = road.pts[i];
+    const inWin = Math.abs(x - cx) < win + 10 && Math.abs(y - cy) < win + 10;
+    if (inWin) {
+      if (!run) run = [];
+      run.push(i);
+    } else if (run) {
+      runs.push(run);
+      run = null;
+    }
+  }
+  if (run) runs.push(run);
+  const p3 = (i, d) => at(...rp(i, d), road.z[i]);
+  const strip = (list, d0, d1) => pathOf([...list.map((i) => p3(i, d0(i))), ...[...list].reverse().map((i) => p3(i, d1(i)))], true);
+  const roadSvg = (list) => {
+    const out = [];
+    let faces = "";
+    for (let j = 0; j + 1 < list.length; j++) {
+      const i = list[j];
+      const i2 = list[j + 1];
+      const dd = road.drop[i];
+      const h = road.heading[i];
+      if (-Math.sin(h) * dd * V[0] + Math.cos(h) * dd * V[1] <= 0.02) continue;
+      const e0 = dd * bench(i, dd);
+      const e1 = dd * bench(i2, dd);
+      faces += pathOf([p3(i, e0), p3(i2, e1), at(...rp(i2, e1), road.z[i2] - 12), at(...rp(i, e0), road.z[i] - 12)], true);
+    }
+    if (faces) out.push(`<path class="cr-d-face" data-shade="2" d="${faces}"/>`);
+    out.push(`<path class="cr-d-land" d="${strip(list, (i) => bench(i, 1), (i) => -bench(i, -1))}"/>`);
+    out.push(`<path class="cr-asphalt" d="${strip(list, () => -M.HALF_ROAD, () => M.HALF_ROAD)}"/>`);
+    out.push(`<path class="cr-paint" d="${strip(list, () => -M.HALF_ROAD + 0.15, () => -M.HALF_ROAD + 0.3)}${strip(list, () => M.HALF_ROAD - 0.3, () => M.HALF_ROAD - 0.15)}"/>`);
+    let dashes = "";
+    const per = Math.round(3 / road.ds);
+    for (let a = list[0] - (list[0] % (per * 3)); a < list[list.length - 1]; a += per * 3) {
+      const dash = list.filter((i) => i >= a && i <= a + per);
+      if (dash.length > 1) dashes += strip(dash, () => -0.08, () => 0.08);
+    }
+    if (dashes) out.push(`<path class="cr-paint" d="${dashes}"/>`);
+    // the unguarded edge, as a fine dark band
+    out.push(`<path class="cr-d-edge" d="${strip(list, (i) => road.drop[i] * bench(i, road.drop[i]), (i) => road.drop[i] * (bench(i, road.drop[i]) - 0.12))}"/>`);
+    return out.join("");
+  };
+  const parts = [];
+  let floor = "";
+  tops.forEach((T, n) => {
+    const grid = TR.gridOf(box, 3, (x, y, edge) => (edge ? 1e3 : T - 0.5 - heightAt(x, y)));
+    const rings = TR.contour(grid).map((r) => TR.simplifyRing(r, 0.7)).filter((r) => Math.abs(TR.ringArea(r)) > 10);
+    const deep = n === 0 ? 120 : LAYER;
+    const faces = { 1: "", 2: "", 3: "" };
+    let topD = "";
+    for (const raw of rings) {
+      const ring = TR.ringArea(raw) < 0 ? [...raw].reverse() : raw;
+      for (let q = 0; q < ring.length; q++) {
+        const [ax, ay] = ring[q];
+        const [bx, by] = ring[(q + 1) % ring.length];
+        const len = Math.hypot(bx - ax, by - ay) || 1;
+        const nx = (by - ay) / len;
+        const ny = -(bx - ax) / len;
+        if (nx * V[0] + ny * V[1] <= 0.02) continue;
+        const light = nx * LT[0] + ny * LT[1];
+        const band = light > 0.25 ? 3 : light > -0.25 ? 2 : 1;
+        faces[band] += pathOf([at(ax, ay, T), at(bx, by, T), at(bx, by, T - deep), at(ax, ay, T - deep)], true);
+      }
+      topD += pathOf(ring.map(([x, y]) => at(x, y, T)), true);
+    }
+    for (const band of [1, 2, 3]) if (faces[band]) parts.push(`<path class="cr-d-face" data-shade="${band}" d="${faces[band]}"/>`);
+    if (topD) parts.push(`<path class="cr-d-land" d="${topD}"/>`, lineSvg(topD, { tone: "lo" }));
+    if (T > zc && T - LAYER <= zc) floor = topD;
+    // the road whose height lies under this top and above the one below
+    for (const list of runs) {
+      let piece = [];
+      for (const i of list) {
+        if (road.z[i] >= T - LAYER && road.z[i] < T) piece.push(i);
+        else if (piece.length) {
+          if (piece.length > 1) parts.push(roadSvg(piece));
+          piece = [];
+        }
+      }
+      if (piece.length > 1) parts.push(roadSvg(piece));
+    }
+  });
+  // a portal in view: the headwall and its opening, over the rock face the terraces already drew
+  let arches = "";
+  const hw = D.headwall;
+  for (const o of D.portals) {
+    if (Math.abs(hw.face - cx) > win + 20 || Math.abs(o.yc - cy) > win + 20) continue;
+    const x1 = D.portal;
+    const top = o.z + hw.tall;
+    const pts = [[x1, o.yc - o.half, o.z]];
+    for (let i = 0; i <= 24; i++) {
+      const a = Math.PI - (i / 24) * Math.PI;
+      pts.push([x1, o.yc + o.half * Math.cos(a), o.spring + o.half * Math.sin(a)]);
+    }
+    pts.push([x1, o.yc + o.half, o.z]);
+    const arch = pathOf(pts.map((p) => at(...p)), true);
+    arches += arch;
+    const frontWall = [[x1, o.yc - hw.wide, o.z], [x1, o.yc + hw.wide, o.z], [x1, o.yc + hw.wide, top], [x1, o.yc - hw.wide, top]];
+    const side = [[x1, o.yc + hw.wide, o.z], [x1 - hw.thick, o.yc + hw.wide, o.z], [x1 - hw.thick, o.yc + hw.wide, top], [x1, o.yc + hw.wide, top]];
+    const lid = [[x1, o.yc - hw.wide, top], [x1, o.yc + hw.wide, top], [x1 - hw.thick, o.yc + hw.wide, top], [x1 - hw.thick, o.yc - hw.wide, top]];
+    parts.push(`<path class="cr-d-bore" d="${arch}"/><g class="cr-d-inside" data-portal="${o.yc}"></g>`);
+    parts.push(`<path class="cr-d-wall" fill-rule="evenodd" d="${pathOf(frontWall.map((p) => at(...p)), true)}${arch}"/>`);
+    parts.push(`<path class="cr-d-wall" data-shade="1" d="${pathOf(side.map((p) => at(...p)), true)}"/>`);
+    parts.push(`<path class="cr-d-wall" data-shade="3" d="${pathOf(lid.map((p) => at(...p)), true)}"/>`);
+    parts.push(lineSvg(pathOf(frontWall.map((p) => at(...p)), true), { tone: "mid" }) + lineSvg(arch, { tone: "mid" }));
+  }
+  return { svg: parts.join(""), floor, arches };
+}
+
 function drawDetail(pose, hidden) {
   if (!detailView || narrow.matches) return;
   if (hidden) {
@@ -192,45 +351,20 @@ function drawDetail(pose, hidden) {
     detailView.classList.remove("is-idle");
   }
   const scale = DT.scale;
+  const zc = car.z;
   const P2 = { scale, azimuth: D.P.azimuth, elevation: D.P.elevation, origin: [0, 0] };
   const ahead = 4;
-  const [u0, v0] = iso([car.x + Math.cos(car.psi) * ahead, car.y + Math.sin(car.psi) * ahead, D.road], P2);
+  const [u0, v0] = iso([car.x + Math.cos(car.psi) * ahead, car.y + Math.sin(car.psi) * ahead, zc], P2);
   P2.origin = [DT.cx - u0, DT.cy - v0];
-  const at = (x, y, z = D.road) => iso([x, y, z], P2);
-  const near = (x, y) => Math.abs(x - car.x) < 140 && Math.abs(y - car.y) < 140;
-  const parts = [];
-
-  // the cliff top, then the faces that turn toward us, drawn down past the rim
-  const land = TOP.map((ring) => pathOf(ring.map(({ x, y }) => at(x, y)), true)).join("");
-  parts.push(`<path class="cr-d-land" fill-rule="evenodd" d="${land}"/>`);
-  const faces = { 1: [], 2: [], 3: [] };
-  for (const ring of TOP) {
-    for (const e of ring) {
-      if (!near(e.x, e.y) || e.nx * V[0] + e.ny * V[1] <= 0.02) continue;
-      const light = e.nx * LT[0] + e.ny * LT[1];
-      const band = light > 0.25 ? 3 : light > -0.25 ? 2 : 1;
-      faces[band].push(pathOf([at(e.x, e.y), at(e.bx, e.by), at(e.bx, e.by, D.road - 90), at(e.x, e.y, D.road - 90)], true));
-    }
+  const at = (x, y, z) => iso([x, y, z], P2);
+  const near = (x, y) => Math.abs(x - car.x) < 120 && Math.abs(y - car.y) < 120;
+  if (!cache || Math.hypot(car.x - cache.x, car.y - cache.y) > 34 || Math.abs(zc - cache.z) > 6) {
+    const world = worldAround(P2, car.x, car.y, zc);
+    cache = { x: car.x, y: car.y, z: zc, origin: [...P2.origin], ...world };
+    cache.html = `<g class="cr-d-world">${world.svg}</g>`;
   }
-  for (const band of [1, 2, 3]) if (faces[band].length) parts.push(`<path class="cr-d-face" data-shade="${band}" d="${faces[band].join("")}"/>`);
-  parts.push(TOP.map((ring) => lineSvg(pathOf(ring.map(({ x, y }) => at(x, y)), true), { tone: "hi" })).join(""));
-
-  // the road: asphalt, edge lines, the centre dashes
-  const ids = [];
-  for (let j = -320; j <= 320; j += 4) if (car.i + j >= 0 && car.i + j < road.n) ids.push(car.i + j);
-  const rp = (i, d) => M.roadPoint(road, i, d);
-  const strip = (d0, d1, list = ids) => pathOf([...list.map((i) => at(...rp(i, d0))), ...list.slice().reverse().map((i) => at(...rp(i, d1)))], true);
-  parts.push(`<path class="cr-asphalt" d="${strip(-M.HALF_ROAD, M.HALF_ROAD)}"/>`);
-  parts.push(`<path class="cr-paint" d="${strip(-M.HALF_ROAD + 0.15, -M.HALF_ROAD + 0.3)}${strip(M.HALF_ROAD - 0.3, M.HALF_ROAD - 0.15)}"/>`);
-  const dash = Math.round(3 / road.ds);
-  let dashes = "";
-  for (let i = Math.max(0, ids[0] - (ids[0] % (dash * 3))); i < ids[ids.length - 1]; i += dash * 3) {
-    const run = [];
-    for (let j = i; j <= Math.min(road.n - 1, i + dash); j += 2) run.push(j);
-    if (run.length > 1) dashes += strip(-0.08, 0.08, run);
-  }
-  parts.push(`<path class="cr-paint" d="${dashes}"/>`);
-  for (const d of [-M.HALF_ROAD, M.HALF_ROAD]) parts.push(clippedLine(ids.map((i) => at(...rp(i, d))), { tone: "lo" }));
+  const shift = `translate(${(P2.origin[0] - cache.origin[0]).toFixed(1)} ${(P2.origin[1] - cache.origin[1]).toFixed(1)})`;
+  const parts = [`<g transform="${shift}">${cache.html}</g>`];
 
   // fresh tyre marks: the rear wheels' last three seconds, darker where the tail was out
   if (trail.length) {
@@ -250,7 +384,7 @@ function drawDetail(pose, hidden) {
         const len = Math.hypot(dx, dy) || 1;
         const ox = (-dy / len) * w;
         const oy = (dx / len) * w;
-        bins[bin].push(pathOf([at(ax[0] + ox, ax[1] + oy), at(bx[0] + ox, bx[1] + oy), at(bx[0] - ox, bx[1] - oy), at(ax[0] - ox, ax[1] - oy)], true));
+        bins[bin].push(pathOf([at(ax[0] + ox, ax[1] + oy, a.z), at(bx[0] + ox, bx[1] + oy, b.z), at(bx[0] - ox, bx[1] - oy, b.z), at(ax[0] - ox, ax[1] - oy, a.z)], true));
       }
     }
     bins.forEach((list, bin) => {
@@ -258,7 +392,7 @@ function drawDetail(pose, hidden) {
     });
   }
 
-  // the headlights on the ground, kept to the cliff top
+  // the headlights on the ground, kept to the terrace the car is on
   const c = Math.cos(pose.yaw);
   const s = Math.sin(pose.yaw);
   let beams = "";
@@ -267,15 +401,15 @@ function drawDetail(pose, hidden) {
     const ly = car.y + s * 9.3 + c * side * 2.55;
     // three nested fans, so the beam's edges fall off instead of stopping
     const fanOf = (spread) => {
-      const fan = [at(lx, ly)];
+      const fan = [at(lx, ly, zc)];
       for (let i = 0; i <= 10; i++) {
         const a = -spread + (2 * spread * i) / 10;
-        fan.push(at(lx + Math.cos(pose.yaw + a) * 80, ly + Math.sin(pose.yaw + a) * 80));
+        fan.push(at(lx + Math.cos(pose.yaw + a) * 80, ly + Math.sin(pose.yaw + a) * 80, zc));
       }
       return pathOf(fan, true);
     };
-    const [x1, y1] = at(lx, ly);
-    const [x2, y2] = at(lx + c * 80, ly + s * 80);
+    const [x1, y1] = at(lx, ly, zc);
+    const [x2, y2] = at(lx + c * 80, ly + s * 80, zc);
     const g = beamGrads[n];
     if (g) {
       g.setAttribute("x1", x1.toFixed(1));
@@ -285,16 +419,16 @@ function drawDetail(pose, hidden) {
     }
     for (const spread of [0.42, 0.3, 0.17]) beams += `<path class="cr-d-beam" fill="url(#cr-beam-${n})" opacity="0.4" d="${fanOf(spread)}"/>`;
   });
-  parts.push(`<g class="cr-d-beams"><clipPath id="cr-detail-land"><path fill-rule="evenodd" d="${land}"/></clipPath><g clip-path="url(#cr-detail-land)">${beams}</g></g>`);
+  parts.push(`<g class="cr-d-beams"><clipPath id="cr-detail-land"><path transform="${shift}" d="${cache.floor}"/></clipPath><g clip-path="url(#cr-detail-land)">${beams}</g></g>`);
 
-  // the delineators round the inside of the hairpin, the car, and the tyre smoke, in depth order
+  // the delineators round the inside of the hairpins, the car, and the tyre smoke, in depth order
   const things = [];
-  for (const [x, y, toward] of D.posts) {
+  for (const [x, y, z, toward] of D.posts) {
     if (!near(x, y)) continue;
-    const slab = solidSvg(slabOf({ x: x - 0.7, y: y - 0.7, w: 1.4, d: 1.4, r: 0.3 }, D.road, 5.2, P2, 2, 0.2), { tone: "mid", className: "cr-post" });
+    const slab = solidSvg(slabOf({ x: x - 0.7, y: y - 0.7, w: 1.4, d: 1.4, r: 0.3 }, z, 5.2, P2, 2, 0.2), { tone: "mid", className: "cr-post" });
     const rx = x + Math.cos(toward) * 0.75;
     const ry = y + Math.sin(toward) * 0.75;
-    things.push({ key: depthAt(x, y, D.road), svg: `${slab}<path class="cr-reflector" d="${pathOf([at(rx, ry, D.road + 3.4), at(rx, ry, D.road + 4.6)])}"/>` });
+    things.push({ key: depthAt(x, y, z), svg: `${slab}<path class="cr-reflector" d="${pathOf([at(rx, ry, z + 3.4), at(rx, ry, z + 4.6)])}"/>` });
   }
   const opts = { lamps: true, brake: brake.x };
   const plane = D.portal;
@@ -302,13 +436,19 @@ function drawDetail(pose, hidden) {
   const lo = Math.min(car.x - c * half, car.x + c * half);
   let inner = "";
   let open = "";
-  if (lo >= plane) open = CARS.carSvg(pose, P2, G, K, opts);
+  const pose2 = { ...pose, z: zc };
+  if (lo >= plane) open = CARS.carSvg(pose2, P2, G, K, opts);
   else {
     const cut = (plane - car.x) / c;
-    open = CARS.carSvg(pose, P2, G, K, { ...opts, cut, keepAbove: c > 0 });
-    inner = CARS.carSvg(pose, P2, G, K, { ...opts, cut, keepAbove: c <= 0 });
+    open = CARS.carSvg(pose2, P2, G, K, { ...opts, cut, keepAbove: c > 0 });
+    inner = CARS.carSvg(pose2, P2, G, K, { ...opts, cut, keepAbove: c <= 0 });
   }
-  things.push({ key: depthAt(car.x, car.y, D.road + 2), svg: open });
+  // what hides the car in the main view hides it here too: the same line, scaled about the camera
+  const cols = hiddenBelow(car.x, car.y, zc, 36);
+  const k2 = scale / D.P.scale;
+  const map = ([x, y]) => [P2.origin[0] + (x - D.P.origin[0]) * k2, P2.origin[1] + (y - D.P.origin[1]) * k2];
+  const carClipSvg = cols ? `<clipPath id="cr-detail-car"><path d="${clipD(cols, map)}"/></clipPath>` : "";
+  things.push({ key: depthAt(car.x, car.y, zc + 2), svg: `${carClipSvg}<g${cols ? ' clip-path="url(#cr-detail-car)"' : ""}>${open}</g>` });
   const puffs = gpu && gpu.puffs ? gpu.puffs() : [];
   for (const p of puffs) {
     if (!near(p.x, p.y)) continue;
@@ -316,54 +456,20 @@ function drawDetail(pose, hidden) {
     const rr = p.r * scale * 1.2;
     things.push({ key: depthAt(p.x, p.y, p.z), svg: `<circle fill="url(#cr-puff)" opacity="${Math.min(0.85, p.a * 0.8).toFixed(2)}" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${rr.toFixed(1)}"/>` });
   }
-
-  // a portal in view: the rock face of the hill, the headwall and its opening, the car's far part inside
-  let wall = "";
-  if (ids.some((i) => road.pts[i][0] < plane + 70 && near(...road.pts[i]))) {
-    const hw = D.headwall;
-    const x1 = plane;
-    const top = D.road + hw.tall;
-    const rock = [[hw.face - 1, D.box[1]], [hw.face - 1, D.hillFront]];
-    wall += `<path class="cr-d-wall" data-shade="1" d="${pathOf([at(rock[0][0], rock[0][1]), at(rock[1][0], rock[1][1]), at(rock[1][0], rock[1][1], D.wallTop), at(rock[0][0], rock[0][1], D.wallTop)], true)}"/>`;
-    wall += `<path class="cr-d-wall" data-shade="3" d="${pathOf([at(rock[0][0], rock[0][1], D.wallTop), at(rock[1][0], rock[1][1], D.wallTop), at(D.box[0], rock[1][1], D.wallTop), at(D.box[0], rock[0][1], D.wallTop)], true)}"/>`;
-    // the hill's own front, facing the sea, below and beside the portal face
-    wall += `<path class="cr-d-wall" data-shade="2" d="${pathOf([at(rock[1][0], rock[1][1], D.road - 90), at(D.box[0], rock[1][1], D.road - 90), at(D.box[0], rock[1][1], D.wallTop), at(rock[1][0], rock[1][1], D.wallTop)], true)}"/>`;
-    wall += clippedLine([at(rock[0][0], rock[0][1], D.wallTop), at(rock[1][0], rock[1][1], D.wallTop), at(D.box[0], rock[1][1], D.wallTop)], { tone: "lo" });
-    wall += clippedLine([at(rock[1][0], rock[1][1], D.road - 90), at(rock[1][0], rock[1][1], D.wallTop)], { tone: "lo" });
-    const arches = [];
-    for (const o of D.portals) {
-      const pts = [[x1, o.yc - o.half, o.z]];
-      for (let i = 0; i <= 24; i++) {
-        const a = Math.PI - (i / 24) * Math.PI;
-        pts.push([x1, o.yc + o.half * Math.cos(a), o.spring + o.half * Math.sin(a)]);
-      }
-      pts.push([x1, o.yc + o.half, o.z]);
-      arches.push(pathOf(pts.map((p) => at(...p)), true));
-      const front = [[x1, o.yc - hw.wide, o.z], [x1, o.yc + hw.wide, o.z], [x1, o.yc + hw.wide, top], [x1, o.yc - hw.wide, top]];
-      const side = [[x1, o.yc + hw.wide, o.z], [x1 - hw.thick, o.yc + hw.wide, o.z], [x1 - hw.thick, o.yc + hw.wide, top], [x1, o.yc + hw.wide, top]];
-      const lid = [[x1, o.yc - hw.wide, top], [x1, o.yc + hw.wide, top], [x1 - hw.thick, o.yc + hw.wide, top], [x1 - hw.thick, o.yc - hw.wide, top]];
-      wall += `<path class="cr-d-bore" d="${arches[arches.length - 1]}"/>`;
-      if (inner && (car.i < road.n / 2) === (o === D.portals[0])) wall += `<clipPath id="cr-detail-arch"><path d="${arches[arches.length - 1]}"/></clipPath><g clip-path="url(#cr-detail-arch)">${inner}</g>`;
-      wall += `<path class="cr-d-wall" fill-rule="evenodd" d="${pathOf(front.map((p) => at(...p)), true)}${arches[arches.length - 1]}"/>`;
-      wall += `<path class="cr-d-wall" data-shade="1" d="${pathOf(side.map((p) => at(...p)), true)}"/>`;
-      wall += `<path class="cr-d-wall" data-shade="3" d="${pathOf(lid.map((p) => at(...p)), true)}"/>`;
-      wall += lineSvg(pathOf(front.map((p) => at(...p)), true), { tone: "mid" }) + lineSvg(arches[arches.length - 1], { tone: "mid" });
-    }
-  }
   things.sort((a, b) => a.key - b.key);
-  parts.push(wall);
+  if (inner && cache.arches) parts.push(`<clipPath id="cr-detail-arch"><path transform="${shift}" d="${cache.arches}"/></clipPath><g clip-path="url(#cr-detail-arch)">${inner}</g>`);
   parts.push(things.map((t) => t.svg).join(""));
   detailView.innerHTML = parts.join("");
 
   // the notes: where the car is going (its path), where it points (its nose), the angle between, and the edge
-  const zn = D.road + 7;
+  const zn = zc + 7;
   const [cx0, cy0] = at(car.x, car.y, zn);
   const notes = [];
   const reach = 30;
   const pathTip = at(car.x + Math.cos(car.psi) * reach, car.y + Math.sin(car.psi) * reach, zn);
   const noseTip = at(car.x + c * reach, car.y + s * reach, zn);
   const beta = car.beta;
-  const deg = Math.round(Math.abs(beta) * 180 / Math.PI);
+  const deg = Math.round((Math.abs(beta) * 180) / Math.PI);
   if (deg >= 8) {
     const arc = [];
     for (let i = 0; i <= 16; i++) {
@@ -396,15 +502,15 @@ function drawDetail(pose, hidden) {
     let best = null;
     for (const [x, y] of M.cornersOf(car)) {
       const pr = M.project(road, x, y, car.i);
-      const m = pr.d + M.HALF_ROAD + road.verge[pr.i];
+      const m = M.HALF_ROAD + road.verge[pr.i] - road.drop[pr.i] * pr.d;
       if (!best || m < best.m) best = { x, y, i: pr.i, m };
     }
-    const [ex2, ey2] = rp(best.i, -(M.HALF_ROAD + road.verge[best.i]));
+    const [ex2, ey2] = M.roadPoint(road, best.i, road.drop[best.i] * (M.HALF_ROAD + road.verge[best.i]));
     // the foot of the perpendicular from that corner to the edge
     const h = road.heading[best.i];
     const along = (best.x - ex2) * Math.cos(h) + (best.y - ey2) * Math.sin(h);
-    const a = at(best.x, best.y);
-    const b = at(ex2 + Math.cos(h) * along, ey2 + Math.sin(h) * along);
+    const a = at(best.x, best.y, zc);
+    const b = at(ex2 + Math.cos(h) * along, ey2 + Math.sin(h) * along, zc);
     const dx = b[0] - a[0];
     const dy = b[1] - a[1];
     const len = Math.hypot(dx, dy);
@@ -421,7 +527,7 @@ function drawDetail(pose, hidden) {
   detailNotes.innerHTML = notes.join("");
 
   // in the main view: a ring round the car and a leader up to the inset
-  const [mx0, my0] = iso([car.x, car.y, D.road + 3], D.P);
+  const [mx0, my0] = iso([car.x, car.y, zc + 3], D.P);
   const ring = 15;
   const ux = DT.cx - mx0;
   const uy = DT.cy - my0;
@@ -438,12 +544,12 @@ function trackWheels(dt) {
   const s = Math.sin(yaw);
   const w = [1, -1].map((side) => [car.x - c * 6 - s * side * 3.55, car.y - s * 6 + c * side * 3.55]);
   const last = trail[trail.length - 1];
-  if (!last || Math.hypot(w[0][0] - last.w[0][0], w[0][1] - last.w[0][1]) > 1.2 || trailClock - last.t > 0.15) trail.push({ t: trailClock, w, slip: Math.abs(car.beta) });
+  if (!last || Math.hypot(w[0][0] - last.w[0][0], w[0][1] - last.w[0][1]) > 1.2 || trailClock - last.t > 0.15) trail.push({ t: trailClock, w, z: car.z, slip: Math.abs(car.beta) });
   while (trail.length && trailClock - trail[0].t > 3) trail.shift();
 }
 
 function poseOf(s) {
-  return { x: s.x, y: s.y, z: D.road, yaw: s.psi + s.beta, steer: s.steer };
+  return { x: s.x, y: s.y, z: s.z, yaw: s.psi + s.beta, steer: s.steer };
 }
 
 // which side of a portal's face the car is on: the far portal at the start of the road, the near one at the end
@@ -474,7 +580,13 @@ function placeCar() {
   if (inner && twin.parentNode !== slot) slot.appendChild(twin);
   if (!inner && twin.parentNode) twin.remove();
   // the open car takes its place among the trees, posts and signs by depth
-  const key = depthAt(car.x, car.y, D.road + 2);
+  // the slopes, knolls and spurs in front of the car hide it
+  const cols = hidden ? null : hiddenBelow(car.x, car.y, car.z, 34);
+  if (cols) {
+    carClipPath.setAttribute("d", clipD(cols));
+    carNode.setAttribute("clip-path", "url(#cr-car-live)");
+  } else carNode.removeAttribute("clip-path");
+  const key = depthAt(car.x, car.y, car.z + 2);
   let before = null;
   for (const item of items) {
     if (item.key > key) {
@@ -513,8 +625,8 @@ function announce() {
 function poseStill() {
   const lap = M.lapOf(road, profile, paceOf(ease.x));
   let best = 0;
-  lap.trace.forEach(([x, , , beta], i) => {
-    if (x > 150 && beta >= lap.trace[best][3]) best = i;
+  lap.trace.forEach(([, , , beta, i], q) => {
+    if (road.hairpin[i] === 2 && beta >= lap.trace[best][3]) best = q;
   });
   car = M.carStart(road, profile, paceOf(ease.x));
   for (let i = 0; i <= best; i++) M.stepCar(road, profile, car, paceOf(ease.x), 1 / 120);
@@ -550,7 +662,7 @@ function tick(now) {
   springTo(brake, car.brake, dt, 0.06);
   brake.x = clampTo(brake.x, 0, 1);
   placeCar();
-  drawSock(state.clock);
+  swayTrees(state.clock);
   drawKnob();
   lightItems();
   if (car.dark <= 0) trackWheels(dt);

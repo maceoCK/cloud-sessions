@@ -2,7 +2,7 @@
 import * as k from "../../anatomy/kit/iso-kit.mjs";
 import * as G from "../../anatomy/kit/lathe.mjs";
 import { tubePieces, tubeSvg } from "../../anatomy/kit/tube.mjs";
-import { hash2, fbm } from "./terrain.mjs";
+import { hash2, fbm, inside as within } from "./terrain.mjs";
 
 const S = (paths, style) => k.solidSvg(paths, style);
 const Ln = (d, style) => k.lineSvg(d, style);
@@ -50,7 +50,12 @@ export function portal({ P, face, yc, z, half = 20, spring = 15, thick = 4, wide
   inside.push(`</g>`);
   // lining rings every 2 m on the visible wall, and sodium lamps down the bore
   let rings = "";
-  for (let x = x1 - 10; x > deep + 4; x -= 10) rings += k.pathOf([[x, yc - half, z + 0.8], [x, yc - half, zs]].map(at));
+  // only the rings seen whole through the opening: one cut by its edge would stop in the rock
+  const mouth = arch(x1).map(at);
+  for (let x = x1 - 10; x > deep + 4; x -= 10) {
+    const ends = [[x, yc - half, z + 0.8], [x, yc - half, zs]].map(at);
+    if (ends.every(([sx, sy]) => within(mouth, sx, sy))) rings += k.pathOf(ends);
+  }
   inside.push(Ln(rings, { tone: "faint", className: "cr-bore-line" }));
   const lamps = [];
   for (let x = x1 - 9, i = 0; x > deep + 6; x -= 15, i++) lamps.push([...at([x, yc - half + 0.4, zs + 6]), Math.max(0.15, 1 - i * 0.16)]);
