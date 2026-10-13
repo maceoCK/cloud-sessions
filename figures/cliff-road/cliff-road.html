@@ -3695,7 +3695,7 @@ void main(){
 const fxGlsl = (NS, NP) => `${COMMON_GLSL}
 uniform float uRoad;uniform float uPortalX;uniform vec4 uCarA;uniform vec4 uCarB;
 uniform vec4 uSmk[${NS}];uniform vec4 uSmkB[${NS}];uniform vec4 uSpr[${NP}];uniform vec4 uSprB[${NP}];
-uniform vec4 uPortA;uniform vec4 uPortB;uniform float uBeams;uniform vec2 uWind;uniform float uSea;
+uniform vec4 uPortA;uniform vec4 uPortB;uniform vec4 uPortC;uniform float uPortCx;uniform float uBeams;uniform vec2 uWind;uniform float uSea;
 float landAt(vec2 p){return coastTex(p).b*512.;}
 // does anything of the mountain stand between this point and the eye?
 float seenFx(vec3 q){
@@ -3805,6 +3805,12 @@ void main(){
       float soft=1.-smoothstep(-.7*px,.7*px,max(abs(dy)-o.y,max(w0.z-top,o.z-w0.z)));
       sodium+=soft*(.5+.5*smoothstep(o.z,top,w0.z));
     }
+    // the short tunnel through the rib, in its own face
+    vec3 w2=onWallX(vb,uPortCx);
+    float dy2=w2.y-uPortC.x;
+    float top2=uPortC.w+sqrt(max(uPortC.y*uPortC.y-dy2*dy2,0.));
+    float soft2=1.-smoothstep(-.7*px,.7*px,max(abs(dy2)-uPortC.y,max(w2.z-top2,uPortC.z-w2.z)));
+    sodium+=soft2*(.5+.5*smoothstep(uPortC.z,top2,w2.z));
   }
   if(uCarA.w>.5){
     vec3 d0;vec3 d1;vec3 la=lampAt(1.,d0);vec3 lb=lampAt(-1.,d1);
@@ -3914,7 +3920,7 @@ function gpuOf(D, stage, pale) {
   })();
   const NS = budget >= 224 ? 32 : 12;
   const NP = budget >= 224 ? 48 : 16;
-  const fx = light ? glLayer({ canvas: fxCanvas, fragment: fxGlsl(NS, NP), view: [D.W, D.H], camera: D.camera, maxRatio: 0.6, uniforms: ["uFade", "uCarA", "uCarB", "uSmk", "uSmkB", "uSpr", "uSprB", "uWind", "uRoad", "uBeams"], fixed: { ...common, uPortalX: D.portal, uPortA: [D.portals[0].yc, D.portals[0].half, D.portals[0].z, D.portals[0].spring], uPortB: [D.portals[1].yc, D.portals[1].half, D.portals[1].z, D.portals[1].spring], uSea: D.sea } }) : null;
+  const fx = light ? glLayer({ canvas: fxCanvas, fragment: fxGlsl(NS, NP), view: [D.W, D.H], camera: D.camera, maxRatio: 0.6, uniforms: ["uFade", "uCarA", "uCarB", "uSmk", "uSmkB", "uSpr", "uSprB", "uWind", "uRoad", "uBeams"], fixed: { ...common, uPortalX: D.portal, uPortA: [D.portals[0].yc, D.portals[0].half, D.portals[0].z, D.portals[0].spring], uPortB: [D.portals[1].yc, D.portals[1].half, D.portals[1].z, D.portals[1].spring], uPortC: [D.portals[2].yc, D.portals[2].half, D.portals[2].z, D.portals[2].spring], uPortCx: D.portals[2].face, uSea: D.sea } }) : null;
   if (!fx) return null;
   for (const layer of [sea, light, fx]) {
     const gl = layer.gl;
