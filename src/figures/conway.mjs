@@ -136,7 +136,7 @@ export default {
   id: "conway",
   fig: "Fig 7",
   title: "Life table",
-  hint: "Click a well to place a peg",
+  hint: "Place a peg",
   width: WIDTH,
   height: HEIGHT,
   label:

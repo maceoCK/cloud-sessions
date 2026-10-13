@@ -13,22 +13,21 @@ export const PERSON = {
 export const META = {
   title: "Maceo Cardinale Kwik",
   description:
-    "Maceo Cardinale Kwik, engineer and founder in New York City. Founder of Datost, an applied research lab backed by Y Combinator and OpenAI, building ED1TH: glasses that put a quiet, capable computer in the corner of your eye. Previously Traba and SimonComputing. B.S. in Computer Science from Virginia Tech in two years, 4.0.",
+    "Engineer and founder in New York City, building ED1TH at Datost: glasses that put a quiet, capable computer in the corner of your eye.",
 };
 
 // The cover, after the Michelangelus announcement poster: a wordmark, one
 // monumental capital, a spaced line, and a small line set edge to edge.
 export const COVER = {
   big: ["Engineer", "and", "Founder"].map((w) => w.toUpperCase()),
-  small: "FOUNDER OF DATOST, BACKED BY Y COMBINATOR AND OPENAI, IN NEW YORK CITY",
+  small: ["DATOST", "NEW YORK CITY"],
+  said: "Engineer and founder. Datost, New York City.",
 };
 
 export const LEDE = [
-  "I started Datost, an applied research lab backed by Y Combinator and OpenAI. We are building ED1TH: glasses that put a quiet, capable computer in the corner of your eye.",
-  "Each figure below is a small machine that works the way that part of my work does.",
+  "Building ED1TH at Datost: glasses that put a quiet, capable computer in the corner of your eye.",
+  "Everything below works. Poke it.",
 ];
-// how to work the figures, by pointer and by finger
-export const HOW = { fine: "Hover, click, or use the arrow keys.", touch: "Tap them." };
 
 // Page order: groups of figures. Each entry is keyed by figure id.
 export const GROUPS = [
@@ -49,22 +48,22 @@ export const ENTRIES = {
   datost: {
     kicker: "Founder",
     name: "Datost",
-    line: "Sixteen drawers, every one of them locked.",
-    body: ["Sixteen of its repositories are private."],
+    line: "Sixteen drawers. All locked.",
+    body: ["Backed by Y Combinator and OpenAI."],
     links: [["datost.com", "https://datost.com"]],
   },
   traba: {
     kicker: "Engineering",
     name: "Traba",
     line: "Shifts, filled at market speed.",
-    body: ["The industrial labor marketplace."],
+    body: ["Industrial labor marketplace."],
     links: [],
   },
   simon: {
     kicker: "Software engineering",
     name: "SimonComputing",
     line: "A release is a promise made to strangers.",
-    body: ["Production systems, built with a consultancy's discipline."],
+    body: [],
     links: [],
   },
   pravost: {
@@ -78,33 +77,28 @@ export const ENTRIES = {
     kicker: "Mathematics",
     name: "h668-z37",
     line: "The smallest Hadamard order nobody has settled.",
-    body: [
-      "Cyclotomic nonexistence results for the conference graph of H(668).",
-    ],
+    body: ["Some of it does not exist."],
     links: [["github.com/maceoCK/h668-z37", "https://github.com/maceoCK/h668-z37"]],
   },
   conway: {
     kicker: "Game",
     name: "conway",
     line: "You win when nothing is left alive.",
-    body: ["A strategy game grown from Conway's Game of Life."],
+    body: ["A game grown from Life."],
     links: [["github.com/maceoCK/conway", "https://github.com/maceoCK/conway"]],
   },
   school: {
     kicker: "B.S. Computer Science",
     name: "Virginia Tech",
-    line: "Two years, 4.0.",
-    body: ["I began at Penn State."],
+    line: "Two years, start to finish.",
+    body: ["Started at Penn State."],
     links: [],
   },
 };
 
 
 export const CONTACT = {
-  line: "Write to me.",
   links: [["github.com/maceoCK", "https://github.com/maceoCK"]],
 };
 
-export const COLOPHON = [
-  "Figures drawn in code with the Anatomy kit by wheresryan22. Set in Michelangelus by studiogusto, carried as outlines, with Crimson Pro and Geist Mono.",
-];
+export const COLOPHON = ["Drawn with the Anatomy kit by wheresryan22. Set in Michelangelus."];

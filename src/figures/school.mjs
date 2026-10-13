@@ -182,8 +182,7 @@ export default {
   id: "school",
   fig: "Fig 8",
   title: "Two-year stage",
-  hint: "Hover to turn the crank",
-  touch: "Tap along the bed to send the carriage",
+  hint: "Turn the crank",
   width: WIDTH,
   height: HEIGHT,
   label:

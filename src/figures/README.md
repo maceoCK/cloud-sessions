@@ -12,9 +12,8 @@ import { tubePieces, tubeSvg } from "../../kit/tube.mjs"; // optional: pipes and
 export default {
   id: "datost",                 // matches the file name; the mount is #fig-<id>
   fig: "Fig 2",                 // card corner, top left
-  title: "Sixteen drawers",     // card corner, top right (shown uppercase)
-  hint: "Hover a drawer to try it",   // card corner, bottom left (shown uppercase)
-  touch: "Tap a drawer to try it",    // optional: the hint on touch screens (default: hover/click become tap)
+  title: "Card cabinet",        // card corner, top right (shown uppercase): what the object is
+  hint: "Try a drawer",          // card corner, bottom left (shown uppercase): an imperative that works for mouse and finger
   width: 600, height: 380,      // the svg viewBox
   label: "…",                   // the svg's aria-label: what the object is and what it shows
   stage: { role: "slider" | "group", label: "…controls in words…", attrs: { "aria-valuetext": "…" } },

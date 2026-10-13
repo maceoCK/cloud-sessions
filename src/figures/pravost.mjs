@@ -170,8 +170,8 @@ function coinSvg() {
 export default {
   id: "pravost",
   fig: "Fig 5",
-  title: "Held against intention",
-  hint: "Click to add a coin",
+  title: "Beam balance",
+  hint: "Add a coin",
   width: WIDTH,
   height: HEIGHT,
   label:

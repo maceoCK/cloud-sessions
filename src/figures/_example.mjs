@@ -165,7 +165,7 @@ export default {
   id: "_example",
   fig: "Fig 0",
   title: "Dial indicator",
-  hint: "Hover to slide the carriage",
+  hint: "Slide the carriage",
   width: WIDTH,
   height: HEIGHT,
   label:

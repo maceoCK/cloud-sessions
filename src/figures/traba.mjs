@@ -238,7 +238,7 @@ export default {
   id: "traba",
   fig: "Fig 3",
   title: "Time clock",
-  hint: "Hover a card to punch it in",
+  hint: "Punch a card in",
   width: WIDTH,
   height: HEIGHT,
   label:

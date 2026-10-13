@@ -12,7 +12,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
 import { ISO_CSS } from "../kit/iso-kit.mjs";
-import { COLOPHON, CONTACT, ENTRIES, GROUPS, HOW, LEDE, META, PERSON } from "./content.mjs";
+import { COLOPHON, CONTACT, COVER, ENTRIES, GROUPS, LEDE, META, PERSON } from "./content.mjs";
 import { ROMAN } from "./type/display.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -224,7 +224,7 @@ a:hover{text-decoration-color:var(--pink)}
   .theme button{padding:6px 7px}
   .cover-word{width:92%}
   .cover-m .ol{height:min(46svh,72vw)}
-  .cover-small{justify-content:flex-start;column-gap:9px}
+  .cover-small{column-gap:9px}
 }
 
 /* standfirst */
@@ -292,11 +292,8 @@ a:hover{text-decoration-color:var(--pink)}
 .fl{font-family:"Geist Mono",monospace;letter-spacing:0}
 .fw{height:.7em;overflow:visible;fill:currentColor;vertical-align:baseline}
 .atlas{position:absolute;width:0;height:0;overflow:hidden}
-.hint-touch{display:none}
-@media (hover:none) and (pointer:coarse){.hint-fine{display:none}.hint-touch{display:inline}}
 .contact{margin-top:clamp(100px,12vw,180px)}
-.contact .say{margin:clamp(24px,3vw,44px) 0 0;font:italic 400 clamp(26px,3vw,42px)/1.1 var(--serif);color:var(--ink)}
-.contact .mail{display:block;margin-top:18px;padding-bottom:min(4%,52px);color:var(--ink);text-decoration:none;width:min(100%,1180px)}
+.contact .mail{display:block;margin-top:clamp(28px,4vw,56px);padding-bottom:min(4%,52px);color:var(--ink);text-decoration:none;width:min(100%,1180px)}
 .contact .mail .ol{width:100%;height:auto;transition:fill .3s}
 .contact .mail:hover .ol{fill:#c13fae}
 .contact ul{display:flex;flex-wrap:wrap;gap:6px 22px;margin:34px 0 0;padding:0;list-style:none;font:13px/1.5 var(--mono)}
@@ -362,7 +359,7 @@ export function sitePage({ figures, script, fragment = false }) {
     return `<section class="group" id="${group.id}" aria-labelledby="g-${group.id}"><header class="group-head"><h2 id="g-${group.id}"><span class="vh">${esc(group.title)}</span>${line(`group.${group.id}`)}</h2></header>${entries}</section>`;
   }).join("");
 
-  const contact = `<section class="contact" id="contact" aria-labelledby="g-contact"><header class="group-head"><h2 id="g-contact"><span class="vh">Contact</span>${line("group.contact")}</h2></header><p class="say">${flow("flow.say", CONTACT.line)}</p><a class="mail" href="mailto:${PERSON.email}"><span class="vh">${esc(PERSON.email)}</span>${line("contact.mail")}</a><ul>${CONTACT.links.map((l) => `<li>${link(l)}</li>`).join("")}</ul></section>`;
+  const contact = `<section class="contact" id="contact" aria-labelledby="g-contact"><header class="group-head"><h2 id="g-contact" class="vh">Contact</h2></header><a class="mail" href="mailto:${PERSON.email}"><span class="vh">${esc(PERSON.email)}</span>${line("contact.mail")}</a><ul>${CONTACT.links.map((l) => `<li>${link(l)}</li>`).join("")}</ul></section>`;
 
   const colophon = `<footer class="colophon">${seal("seal")}<div>${COLOPHON.map((p) => `<p>${esc(p)}</p>`).join("")}</div></footer>`;
 
@@ -477,10 +474,10 @@ ${lozenges()}
 <div class="cover-bar wrap"><a href="#top" aria-label="Maceo Cardinale Kwik, top of page">${seal("seal-mini")}</a><nav aria-label="Sections"><a href="#figures">Figures</a><a href="#contact">Contact</a></nav><div class="theme" role="group" aria-label="Theme"><button type="button" data-set="light" aria-pressed="false">Paper</button><button type="button" data-set="dark" aria-pressed="false">Carbon</button></div></div>
 <h1 class="cover-word"><span class="vh">${esc(PERSON.name)}</span>${line("cover.word")}</h1>
 <div class="cover-m" aria-hidden="true">${line("cover.M")}</div>
-<div class="cover-foot wrap"><p class="cover-big"><span class="vh">Engineer and founder.</span>${bigWords.map((k) => line(k)).join("")}</p><p class="cover-small"><span class="vh">Founder of Datost, backed by Y Combinator and OpenAI, in New York City.</span>${smallWords.map((k) => line(k)).join("")}</p></div>
+<div class="cover-foot wrap"><p class="cover-big" aria-hidden="true">${bigWords.map((k) => line(k)).join("")}</p><p class="cover-small"><span class="vh">${esc(COVER.said)}</span>${smallWords.map((k) => line(k)).join("")}</p></div>
 </header>`;
 
-  const standfirst = `<section class="standfirst wrap" aria-label="Introduction"><p class="lead">${flow("flow.lede", LEDE[0])}</p><p>${txt(LEDE[1])} <span class="hint-fine">${esc(HOW.fine)}</span><span class="hint-touch">${esc(HOW.touch)}</span></p></section>`;
+  const standfirst = `<section class="standfirst wrap" aria-label="Introduction"><p class="lead">${flow("flow.lede", LEDE[0])}</p><p>${txt(LEDE[1])}</p></section>`;
 
   const body = `<a class="skip" href="#figures">Skip to the figures</a>${atlas()}${cover}<main>${standfirst}<div class="wrap" id="figures">${contents}${groups}${contact}${colophon}</div></main>${ruler}<script type="module">${script}\n${pageScript}</script>`;
   // a fragment for hosts that supply their own document around the page

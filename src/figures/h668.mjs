@@ -257,7 +257,7 @@ export default {
   id: "h668",
   fig: "Fig 6",
   title: "Cyclotomic sieve",
-  hint: "Hover the rack to load a disc",
+  hint: "Load a disc",
   width: WIDTH,
   height: HEIGHT,
   label:

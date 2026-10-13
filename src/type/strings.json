@@ -27,67 +27,12 @@
  {
   "id": "cover.small.0",
   "style": "regular",
-  "text": "FOUNDER"
+  "text": "DATOST"
  },
  {
   "id": "cover.small.1",
   "style": "regular",
-  "text": "OF"
- },
- {
-  "id": "cover.small.2",
-  "style": "regular",
-  "text": "DATOST,"
- },
- {
-  "id": "cover.small.3",
-  "style": "regular",
-  "text": "BACKED"
- },
- {
-  "id": "cover.small.4",
-  "style": "regular",
-  "text": "BY"
- },
- {
-  "id": "cover.small.5",
-  "style": "regular",
-  "text": "Y"
- },
- {
-  "id": "cover.small.6",
-  "style": "regular",
-  "text": "COMBINATOR"
- },
- {
-  "id": "cover.small.7",
-  "style": "regular",
-  "text": "AND"
- },
- {
-  "id": "cover.small.8",
-  "style": "regular",
-  "text": "OPENAI,"
- },
- {
-  "id": "cover.small.9",
-  "style": "regular",
-  "text": "IN"
- },
- {
-  "id": "cover.small.10",
-  "style": "regular",
-  "text": "NEW"
- },
- {
-  "id": "cover.small.11",
-  "style": "regular",
-  "text": "YORK"
- },
- {
-  "id": "cover.small.12",
-  "style": "regular",
-  "text": "CITY"
+  "text": "NEW YORK CITY"
  },
  {
   "id": "roman.I",
@@ -148,11 +93,6 @@
   "id": "group.school",
   "style": "italic",
   "text": "School"
- },
- {
-  "id": "group.contact",
-  "style": "italic",
-  "text": "Contact"
  },
  {
   "id": "name.ed1th",
@@ -223,7 +163,7 @@
  {
   "id": "flow.lede",
   "style": "regular",
-  "text": "I started Datost, an applied research lab backed by Y Combinator and OpenAI. We are building ED1TH: glasses that put a quiet, capable computer in the corner of your eye.",
+  "text": "Building ED1TH at Datost: glasses that put a quiet, capable computer in the corner of your eye.",
   "flow": true
  },
  {
@@ -235,7 +175,7 @@
  {
   "id": "flow.line.datost",
   "style": "italic",
-  "text": "Sixteen drawers, every one of them locked.",
+  "text": "Sixteen drawers. All locked.",
   "flow": true
  },
  {
@@ -271,7 +211,7 @@
  {
   "id": "flow.line.school",
   "style": "italic",
-  "text": "Two years, 4.0.",
+  "text": "Two years, start to finish.",
   "flow": true
  },
  {
@@ -320,12 +260,6 @@
   "id": "flow.name.school",
   "style": "italic",
   "text": "Virginia Tech",
-  "flow": true
- },
- {
-  "id": "flow.say",
-  "style": "italic",
-  "text": "Write to me.",
   "flow": true
  }
 ]

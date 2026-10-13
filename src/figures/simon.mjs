@@ -239,7 +239,7 @@ export default {
   id: "simon",
   fig: "Fig 4",
   title: "Production line",
-  hint: "Hover to run the line",
+  hint: "Run the line",
   width: WIDTH,
   height: HEIGHT,
   label:

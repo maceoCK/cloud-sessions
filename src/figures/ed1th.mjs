@@ -349,7 +349,7 @@ export default {
   id: "ed1th",
   fig: "Fig 1",
   title: "ED1TH fitting stand",
-  hint: "Move the pointer to look around",
+  hint: "Look around",
   width: WIDTH,
   height: HEIGHT,
   label:

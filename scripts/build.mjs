@@ -46,13 +46,6 @@ function sourceOf(fn) {
   return /^(async\s+)?live\s*\(/.test(text) ? text.replace(/^(async\s+)?live/, "$1function") : text;
 }
 
-// The plate's hint, as said to a finger: hover and click both become a tap.
-export const HINT_CSS = `.hint-touch{display:none}@media (hover:none) and (pointer:coarse){.hint-fine{display:none}.hint-touch{display:inline}}`;
-export const touchHint = (hint) =>
-  hint
-    .replace(/^Move the pointer to /, "Tap to ")
-    .replace(/^(Hover|Click) /, "Tap ");
-
 export function render(fig, label = fig.fig) {
   const built = fig.build();
   const svg = k.figureSvg({ width: fig.width, height: fig.height, label: fig.label, body: compactSvg(built.svg) });
@@ -60,9 +53,7 @@ export function render(fig, label = fig.fig) {
     .map(([key, value]) => ` ${key}="${escape(value)}"`)
     .join("");
   const stage = `<div class="iso-stage" tabindex="0" role="${fig.stage?.role ?? "group"}" aria-label="${escape(fig.stage?.label ?? fig.title)}"${extra}>${svg}</div>`;
-  const plate = k
-    .plateHtml({ fig: label, title: fig.title, hint: fig.hint, readout: built.readout ?? "", body: stage })
-    .replace(`data-corner="hint">${escape(fig.hint ?? "")}</span>`, `data-corner="hint"><span class="hint-fine">${escape(fig.hint ?? "")}</span><span class="hint-touch">${escape(fig.touch ?? touchHint(fig.hint ?? ""))}</span></span>`);
+  const plate = k.plateHtml({ fig: label, title: fig.title, hint: fig.hint, readout: built.readout ?? "", body: stage });
   const html = `<div class="fig-mount" id="fig-${fig.id}" data-fig="${fig.id}">${plate}</div>`;
   const boot = fig.live ? `FIGS.push([${JSON.stringify(fig.id)}, ${JSON.stringify(built.data ?? {})}, ${sourceOf(fig.live)}]);` : "";
   return { fig, html, boot, css: fig.css ?? "", bytes: svg.length };
@@ -98,7 +89,7 @@ mkdirSync(join(DIST, "fig"), { recursive: true });
 for (const r of only || args.includes("--pages") ? rendered : []) {
   for (const theme of ["light", "dark"]) {
     let page = k.pageHtml({ title: `${r.fig.fig} · ${r.fig.title}`, theme, body: r.html, script: "", width: 760 });
-    page = page.replace("</head>", `<style>${HINT_CSS}${r.css}</style></head>`).replace("</body>", `<script type="module">${scriptOf([r])}</script></body>`);
+    page = page.replace("</head>", `<style>${r.css}</style></head>`).replace("</body>", `<script type="module">${scriptOf([r])}</script></body>`);
     writeFileSync(join(DIST, "fig", `${r.fig.id}${theme === "dark" ? "-dark" : ""}.html`), page);
   }
   console.log(`${r.fig.id.padEnd(10)} svg ${(r.bytes / 1024).toFixed(0).padStart(5)} KB`);

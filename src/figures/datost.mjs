@@ -188,8 +188,8 @@ function polygonOf(d) {
 export default {
   id: "datost",
   fig: "Fig 2",
-  title: "Sixteen drawers",
-  hint: "Hover a drawer to try it",
+  title: "Card cabinet",
+  hint: "Try a drawer",
   width: WIDTH,
   height: HEIGHT,
   label:
