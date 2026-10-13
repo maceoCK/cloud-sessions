@@ -44,7 +44,7 @@ const put = (memo, key, el, name, value) => {
 
 // ---- Tour --------------------------------------------------------------------------------------
 // Times in seconds. The peel runs on the stick-slip clock: steady, with a pause at every band.
-const T = { rest: 1.5, lift: 1.5, peel: 4.2, off: 1.4, hold: 2.4, place: 1.7, settle: 0.9 };
+const T = { rest: 1.5, lift: 1.5, peel: 4.2, off: 1.4, hold: 3.0, place: 1.7, settle: 0.9 };
 const CYCLE = Object.values(T).reduce((a, b) => a + b, 0);
 const ease = (x) => x * x * (3 - 2 * x);
 const easeOut = (x) => 1 - (1 - x) ** 3;

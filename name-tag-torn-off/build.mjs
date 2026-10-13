@@ -96,39 +96,6 @@ function sandTile(id, transform) {
   for (let i = 0; i < 70; i++) light += `<circle cx="${fx(R() * w)}" cy="${fx(R() * h)}" r="${fx(0.25 + R() * 0.5)}"/>`;
   return tile(id, w, h, transform, `<g class="nt-tx-sand">${dark}</g><g class="nt-tx-sandlight">${light}</g>`);
 }
-// Adhesive with paper fibre in it: a dense fuzz of pale flecks and short fibres.
-function fuzzTile() {
-  const w = 47, h = 43;
-  let out = "";
-  for (let i = 0; i < 170; i++) {
-    const cx = R() * w, cy = R() * h, r = 0.2 + R() ** 1.6 * 0.95;
-    const shape = blobPath(0, 0, r, 6, 0.7);
-    out += wrap(w, h, cx, cy, r + 1, (x, y) => `<path transform="translate(${fx(x)} ${fx(y)})" d="${shape}"/>`);
-  }
-  for (let i = 0; i < 46; i++) {
-    const cx = R() * w, cy = R() * h, len = 0.8 + R() * 2.6, a = R() * Math.PI, t = 0.12 + R() * 0.1;
-    const c = Math.cos(a), s = Math.sin(a);
-    const shape = pathOf([[-c * len, -s * len], [s * t, -c * t], [c * len, s * len], [-s * t, c * t]], true);
-    out += wrap(w, h, cx, cy, len + 1, (x, y) => `<path transform="translate(${fx(x)} ${fx(y)})" d="${shape}"/>`);
-  }
-  return tile("nt-fuzz", w, h, LABEL, `<g class="nt-tx-fuzz">${out}</g>`);
-}
-// ...and a coarser mottle where it lies thicker or thinner.
-function mottleTile() {
-  const w = 89, h = 71;
-  let thick = "", thin = "";
-  for (let i = 0; i < 26; i++) {
-    const cx = R() * w, cy = R() * h, r = 2 + R() * 6;
-    const shape = blobPath(0, 0, r, 11, 0.7, 1.4, 0.8, R() * 3);
-    thick += wrap(w, h, cx, cy, r * 1.6, (x, y) => `<path transform="translate(${fx(x)} ${fx(y)})" d="${shape}"/>`);
-  }
-  for (let i = 0; i < 30; i++) {
-    const cx = R() * w, cy = R() * h, r = 0.8 + R() * 2.4;
-    const shape = blobPath(0, 0, r, 9, 0.8, 1.3, 0.9, R() * 3);
-    thin += wrap(w, h, cx, cy, r * 1.6, (x, y) => `<path transform="translate(${fx(x)} ${fx(y)})" d="${shape}"/>`);
-  }
-  return tile("nt-mottle", w, h, LABEL, `<g class="nt-tx-thick">${thick}</g><g class="nt-tx-thin">${thin}</g>`);
-}
 // Raster grain, each image defined once and tiled by patterns in every plane that uses it.
 const IMAGES = [
   ["nt-img-fuzz", fuzzTexture(), 92],
@@ -340,8 +307,6 @@ function residue() {
     return `<circle cx="${fx(x)}" cy="${fx(y)}" r="${fx(r)}"/>`;
   }).join("")}</g>`);
   out.push(`</g>`);
-  // the torn rims of the bare spots, where the adhesive film ends
-  out.push(`<g class="nt-holes">${RESIDUE.holes.map((h) => `<path d="${onPlate(h)}"/>`).join("")}</g>`);
   // the torn edge of the piece that stayed lifts a hair and throws a thin shadow on the residue
   out.push(`<path class="nt-lift" d="${onPlate(PEEL.TEAR.map(([u, v]) => [u - 1.1, v + 0.5]), 0, false)}"/>`);
   // the line the label's die-cut edge left in the adhesive, from one end of the tear to the other

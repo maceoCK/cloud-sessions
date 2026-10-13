@@ -10,13 +10,12 @@
   --nt-face-0: #e0e0dd; --nt-face-1: #efefec; --nt-face-2: #ffffff; --nt-face-3: #ffffff; --nt-face-4: #ffffff;
   --nt-back-0: #ccc9bf; --nt-back-1: #d8d5cc; --nt-back-2: #e2dfd7; --nt-back-3: #e9e6df; --nt-back-4: #eeebe5;
   --nt-ink: #17171b; --nt-ghost: 18%;
-  --nt-film: #d6d5ce; --nt-thick: #c9c8bf; --nt-thin: #e2e2dc; --nt-fuzz: #f8f7f2;
-  --nt-hole: #e8e9e8; --nt-island: #fbfaf6; --nt-speck: #5f5e57;
+  --nt-film: #dad9d2; --nt-island: #fbfaf6; --nt-speck: #5f5e57;
   --nt-delam: #f0eee7; --nt-tear: #8c8a84; --nt-fuzzfibre: #fbfaf5;
   --nt-halo: #5c5b54;
   --nt-sheen-hi: #ffffff; --nt-sheen-hi-o: .75; --nt-sheen-lo: #6f7375; --nt-sheen-lo-o: .14;
   --nt-grime: #6d5a4c; --nt-plug: #cfcfca; --nt-plughole: #4a3e37;
-  --nt-clay-o: .32; --nt-sand-o: .7; --nt-sandlight-o: .8; --nt-fuzz-o: .95; --nt-drift-o: .55;
+  --nt-clay-o: .32; --nt-sand-o: .7; --nt-sandlight-o: .8; --nt-fuzz-o: .62; --nt-drift-o: .42;
 }
 .iso[data-theme="dark"] {
   --nt-brick-a: #33251f; --nt-brick-b: #382822; --nt-brick-c: #2f231e; --nt-brick-d: #3c2a22; --nt-brick-e: #2c2420;
@@ -29,8 +28,7 @@
   --nt-face-0: #1a1a1a; --nt-face-1: #222222; --nt-face-2: #2c2c2c; --nt-face-3: #303030; --nt-face-4: #343434;
   --nt-back-0: #151514; --nt-back-1: #1a1a19; --nt-back-2: #20201e; --nt-back-3: #252523; --nt-back-4: #292927;
   --nt-ink: #ededed; --nt-ghost: 15%;
-  --nt-film: #2d2d2a; --nt-thick: #393935; --nt-thin: #252523; --nt-fuzz: #4d4c47;
-  --nt-hole: #1e1f1f; --nt-island: #45443f; --nt-speck: #0a0a0a;
+  --nt-film: #2d2d2a; --nt-island: #45443f; --nt-speck: #0a0a0a;
   --nt-delam: #3a3936; --nt-tear: #8e8d88; --nt-fuzzfibre: #5a5954;
   --nt-halo: #000000;
   --nt-sheen-hi: #9aa0a3; --nt-sheen-hi-o: .16; --nt-sheen-lo: #000000; --nt-sheen-lo-o: .3;
@@ -93,11 +91,6 @@
 
 /* residue */
 .nt-film { fill: var(--nt-film); stroke: none; }
-.nt-tx-thick { fill: var(--nt-thick); opacity: .7; }
-.nt-tx-thin { fill: var(--nt-thin); opacity: .55; }
-.nt-tx-fuzz { fill: var(--nt-fuzz); opacity: .85; }
-.nt-holes path { display: none; }
-.nt-scrapes path { fill: var(--nt-hole); stroke: none; }
 .nt-islands path { fill: var(--nt-island); stroke: var(--nt-tear); stroke-width: .3px; stroke-linejoin: round; opacity: .92; }
 .nt-specks circle { fill: var(--nt-speck); opacity: .55; }
 
