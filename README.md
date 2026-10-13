@@ -46,6 +46,8 @@ The build needs only Node 20.10 or later; it has no dependencies. Deploy
   the page).
 - `src/runtime.js`: the shared live helpers (one rAF loop per figure that runs
   only on screen, the idle tour, springs).
+- `scripts/compact.mjs`: rewrites the figures' straight-line paths in relative
+  commands at their own precision (lossless; about a quarter off the page).
 - `kit/`: the Anatomy kit, vendored (MIT, see `kit/LICENSE`).
 - `src/type/`: the Michelangelus outlines and the list of lines they cover.
 
