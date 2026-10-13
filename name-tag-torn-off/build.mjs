@@ -192,7 +192,7 @@ function wall() {
   // Salt bloom: lime washed out of the mortar dried white on a low brick and the joint under it.
   {
     const Rb = PEEL.rng(7171);
-    const cx = 160, cz = 128;
+    const cx = 140, cz = 146;
     const pts = [];
     for (let i = 0; i < 26; i++) {
       const a = (i / 26) * Math.PI * 2;
