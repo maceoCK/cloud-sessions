@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import * as k from "../kit/iso-kit.mjs";
 import ORDER from "../src/figures/index.mjs";
 import { sitePage } from "../src/page.mjs";
+import { ROMAN } from "../src/type/display.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DIST = join(ROOT, "dist");
@@ -44,14 +45,14 @@ function sourceOf(fn) {
   return /^(async\s+)?live\s*\(/.test(text) ? text.replace(/^(async\s+)?live/, "$1function") : text;
 }
 
-export function render(fig) {
+export function render(fig, label = fig.fig) {
   const built = fig.build();
   const svg = k.figureSvg({ width: fig.width, height: fig.height, label: fig.label, body: built.svg });
   const extra = Object.entries(fig.stage?.attrs ?? {})
     .map(([key, value]) => ` ${key}="${escape(value)}"`)
     .join("");
   const stage = `<div class="iso-stage" tabindex="0" role="${fig.stage?.role ?? "group"}" aria-label="${escape(fig.stage?.label ?? fig.title)}"${extra}>${svg}</div>`;
-  const plate = k.plateHtml({ fig: fig.fig, title: fig.title, hint: fig.hint, readout: built.readout ?? "", keys: fig.keys ?? [], caption: fig.caption, body: stage });
+  const plate = k.plateHtml({ fig: label, title: fig.title, hint: fig.hint, readout: built.readout ?? "", keys: fig.keys ?? [], caption: fig.caption, body: stage });
   const html = `<div class="fig-mount" id="fig-${fig.id}" data-fig="${fig.id}">${plate}</div>`;
   const boot = fig.live ? `FIGS.push([${JSON.stringify(fig.id)}, ${JSON.stringify(built.data ?? {})}, ${sourceOf(fig.live)}]);` : "";
   return { fig, html, boot, css: fig.css ?? "", bytes: svg.length };
@@ -62,13 +63,29 @@ export function scriptOf(rendered) {
   return script.replace(/<\/(script)/gi, "<\\/$1");
 }
 
+// A full build skips a figure that fails to load or render (and says so), so
+// one broken figure never blocks the page; --only fails loudly instead.
 const ids = only ?? ORDER;
-const chosen = [];
-for (const id of ids) chosen.push((await import(`../src/figures/${id}.mjs`)).default);
-const rendered = chosen.map(render);
+const rendered = [];
+for (const id of ids) {
+  try {
+    const fig = (await import(`../src/figures/${id}.mjs`)).default;
+    rendered.push(render(fig, only ? fig.fig : `Fig. ${ROMAN[ids.indexOf(id)]}`));
+  } catch (error) {
+    if (only) throw error;
+    console.warn(`skipped ${id}: ${error.message.split("\n")[0]}`);
+    // --stub stands the example in for a missing figure, to lay out the page.
+    if (args.includes("--stub")) {
+      const example = (await import("../src/figures/_example.mjs")).default;
+      rendered.push(render({ ...example, id, title: `${id} (stand-in)` }, `Fig. ${ROMAN[ids.indexOf(id)]}`));
+    }
+  }
+}
 
+// Standalone pages only for --only (or --pages): a full build never
+// overwrites a page someone is checking.
 mkdirSync(join(DIST, "fig"), { recursive: true });
-for (const r of rendered) {
+for (const r of only || args.includes("--pages") ? rendered : []) {
   for (const theme of ["light", "dark"]) {
     let page = k.pageHtml({ title: `${r.fig.fig} · ${r.fig.title}`, theme, body: r.html, script: "", width: 760 });
     page = page.replace("</head>", `<style>${r.css}</style></head>`).replace("</body>", `<script type="module">${scriptOf([r])}</script></body>`);

@@ -1,3 +1,5 @@
 node_modules/
 shots/
+dist/fig/
 .DS_Store
+src/fonts/*.ttf

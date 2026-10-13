@@ -6,7 +6,10 @@
   "description": "Maceo Cardinale Kwik: a personal site drawn as eight working isometric figures",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "shoot": "node scripts/shoot.mjs"
+    "shoot": "node scripts/shoot.mjs",
+    "outline": "node scripts/strings.mjs && python3 scripts/outline.py"
   },
-  "engines": { "node": ">=20.10" }
+  "engines": {
+    "node": ">=20.10"
+  }
 }

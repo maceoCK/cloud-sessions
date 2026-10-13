@@ -1,3 +1,3 @@
 // The figures, in page order. Each id names src/figures/<id>.mjs, which
 // follows the contract in README.md.
-export default ["_example"];
+export default ["ed1th", "datost", "traba", "simon", "pravost", "h668", "conway", "school"];

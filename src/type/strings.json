@@ -1,0 +1,228 @@
+[
+ {
+  "id": "cover.word",
+  "style": "italic",
+  "text": "Maceo Cardinale Kwik"
+ },
+ {
+  "id": "cover.M",
+  "style": "regular",
+  "text": "M"
+ },
+ {
+  "id": "cover.big.0",
+  "style": "regular",
+  "text": "ENGINEER"
+ },
+ {
+  "id": "cover.big.1",
+  "style": "regular",
+  "text": "AND"
+ },
+ {
+  "id": "cover.big.2",
+  "style": "regular",
+  "text": "FOUNDER"
+ },
+ {
+  "id": "cover.small.0",
+  "style": "regular",
+  "text": "FOUNDER"
+ },
+ {
+  "id": "cover.small.1",
+  "style": "regular",
+  "text": "OF"
+ },
+ {
+  "id": "cover.small.2",
+  "style": "regular",
+  "text": "DATOST,"
+ },
+ {
+  "id": "cover.small.3",
+  "style": "regular",
+  "text": "BACKED"
+ },
+ {
+  "id": "cover.small.4",
+  "style": "regular",
+  "text": "BY"
+ },
+ {
+  "id": "cover.small.5",
+  "style": "regular",
+  "text": "Y"
+ },
+ {
+  "id": "cover.small.6",
+  "style": "regular",
+  "text": "COMBINATOR"
+ },
+ {
+  "id": "cover.small.7",
+  "style": "regular",
+  "text": "AND"
+ },
+ {
+  "id": "cover.small.8",
+  "style": "regular",
+  "text": "OPENAI,"
+ },
+ {
+  "id": "cover.small.9",
+  "style": "regular",
+  "text": "IN"
+ },
+ {
+  "id": "cover.small.10",
+  "style": "regular",
+  "text": "NEW"
+ },
+ {
+  "id": "cover.small.11",
+  "style": "regular",
+  "text": "YORK"
+ },
+ {
+  "id": "cover.small.12",
+  "style": "regular",
+  "text": "CITY"
+ },
+ {
+  "id": "roman.I",
+  "style": "regular",
+  "text": "I"
+ },
+ {
+  "id": "roman.II",
+  "style": "regular",
+  "text": "II"
+ },
+ {
+  "id": "roman.III",
+  "style": "regular",
+  "text": "III"
+ },
+ {
+  "id": "roman.IV",
+  "style": "regular",
+  "text": "IV"
+ },
+ {
+  "id": "roman.V",
+  "style": "regular",
+  "text": "V"
+ },
+ {
+  "id": "roman.VI",
+  "style": "regular",
+  "text": "VI"
+ },
+ {
+  "id": "roman.VII",
+  "style": "regular",
+  "text": "VII"
+ },
+ {
+  "id": "roman.VIII",
+  "style": "regular",
+  "text": "VIII"
+ },
+ {
+  "id": "group.now",
+  "style": "italic",
+  "text": "Now"
+ },
+ {
+  "id": "group.before",
+  "style": "italic",
+  "text": "Before"
+ },
+ {
+  "id": "group.open",
+  "style": "italic",
+  "text": "Open work"
+ },
+ {
+  "id": "group.school",
+  "style": "italic",
+  "text": "School"
+ },
+ {
+  "id": "group.record",
+  "style": "italic",
+  "text": "Record"
+ },
+ {
+  "id": "group.contact",
+  "style": "italic",
+  "text": "Contact"
+ },
+ {
+  "id": "name.ed1th",
+  "style": "regular",
+  "text": "ED1TH",
+  "tracking": 0.03
+ },
+ {
+  "id": "name.datost",
+  "style": "regular",
+  "text": "DATOST",
+  "tracking": 0.03
+ },
+ {
+  "id": "name.traba",
+  "style": "regular",
+  "text": "TRABA",
+  "tracking": 0.03
+ },
+ {
+  "id": "name.simon",
+  "style": "regular",
+  "text": "SIMONCOMPUTING",
+  "tracking": 0.03
+ },
+ {
+  "id": "name.pravost",
+  "style": "regular",
+  "text": "PRAVOST",
+  "tracking": 0.03
+ },
+ {
+  "id": "name.h668",
+  "style": "regular",
+  "text": "H668-Z37",
+  "tracking": 0.03
+ },
+ {
+  "id": "name.conway",
+  "style": "regular",
+  "text": "CONWAY",
+  "tracking": 0.03
+ },
+ {
+  "id": "name.school",
+  "style": "regular",
+  "text": "VIRGINIA TECH",
+  "tracking": 0.03
+ },
+ {
+  "id": "contact.mail",
+  "style": "italic",
+  "text": "maceo@datost.com"
+ },
+ {
+  "id": "seal.ring",
+  "style": "regular",
+  "text": "MACEO · CARDINALE · KWIK · NEW YORK CITY · ",
+  "tracking": 0.12,
+  "glyphs": true
+ },
+ {
+  "id": "seal.mck",
+  "style": "regular",
+  "text": "MCK",
+  "tracking": 0.04
+ }
+]
