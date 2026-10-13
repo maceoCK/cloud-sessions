@@ -65,9 +65,10 @@ stores only outlines in `src/type/outlines.json`. A line becomes one outline.
 Wrapping text is cut into words over a shared glyph atlas: the page draws each
 word as a small inline svg of `<use>` glyphs, with real spaces between words
 so they wrap, and the words themselves beside it for screen readers. In
-all-caps words set in the italic (E1O) the figures come from the upright,
-slanted to the italic's 20 degrees, because the italic's old-style 1 reads as
-an i. If copy changes without a re-outline, the build warns and sets that text
+all-caps words with a figure (E1O) the figures are lining ones from the
+upright, slanted to match when the word is italic, and the 1 is drawn in
+`outline.py` from the font's own stem and foot with a longer flag, because
+Michelangelus's 1 reads as an l beside capitals. If copy changes without a re-outline, the build warns and sets that text
 in a system serif rather than showing stale outlines. To change a display
 line, edit `src/content.mjs`, install the font ([Microsoft Download
 Center](https://www.microsoft.com/en-us/download/details.aspx?id=108856)),
