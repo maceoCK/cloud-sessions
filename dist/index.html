@@ -156,7 +156,7 @@ a:hover{text-decoration-color:var(--pink)}
 .cover-big,.cover-small{display:flex;justify-content:space-between;align-items:flex-end;margin:0}
 .cover-big .ol{height:clamp(15px,4.4vw,62px)}
 .cover-small{margin-top:clamp(16px,2.6vh,30px);flex-wrap:wrap;row-gap:8px;column-gap:10px}
-.cover-small .ol{height:clamp(6.5px,.72vw,10px)}
+.cover-small .ol{height:clamp(6.5px,.72vw,10px);overflow:visible;filter:drop-shadow(0 0 2px rgba(10,9,8,.9)) drop-shadow(0 0 5px rgba(10,9,8,.6))}
 @media (max-width:640px){
   .cover{height:auto;min-height:100svh}
   .cover-bar{gap:12px;font-size:11px}
@@ -250,7 +250,7 @@ a:hover{text-decoration-color:var(--pink)}
 /* contact */
 .contact{margin-top:clamp(100px,12vw,180px)}
 .contact .say{margin:clamp(24px,3vw,44px) 0 0;font:italic 400 clamp(26px,3vw,42px)/1.1 var(--serif);color:var(--ink)}
-.contact .mail{display:block;margin-top:18px;color:var(--ink);text-decoration:none;width:min(100%,1180px)}
+.contact .mail{display:block;margin-top:18px;padding-bottom:min(4%,52px);color:var(--ink);text-decoration:none;width:min(100%,1180px)}
 .contact .mail .ol{width:100%;height:auto;transition:fill .3s}
 .contact .mail:hover .ol{fill:#c13fae}
 .contact ul{display:flex;flex-wrap:wrap;gap:6px 22px;margin:34px 0 0;padding:0;list-style:none;font:13px/1.5 var(--mono)}
