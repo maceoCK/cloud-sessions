@@ -487,3 +487,25 @@
 .cr-bench {
   fill: var(--anatomy-top);
 }
+
+/* two-tone paint: pale above the beltline, dark below */
+.cr {
+  --cr-lower: #34363b;
+  --cr-lower-shade: #26282c;
+}
+
+.iso:not([data-theme="light"]) .cr {
+  --cr-lower: #07080a;
+  --cr-lower-shade: #050607;
+}
+
+.cr .iso-solid.cr-lower > .iso-fill,
+.cr .iso-solid.cr-lower > .iso-top,
+.cr .iso-solid.cr-lower[data-lit] > .iso-top {
+  fill: var(--cr-lower);
+}
+
+.cr .iso-solid.cr-lower > .iso-shade,
+.cr .iso-solid.cr-lower[data-lit] > .iso-shade {
+  fill: var(--cr-lower-shade);
+}

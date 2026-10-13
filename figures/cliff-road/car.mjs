@@ -105,7 +105,7 @@ export function carSvg(pose, P, G, k, { lamps = true, brake = 0, cut = null, kee
   ];
   for (const poly of lower) {
     const fc = poly.reduce((a, p) => a + p[0], 0) / poly.length;
-    put(depthOf(fc, 0, 2) + 0.01, solid(prism(poly, -H, H), { tone: "hi", lit: true, crease: "lo" }));
+    put(depthOf(fc, 0, 2) + 0.01, solid(prism(poly, -H, H), { tone: "hi", lit: true, crease: "lo", className: "cr-lower" }));
   }
   parts.sort((a, b) => a.key - b.key);
   const ordered = parts.map((p) => p.svg);
