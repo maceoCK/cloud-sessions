@@ -561,7 +561,15 @@ function phaseOf() {
   const recent = state.clock - state.lastStep;
   if (state.prints.length && recent < 1.4) {
     const n = state.prints.length;
-    return { word: `step ${n}`, text: `step ${n} · ${metres(GAIT.step)} m · ${(GAIT.depth * 10).toFixed(0)} mm deep` };
+    const latest = state.prints[n - 1];
+    const before = state.prints[n - 2];
+    const deep = `${(GAIT.depth * latest.scale * 10).toFixed(0)} mm deep`;
+    if (!before) return { word: `step ${n}`, text: `step ${n} · ${deep}` };
+    const [ax, ay] = toWorld(before, 4, 0);
+    const [bx, by] = toWorld(latest, 4, 0);
+    const walk = (before.heading + latest.heading) / 2;
+    const along = Math.abs((bx - ax) * Math.cos(walk) + (by - ay) * Math.sin(walk));
+    return { word: `step ${n}`, text: `step ${n} · ${metres(along)} m · ${deep}` };
   }
   if (state.prints.length) {
     const n = state.prints.length;
