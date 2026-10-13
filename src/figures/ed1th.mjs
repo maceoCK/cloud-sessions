@@ -162,6 +162,36 @@ function box() {
 }
 const CABLE_Y = -40;
 
+
+// An optician's corner on the bare half of the base: a parts tray with spare
+// nose pads and screws, and a precision screwdriver lying beside it.
+const TRAY = { x: -92, y: -58, w: 28, d: 20, r: 3 };
+function tools() {
+  const out = [];
+  out.push(`<path class="iso-halo" d="${k.haloOf(TRAY, 0, 1, P)}" style="filter:blur(4px)"/>`);
+  out.push(S(k.slabOf(TRAY, 0, 3.4, P, 4, 0.5), { tone: "mid" }));
+  // two wells, a divider between them
+  const wells = [{ x: TRAY.x + 2.4, y: TRAY.y + 2.4, w: 12.4, d: TRAY.d - 4.8, r: 2 }, { x: TRAY.x + 15.2, y: TRAY.y + 2.4, w: 12.4, d: TRAY.d - 4.8, r: 2 }];
+  for (const w of wells) out.push(`<path class="iso-line" data-tone="lo" style="fill:var(--anatomy-shade-1)" d="${k.planOutline(w, 3.4, P, 3)}"/>`);
+  // spare nose pads in one well, screws in the other
+  for (const [x, y] of [[TRAY.x + 6, TRAY.y + 7], [TRAY.x + 10.6, TRAY.y + 12.4]]) {
+    const F = G.frameAlong([x, y, 3.4 + 0.8], [0.15, -0.1, 1]);
+    out.push(S(G.disc(-0.6, 0.6, 2.4, F, P, { steps: 24 }), { tone: "hi" }));
+  }
+  const screws = [[TRAY.x + 19, TRAY.y + 7.4], [TRAY.x + 23.4, TRAY.y + 9], [TRAY.x + 20.6, TRAY.y + 13.2]];
+  for (const [x, y] of screws) {
+    out.push(S(k.cylinder(x, y, 1.1, 3.4, 0.9, P, 14), { tone: "hi", crease: "lo" }));
+    out.push(L(k.lineOnTop([x - 0.7, y], [x + 0.7, y], 4.3, P), { tone: "mid" }));
+  }
+  // the screwdriver: a fluted handle with a swivel cap, a thin shaft, a blade
+  const a = [Math.cos(0.18), Math.sin(0.18), 0];
+  const o = [TRAY.x - 2, TRAY.y + TRAY.d + 7, 2.6];
+  const F = G.frameOf(o, a, [0, 0, 1], G.cross3(a, [0, 0, 1]));
+  out.push(S(G.solidOf([[0, 1.6], [1.2, 2.6], [3, 2.6], [3, 2.2], [17, 2.2], [18.4, 1.4]], F, P), { tone: "hi", inner: k.fadedSvg(G.ribsOf(F, 3.4, 16.6, 2.2, 12, P, { fade: [0.08, 0.5] }), { tone: "lo" }) }));
+  out.push(S(G.solidOf([[18.4, 0.55], [30, 0.55], [31.2, 0.3]], F, P), { tone: "mid", crease: "none" }));
+  return out.join("");
+}
+
 // ---------------------------------------------------------------- the stand
 function nose() {
   // nose rest: a post under the bridge, topped by a saddle the pads sit on
@@ -360,6 +390,7 @@ export default {
     glasses();
     temples();
     put([BOX.x + BOX.w / 2, BOX.y + BOX.d / 2, 0], box(), -6);
+    put([TRAY.x + TRAY.w / 2, TRAY.y, 0], tools(), -40);
     // live slots: gaze lines behind the eyes, eyes, display on the right lens
     const slots = [];
     EYES.forEach((eye, index) => {

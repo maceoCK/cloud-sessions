@@ -133,6 +133,22 @@ function cap() {
   out.push(L(k.planOutline(k.insetPlan(pl, 1.4), TOP + CAP_H + 0.8, P, 3), { tone: "faint" }));
   out.push(k.faceTextSvg(k.topMatrix([pl.x + pl.w / 2 + 2, 0], TOP + CAP_H + 0.8, P, "y"), "DATOST", { size: 5.2, tone: "mid", anchor: "middle" }));
   out.push(D([at([pl.x + 3, pl.y + 3, TOP + CAP_H + 0.8]), at([pl.x + 3, pl.y + pl.d - 3, TOP + CAP_H + 0.8])], { size: 0.4 }));
+  // a card tray at the far end of the cap: a stack of index cards and a pencil
+  const z = TOP + CAP_H;
+  const tray = { x: CASE.x + 5, y: CASE.y + CASE.d - 40, w: 30, d: 32, r: 2 };
+  out.push(S(k.slabOf(tray, z, 1.4, P, 3, 0.3), { tone: "mid" }));
+  for (const side of [{ ...tray, w: 1.6 }, { ...tray, d: 1.6 }]) out.push(S(k.slabOf(side, z + 1.4, 4, P, 2), { tone: "mid" }));
+  for (let i = 0; i < 6; i++) {
+    const card = { x: tray.x + 3 + (i % 2) * 0.6, y: tray.y + 3.4 - (i % 3) * 0.5, w: 24, d: 25, r: 0.4 };
+    out.push(S(k.slabOf(card, z + 1.4 + i * 0.7, 0.7, P, 2), { tone: "hi", crease: "lo" }));
+  }
+  const top = z + 1.4 + 6 * 0.7;
+  const card = { x: tray.x + 3.6, y: tray.y + 3.4 };
+  out.push(L([0, 1, 2, 3].map((r) => k.lineOnTop([card.x + 4 + r * 4, card.y + 4], [card.x + 4 + r * 4, card.y + 4 + [16, 12, 18, 9][r]], top, P)).join(""), { tone: "lo", free: true }));
+  for (const side of [{ x: tray.x + tray.w - 1.6, y: tray.y, w: 1.6, d: tray.d, r: 0.6 }, { x: tray.x, y: tray.y + tray.d - 1.6, w: tray.w, d: 1.6, r: 0.6 }]) out.push(S(k.slabOf(side, z + 1.4, 4, P, 2, 0.3), { tone: "mid" }));
+  const a = G.unit3([0.42, -1, 0]);
+  const F = G.frameOf([tray.x + 10, tray.y - 4, z + 1.6], a, [0, 0, 1], G.cross3(a, [0, 0, 1]));
+  out.push(S(G.solidOf([[0, 0.5], [3.4, 1.6, 1], [4, 1.6], [26, 1.6], [26, 1.7], [29, 1.7], [29.6, 1.2, 1], [30.4, 0]], F, P), { tone: "hi", inner: L(G.arcOf(F, 26, 1.7, P), { tone: "faint" }) }));
   return out.join("");
 }
 
