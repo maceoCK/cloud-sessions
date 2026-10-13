@@ -915,6 +915,8 @@ export const PEEL = (() => {
       band: bandOf(dot(nrm, C.L)),
       edge: [...die, ...lower].join(""),
       tear: [...tear, ...lowerTear].join(""),
+      // where the flat part ends at the front, a hairline of its own paper hides the joint
+      seam: edgeRuns(scr, kinds, (k) => k === "cut").map((r) => pathOf(r)).join(""),
     };
   }
 

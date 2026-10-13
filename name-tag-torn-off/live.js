@@ -20,6 +20,8 @@ const flat = {
   under: flatG.querySelector(".nt-under"),
   sides: [...flatG.querySelectorAll(".nt-side")],
   fill: flatG.querySelector(".nt-face"),
+  seam: flatG.querySelector(".nt-seam"),
+  seamGrain: flatG.querySelector(".nt-seamgrain"),
   grain: flatG.querySelector(".nt-grainpaper"),
   ink: flatG.querySelector(".nt-ink"),
   bleed: flatG.querySelector(".nt-bleed"),
@@ -170,6 +172,8 @@ function draw(force = false) {
       f.sides.forEach((d, i) => put(memoFlat, `side${i}`, flat.sides[i], "d", d));
       put(memoFlat, "band", flat.g, "data-band", String(f.band));
       put(memoFlat, "fill", flat.fill, "d", f.fill);
+      put(memoFlat, "seam", flat.seam, "d", f.seam);
+      put(memoFlat, "seamGrain", flat.seamGrain, "d", f.seam);
       put(memoFlat, "grain", flat.grain, "d", f.fill);
       put(memoFlat, "ink", flat.ink, "d", f.ink);
       put(memoFlat, "bleed", flat.bleed, "d", f.ink);

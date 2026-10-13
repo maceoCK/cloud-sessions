@@ -116,6 +116,7 @@
 .nt-slot[data-side="back"][data-band="4"] { --nt-paper: var(--nt-back-4); }
 .nt-face, .nt-strip { fill: var(--nt-paper); stroke: none; }
 .nt-seam { fill: none; stroke: var(--nt-paper); stroke-width: .8px; stroke-linecap: round; }
+.nt-seamgrain { fill: none; stroke-width: .8px; stroke-linecap: round; }
 .nt-under { fill: var(--anatomy-paper); stroke: none; }
 .nt-side { stroke: none; }
 .nt-side[data-shade="0"] { fill: var(--nt-face-0); }
