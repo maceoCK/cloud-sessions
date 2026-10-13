@@ -475,6 +475,7 @@ export const PEEL = (() => {
       }
     }
     const cuts = cutsOf(st);
+    out.cuts = cuts;
     const wMid = (W_MIN + W_MAX) / 2;
     for (let i = 0; i + 1 < cuts.length; i++) {
       const hi = cuts[i], lo = cuts[i + 1];
@@ -484,7 +485,8 @@ export const PEEL = (() => {
       const poly = clipBand(FLAP_DW, SPLIT.flapKind, lo, hi);
       if (poly.length < 3 || Math.abs(areaOf(poly.map(({ p }) => p))) < 1e-4) continue;
       const m = poly.length;
-      for (let j = 0; j < m; j++) {
+      const cutCount = poly.reduce((n, q) => n + (q.kind === "cut" ? 1 : 0), 0);
+      for (let j = 0; j < m && cutCount > 2; j++) {
         if (poly[j].kind !== "cut") continue;
         const a = poly[j].p, b = poly[(j + 1) % m].p;
         const line = Math.abs(a[0] - lo) < 1e-6 ? lo : hi;
@@ -576,11 +578,12 @@ export const PEEL = (() => {
     return { flap: flap.filter((r) => r.length > 1).map((r) => r.map(toDW)), stuck: stuck.filter((r) => r.length > 1), all: SCRIBBLE.map((s) => s.map(toDW)) };
   })();
 
-  // Ink per frame: on the flat part (all ink ahead of the front) and per strip of the flap.
-  function inkOf(frame) {
+  // Polylines on the label, cut where they cross strip boundaries, mapped, keyed by strip (-1 for
+  // the flat part). `keep` picks which keys a set of strokes may land in.
+  function runsOf(frame, sets) {
     const { sheet, C } = frame;
     const st = sheet.st;
-    const cuts = cutsOf(st);
+    const cuts = frame.cuts;
     const stripOf = (d) => {
       if (d >= st.f) return -1;
       let lo = 0, hi = cuts.length - 1;
@@ -593,34 +596,48 @@ export const PEEL = (() => {
     };
     const runs = new Map();
     const bounds = cuts.length ? cuts : [st.f];
-    const split = (stroke, keep) => {
+    for (const [strokes, keep] of sets) {
       const push = (key, pts) => {
         if (pts.length < 2 || !keep(key)) return;
         if (!runs.has(key)) runs.set(key, []);
         runs.get(key).push(pts.map((p) => project(C, sheet.at(p[0], p[1]))));
       };
-      let run = [stroke[0]];
-      let key = stripOf(stroke[0][0]);
-      for (let i = 1; i < stroke.length; i++) {
-        const a = stroke[i - 1], b = stroke[i];
-        const lo = Math.min(a[0], b[0]), hi = Math.max(a[0], b[0]);
-        const ts = bounds.filter((c) => c > lo && c < hi).map((c) => (c - a[0]) / (b[0] - a[0])).sort((x, y) => x - y);
-        for (const t of ts) {
-          const p = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-          run.push(p);
-          push(key, run);
-          key = stripOf(a[0] + (b[0] - a[0]) * Math.min(1, t + 1e-4));
-          run = [p];
+      for (const stroke of strokes) {
+        let run = [stroke[0]];
+        let key = stripOf(stroke[0][0]);
+        let keyA = key;
+        for (let i = 1; i < stroke.length; i++) {
+          const a = stroke[i - 1], b = stroke[i];
+          const keyB = stripOf(b[0]);
+          if (keyB === keyA) {
+            run.push(b);
+            continue;
+          }
+          keyA = keyB;
+          const lo = Math.min(a[0], b[0]), hi = Math.max(a[0], b[0]);
+          const ts = bounds.filter((c) => c > lo && c < hi).map((c) => (c - a[0]) / (b[0] - a[0])).sort((x, y) => x - y);
+          for (const t of ts) {
+            const p = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+            run.push(p);
+            push(key, run);
+            key = stripOf(a[0] + (b[0] - a[0]) * Math.min(1, t + 1e-4));
+            run = [p];
+          }
+          run.push(b);
         }
-        run.push(b);
+        push(key, run);
       }
-      push(key, run);
-    };
-    // Ahead of the front all the ink is flat, on both sides of the tear-to-be.
-    if (frame.flat) for (const stroke of INK.all) split(stroke, (key) => key === -1);
-    // Behind it only the flap's ink moves; the rest is drawn once, on the piece that stayed.
-    if (st.f > D_MIN) for (const stroke of INK.flap) split(stroke, (key) => key >= 0);
+    }
     return runs;
+  }
+  // Ink: ahead of the front all of it is flat, on both sides of the tear-to-be; behind it only the
+  // flap's ink moves, and the rest is drawn once, on the piece that stayed.
+  function inkOf(frame) {
+    const st = frame.sheet.st;
+    const sets = [];
+    if (frame.flat) sets.push([INK.all, (key) => key === -1]);
+    if (st.f > D_MIN) sets.push([INK.flap, (key) => key >= 0]);
+    return runsOf(frame, sets);
   }
 
   // ---- Residue ---------------------------------------------------------------------------------------
@@ -731,6 +748,18 @@ export const PEEL = (() => {
     return { band: [...TEAR, ...[...inner].reverse()], inner, fibres };
   })();
 
+  // The flap's own torn edge: the top layer of paper tore a little beyond the layer under it, so
+  // on the flap's back a pale ragged fringe runs along the tear. A line just inside it, in (d, w).
+  const FRINGE = (() => {
+    const R = rng(4402);
+    let w = 0;
+    const line = TEAR.slice(1, -1).map(([u, v]) => {
+      w = w * 0.7 + (R() - 0.5) * 0.9;
+      return toDW([u - 1.5 - Math.abs(w), v]);
+    });
+    return [line.filter((p) => inside(FLAP_DW, p))];
+  })();
+
   // Fibre the plate did not keep, left on the flap's adhesive side: specks and short fibres in
   // (d, w), drawn wherever the back of the flap faces the viewer, so they move with the paper.
   const BACK_FUZZ = (() => {
@@ -785,8 +814,12 @@ export const PEEL = (() => {
 
   // ---- Paint ------------------------------------------------------------------------------------------
   const fmt = (v) => {
-    const t = (Math.round(v * 10) / 10).toFixed(1).replace(/\.0$/, "");
-    return t === "-0" ? "0" : t;
+    let n = Math.round(v * 10);
+    if (n === 0) return "0";
+    const neg = n < 0;
+    if (neg) n = -n;
+    const i = (n / 10) | 0, d = n - i * 10;
+    return (neg ? "-" : "") + i + (d ? "." + d : "");
   };
   const pathOf = (pts, closed = false) => (pts.length ? pts.map(([x, y], i) => `${i ? "L" : "M"}${fmt(x)} ${fmt(y)}`).join("") + (closed ? "Z" : "") : "");
   function hull2(points) {
@@ -898,7 +931,7 @@ export const PEEL = (() => {
     const order = new Map(strips.map((s, i) => [s.index, i]));
     const slots = strips.map((s) => ({
       fill: pathOf(s.scr, true),
-      side: s.side, band: s.band, edge: [], tear: [], seam: [], crease: [], ink: [], ghost: [], fuzz: [],
+      side: s.side, band: s.band, edge: [], tear: [], seam: [], crease: [], ink: [], ghost: [], fuzz: [], fringe: [],
       width: clamp(s.facing / dot(N, C.V), 0.3, 1.3),
     }));
     strips.forEach((s, at) => {
@@ -924,8 +957,16 @@ export const PEEL = (() => {
       if (s.side === "face") slot.ink.push(d);
       else slot.ghost.push(d);
     });
+    // The pale fringe along the torn edge, where the back of the flap shows.
+    const fringe = runsOf(frame, [[FRINGE, (key) => key >= 0]]);
+    for (const s of strips) {
+      if (s.side !== "back") continue;
+      const at = order.get(s.index);
+      const near = Math.max(at, order.get(s.index - 1) ?? -1, order.get(s.index + 1) ?? -1);
+      for (const r of fringe.get(s.index) || []) slots[near].fringe.push(pathOf(r));
+    }
     // Fibre on the back, in the slot that draws each strip's outline.
-    const cuts = cutsOf(st);
+    const cuts = frame.cuts;
     for (const [a, b] of BACK_FUZZ) {
       const m = (a[0] + b[0]) / 2;
       if (m >= st.f || !cuts.length) continue;
@@ -939,9 +980,11 @@ export const PEEL = (() => {
       if (!strip || strip.side !== "back") continue;
       const at = order.get(lo);
       const near = Math.max(at, order.get(lo - 1) ?? -1, order.get(lo + 1) ?? -1);
-      slots[near].fuzz.push(pathOf([project(C, frame.sheet.at(a[0], a[1])), project(C, frame.sheet.at(b[0], b[1]))]));
+      const pa = project(C, frame.sheet.at(a[0], a[1]));
+      const pb = b[0] - a[0] < 0.1 && b[0] - a[0] > -0.1 && b[1] - a[1] < 0.1 && b[1] - a[1] > -0.1 ? [pa[0] + 0.05, pa[1]] : project(C, frame.sheet.at(b[0], b[1]));
+      slots[near].fuzz.push(pathOf([pa, pb]));
     }
-    out.strips = slots.map((slot) => ({ ...slot, edge: slot.edge.join(""), tear: slot.tear.join(""), seam: slot.seam.join(""), ink: slot.ink.join(""), ghost: slot.ghost.join(""), fuzz: slot.fuzz.join(""), crease: slot.crease.join("") }));
+    out.strips = slots.map((slot) => ({ ...slot, edge: slot.edge.join(""), tear: slot.tear.join(""), seam: slot.seam.join(""), ink: slot.ink.join(""), ghost: slot.ghost.join(""), fuzz: slot.fuzz.join(""), crease: slot.crease.join(""), fringe: slot.fringe.join("") }));
     return out;
   }
 

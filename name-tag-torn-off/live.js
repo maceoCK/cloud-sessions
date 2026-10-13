@@ -26,6 +26,7 @@ const slots = [...svg.querySelectorAll(".nt-slot")].map((g) => ({
   seam: g.querySelector(".nt-seam"),
   ghost: g.querySelector(".nt-ghost"),
   fuzz: g.querySelector(".nt-backfuzz"),
+  fringe: g.querySelector(".nt-fringe"),
   tear: g.querySelector(".nt-tear"),
   crease: g.querySelector(".nt-crease"),
   ink: g.querySelector(".nt-ink"),
@@ -123,9 +124,13 @@ function say(st) {
   }
 }
 
-function draw() {
+// On a slow device the curl is redrawn every other frame; motion stays time-based.
+let cost = 0, skip = false;
+function draw(force = false) {
   const key = `${state.s.toFixed(5)}|${state.place.toFixed(3)}`;
-  if (key !== drawn) {
+  skip = !force && cost > 12 && !skip;
+  if (key !== drawn && !skip) {
+    const t0 = performance.now();
     drawn = key;
     const paint = PEEL.paintOf(PEEL.stateAt(state.s), P, { place: state.place });
     put(memoFlat, "halo", halo, "d", paint.halo || "M0 0");
@@ -155,12 +160,14 @@ function draw() {
       put(slot.memo, "seam", slot.seam, "d", s.seam);
       put(slot.memo, "ghost", slot.ghost, "d", s.ghost);
       put(slot.memo, "fuzz", slot.fuzz, "d", s.fuzz);
+      put(slot.memo, "fringe", slot.fringe, "d", s.fringe);
       put(slot.memo, "tear", slot.tear, "d", s.tear);
       put(slot.memo, "crease", slot.crease, "d", s.crease);
       put(slot.memo, "ink", slot.ink, "d", s.ink);
       put(slot.memo, "edge", slot.edge, "d", s.edge);
       put(slot.memo, "w", slot.ink, "style", `stroke-width:${(inkWidth * s.width).toFixed(2)}px`);
     }
+    cost = cost * 0.9 + (performance.now() - t0) * 0.1;
   }
   const alpha = state.alpha >= 0.999 ? "" : state.alpha.toFixed(3);
   if (tagG.style.opacity !== alpha) tagG.style.opacity = alpha;
@@ -188,7 +195,7 @@ function tick(now) {
     if (Math.abs(state.place - target.place) < 0.01) state.place = target.place;
     if (Math.abs(state.alpha - target.alpha) < 0.002) state.alpha = target.alpha;
   }
-  draw();
+  draw(!touring && state.s === target.s && state.place === target.place);
   const settled = !touring && state.s === target.s && state.place === target.place && state.alpha === target.alpha;
   frame = visible && !settled ? requestAnimationFrame(tick) : 0;
 }
