@@ -412,11 +412,13 @@ for (const [i, [x, y, h, seed]] of [[-148, -130, 24, 6], [-152, -58, 28, 7], [-1
   put(`hilltree${i}`, tree.at, tree.svg);
 }
 // delineators round the inside of the hairpin, a chevron board on the outside of the cove's right-hander
+const POSTS = [];
 {
   const tipFrom = road.pts.findIndex(([x], i) => i > I0 && x > 110);
   for (let i = tipFrom, j = 0; j < 9; i += Math.round(6 / road.ds), j++) {
     const [x, y] = ri(i, M.HALF_ROAD + 1.0);
     const h = road.heading[i];
+    POSTS.push([Math.round(x * 10) / 10, Math.round(y * 10) / 10, Math.round((h - Math.PI / 2) * 1000) / 1000]);
     put(`post${j}`, [x, y, Z.road], SC.delineator({ P, x, y, z: Z.road, toward: h - Math.PI / 2 }).svg);
   }
   const apex = road.pts.reduce((best, [x, y], i) => (i > I0 + 900 && y < road.pts[best][1] && x < 60 ? i : best), I1 - 10);
@@ -566,13 +568,53 @@ const DATA = {
   sea: Z.sea,
   box: BOX,
   still: STILL.best,
+  detail: null,
+  posts: POSTS,
+  wallTop: Z.road + 42,
+  hillFront: HILL_FRONT,
 };
+
+// ---- Detail A: a 3:1 view that follows the car, in the card's empty top-right -----------------------------
+// the live code fills the view each frame; the build draws its frame, label and scale
+const DETAIL = { cx: 824, cy: 158, r: 116, scale: Math.round(P.scale * 3 * 1000) / 1000 };
+DATA.detail = DETAIL;
+// the cliff top at road level, as the inset redraws it: the same rings the terrain layer drew, simplified
+DATA.top = LAYERS.find((l) => !l.hill && l.z1 === Z.road).rings.map((ring) => T.simplifyRing(ring, 0.25).map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]));
+DATA.headwall = { face: M.PORTAL_X, thick: 4, wide: 33, tall: 46 };
+const detailSvg = (() => {
+  const { cx, cy, r } = DETAIL;
+  const ring = (rr) => Array.from({ length: 120 }, (_, i) => [cx + rr * Math.cos((i / 120) * Math.PI * 2), cy + rr * Math.sin((i / 120) * Math.PI * 2)]);
+  const parts = [];
+  parts.push(`<defs><clipPath id="cr-detail-clip"><path d="${k.pathOf(ring(r), true)}"/></clipPath>`);
+  parts.push(`<linearGradient id="cr-beam-0" gradientUnits="userSpaceOnUse"><stop offset="0" class="cr-beam-stop" stop-opacity="0.5"/><stop offset="0.3" class="cr-beam-stop" stop-opacity="0.2"/><stop offset="1" class="cr-beam-stop" stop-opacity="0"/></linearGradient>`);
+  parts.push(`<linearGradient id="cr-beam-1" gradientUnits="userSpaceOnUse"><stop offset="0" class="cr-beam-stop" stop-opacity="0.5"/><stop offset="0.3" class="cr-beam-stop" stop-opacity="0.2"/><stop offset="1" class="cr-beam-stop" stop-opacity="0"/></linearGradient>`);
+  // the sea far below the edge: a scatter of glints, so the drop never reads as road
+  parts.push(`<pattern id="cr-far-sea" patternUnits="userSpaceOnUse" width="23" height="11"><rect class="cr-far-sea" width="23" height="11"/><path class="cr-far-glint" d="M2 3h3M13 8h2.5M19 2.5h2"/></pattern>`);
+  parts.push(`<radialGradient id="cr-puff"><stop offset="0" class="cr-puff-stop" stop-opacity="0.9"/><stop offset="0.55" class="cr-puff-stop" stop-opacity="0.45"/><stop offset="1" class="cr-puff-stop" stop-opacity="0"/></radialGradient></defs>`);
+  parts.push(`<g class="cr-detail-lead"></g>`);
+  parts.push(`<path class="cr-detail-ground" fill="url(#cr-far-sea)" d="${k.pathOf(ring(r), true)}"/>`);
+  parts.push(`<g clip-path="url(#cr-detail-clip)"><g class="cr-detail-view"></g></g>`);
+  parts.push(`<g class="cr-detail-notes"></g>`);
+  parts.push(k.lineSvg(k.pathOf(ring(r), true), { tone: "mid", className: "cr-detail-rim" }));
+  parts.push(k.lineSvg(k.pathOf(ring(r + 4), true), { tone: "faint" }));
+  // the label and a 2 m scale bar under the view, at the view's own scale
+  parts.push(k.faceTextSvg(`translate(${cx - r + 2} ${cy - r - 10})`, "DETAIL A · 3:1", { size: 8, tone: "mid" }));
+  parts.push(k.faceTextSvg(`translate(${cx - r + 2} ${cy - r + 0.5})`, "follows the car", { size: 6.5, tone: "lo" }));
+  const bar = 2 * M.U * DETAIL.scale;
+  const bx = cx + r - bar - 4;
+  const by = cy + r + 14;
+  const ticks = [];
+  for (let i = 0; i <= 4; i++) ticks.push(k.lineSvg(k.pathOf([[bx + (bar * i) / 4, by], [bx + (bar * i) / 4, by - (i % 2 ? 2.5 : 4)]]), { tone: "mid" }));
+  parts.push(k.lineSvg(k.pathOf([[bx, by], [bx + bar, by]]), { tone: "mid" }) + ticks.join(""));
+  parts.push(k.faceTextSvg(`translate(${bx - 5} ${by + 2.5})`, "2 m", { size: 7, tone: "mid", anchor: "end" }));
+  return parts.join("");
+})();
 
 // ---- assemble ----------------------------------------------------------------------------------------
 const LABEL_TEXT = "A diorama of a headland at night: a road with no guard rails loops round the cliff top between two tunnel portals, and the sea breaks against the foot of the cliff.";
 const backSvg = k.figureSvg({ width: W, height: H, label: LABEL_TEXT, body: back, className: "cr-back" });
 const layerSvg = (name, body) => `<svg xmlns="http://www.w3.org/2000/svg" class="iso-svg cr-layer ${name}" viewBox="0 0 ${W} ${H}" aria-hidden="true">${body.join("")}</svg>`;
-const stage = `<div class="cr-stage" tabindex="0" role="slider" aria-label="Cliff road. Move the pointer across the figure, or press the left and right arrow keys, to set how hard the driver pushes." aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><span class="cr-said" aria-live="polite"></span>${backSvg}<canvas class="cr-layer cr-gl cr-sea-gl" aria-hidden="true"></canvas>${layerSvg("cr-terrain", terrain)}<canvas class="cr-layer cr-gl cr-light-gl" aria-hidden="true"></canvas>${layerSvg("cr-front", front)}<canvas class="cr-layer cr-gl cr-fx-gl" aria-hidden="true"></canvas></div>`;
+const stage = `<div class="cr-stage" tabindex="0" role="slider" aria-label="Cliff road. Move the pointer across the figure, or press the left and right arrow keys, to set how hard the driver pushes." aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><span class="cr-said" aria-live="polite"></span>${backSvg}<canvas class="cr-layer cr-gl cr-sea-gl" aria-hidden="true"></canvas>${layerSvg("cr-terrain", terrain)}<canvas class="cr-layer cr-gl cr-light-gl" aria-hidden="true"></canvas>${layerSvg("cr-front", front)}<canvas class="cr-layer cr-gl cr-fx-gl" aria-hidden="true"></canvas>${layerSvg("cr-detail", [detailSvg])}</div>`;
 
 const SWELL_SLANT_FOR_CAPTION = 0.35;
 // ---- the card: every number below is computed from the model ---------------------------------------
@@ -589,7 +631,7 @@ const roadAbove = (Z.road - Z.sea) / u;
 const gusts = Array.from({ length: 2000 }, (_, i) => windOf(i * 0.05).speed);
 const windLo = Math.min(...gusts);
 const windHi = Math.max(...gusts);
-const caption = `A headland on a plinth, at night: ${Math.round(road.length - (road.first + road.n - 1 - road.last) * road.ds)} m of road with no guard rail runs ${roadAbove} m above the sea between two tunnel portals. Damp asphalt under sea mist grips at μ ${M.MU}, so the ${TIP_R} m hairpin holds on grip up to √(μgR) = ${kmh(vGrip)} km/h and the ${COVE_R} m cove bend up to ${kmh(Math.sqrt(M.MU * M.GRAV * COVE_R))} km/h. The driver brakes hard from up to ${Math.round(LAP.top)} km/h on the far leg, and turns in faster than grip allows. The rear tyres then slide at μ ${M.MU_SLIDE}, the path widens to v²/(μg), and the car drifts out toward the drop with its nose held into the bend, up to ${Math.round(LAP.peakDrift)}°. Near the edge the driver lifts, which tightens the line. At the top of the control the model's line clears the edge by ${LAP.least.toFixed(1)} m; at the bottom the car corners on grip, with ${Math.round(CALM.peakDrift)}° of tyre slip at most. The tyre marks are the rear wheels' path on that fastest lap. The swell has an ${M.SWELL.period} s period; in 6 m of water its crests are ${Math.round(swell6.lambda)} m apart and travel ${swell6.c.toFixed(1)} m/s. Refraction wraps them round the headland, so each one breaks on the tip first and runs back along both cliffs in about ${sweep.toFixed(0)} s, throwing spray up the rock at up to ${M.SPRAY.rise} m/s, ${sprayTop.toFixed(1)} m high. An onshore wind gusting ${windLo.toFixed(0)} to ${windHi.toFixed(0)} m/s holds the windsock in the hairpin straight out, since a sock fills at 7.7 m/s (15 knots), and carries the spray and the tyre smoke inland.`;
+const caption = `A headland on a plinth, at night: ${Math.round(road.length - (road.first + road.n - 1 - road.last) * road.ds)} m of road with no guard rail runs ${roadAbove} m above the sea between two tunnel portals. Damp asphalt under sea mist grips at μ ${M.MU}, so the ${TIP_R} m hairpin holds on grip up to √(μgR) = ${kmh(vGrip)} km/h and the ${COVE_R} m cove bend up to ${kmh(Math.sqrt(M.MU * M.GRAV * COVE_R))} km/h. The driver brakes hard from up to ${Math.round(LAP.top)} km/h on the far leg, and turns in faster than grip allows. The rear tyres then slide at μ ${M.MU_SLIDE}, the path widens to v²/(μg), and the car drifts out toward the drop with its nose held into the bend, up to ${Math.round(LAP.peakDrift)}°. Near the edge the driver lifts, which tightens the line. At the top of the control the model's line clears the edge by ${LAP.least.toFixed(1)} m; at the bottom the car corners on grip, with ${Math.round(CALM.peakDrift)}° of tyre slip at most. The tyre marks are the rear wheels' path on that fastest lap. The swell has an ${M.SWELL.period} s period; in 6 m of water its crests are ${Math.round(swell6.lambda)} m apart and travel ${swell6.c.toFixed(1)} m/s. Refraction wraps them round the headland, so each one breaks on the tip first and runs back along both cliffs in about ${sweep.toFixed(0)} s, throwing spray up the rock at up to ${M.SPRAY.rise} m/s, ${sprayTop.toFixed(1)} m high. An onshore wind gusting ${windLo.toFixed(0)} to ${windHi.toFixed(0)} m/s holds the windsock in the hairpin straight out, since a sock fills at 7.7 m/s (15 knots), and carries the spray and the tyre smoke inland. Detail A follows the car at 3:1: the arrow is its path, the dashed line is where its nose points, and the red angle between them is the drift. The red dimension runs from the corner nearest the drop to the edge.`;
 const body = `<div class="cr">${k.plateHtml({
   fig: "Fig 5A",
   title: "Cliff road at night",

@@ -572,6 +572,8 @@ function gpuOf(D, stage, pale) {
     smoke.forEach((p, i) => {
       const rr = (p.r0 || 1) + 7.5 * Math.sqrt(Math.max(0, p.age));
       const a = p.age > p.life ? 0 : p.a0 * burst(p.age, 0.12, 0.85) * smooth(p.life, p.life * 0.7, p.age) * inBlock(p.x, p.y, rr) * (seen(p.x, p.y, p.z) * 0.85 + 0.15 * seen(p.x, p.y, p.z + rr));
+      p.shown = a;
+      p.rr = rr;
       smk.set([p.x || 0, p.y || 0, p.z || 0, (p.r0 || 1) + 7.5 * Math.sqrt(Math.max(0, p.age))], i * 4);
       smkB.set([a, Math.exp(-p.age * 1.2), 0, 0], i * 4);
     });
@@ -605,5 +607,7 @@ function gpuOf(D, stage, pale) {
     light.draw({ uFade: fade, uCarA: pose, uCarB: carB }, time);
     fx.draw({ uFade: fade, uCarA: pose, uCarB: carB, uSmk: smk, uSmkB: smkB, uSpr: spr, uSprB: sprB, uWind: WIND }, time);
   }
-  return { step, draw };
+  // the smoke as it stands, for the detail view
+  const puffs = () => smoke.filter((p) => p.shown > 0.01).map((p) => ({ x: p.x, y: p.y, z: p.z, r: p.rr, a: p.shown }));
+  return { step, draw, puffs };
 }

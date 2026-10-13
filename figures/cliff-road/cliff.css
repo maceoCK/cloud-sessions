@@ -292,6 +292,10 @@
 }
 
 @media (max-width: 560px) {
+  .cr-stage > .cr-detail {
+    display: none;
+  }
+
   .cr .iso-plate {
     padding: 48px 6px 70px;
   }
@@ -351,4 +355,117 @@
   --anatomy-shade-2: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 65%), var(--cr-s2));
   --anatomy-shade-3: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 75%), var(--cr-s3));
   --anatomy-mid: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 70%), var(--cr-mid0));
+}
+
+/* Detail A: the car at 3:1 in the card's top-right, redrawn each frame */
+.cr {
+  --cr-void: #c3d0d6;
+  --cr-glint: #e3ebee;
+  --cr-beam: #ffc94d;
+  --cr-puff: #fbfbfa;
+  --cr-trail: #6f6f6c;
+}
+
+.iso:not([data-theme="light"]) .cr {
+  --cr-void: #0b151b;
+  --cr-glint: #2b3a44;
+  --cr-beam: #ffe7b8;
+  --cr-puff: #a4adb6;
+  --cr-trail: #000000;
+}
+
+.cr-detail-ground {
+  stroke: none;
+}
+
+.cr-far-sea {
+  fill: var(--cr-void);
+}
+
+.cr-far-glint {
+  fill: none;
+  stroke: var(--cr-glint);
+  stroke-width: 0.7;
+  stroke-linecap: round;
+}
+
+.cr-d-land {
+  fill: var(--anatomy-top);
+  stroke: none;
+}
+
+.cr-d-face[data-shade="1"] {
+  fill: var(--anatomy-shade-1);
+}
+
+.cr-d-face[data-shade="2"] {
+  fill: var(--anatomy-shade-2);
+}
+
+.cr-d-face[data-shade="3"] {
+  fill: var(--anatomy-shade-3);
+}
+
+.cr-d-face,
+.cr-d-wall,
+.cr-d-bore,
+.cr-d-trail,
+.cr-d-beam,
+.cr-d-arrow,
+.cr-d-pivot {
+  stroke: none;
+}
+
+.cr-d-wall {
+  fill: var(--anatomy-face);
+}
+
+.cr-d-wall[data-shade="1"] {
+  fill: var(--anatomy-shade-1);
+}
+
+.cr-d-wall[data-shade="3"] {
+  fill: var(--anatomy-top);
+}
+
+.cr-d-bore {
+  fill: var(--cr-bore-dark);
+}
+
+.cr-d-trail {
+  fill: var(--cr-trail);
+}
+
+.cr-beam-stop {
+  stop-color: var(--cr-beam);
+}
+
+.cr-puff-stop {
+  stop-color: var(--cr-puff);
+}
+
+.iso:not([data-theme="light"]) .cr-d-beams {
+  mix-blend-mode: screen;
+}
+
+.cr-d-arrow,
+.cr-d-pivot {
+  fill: var(--anatomy-hi);
+}
+
+.cr-d-red {
+  fill: var(--anatomy-red);
+}
+
+.cr .cr-d-red.iso-line {
+  stroke: var(--anatomy-red);
+}
+
+.cr-detail-view.is-idle,
+.cr-detail-notes.is-idle {
+  opacity: 0.45;
+}
+
+.cr .cr-detail-mark.iso-line {
+  stroke-width: 0.9;
 }

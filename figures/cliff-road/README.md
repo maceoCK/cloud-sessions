@@ -34,7 +34,8 @@ Every number the figure shows comes from this one module: the readout, the tyre 
 | terrain SVG | cliff strata, caves, boulders, road, paint, studs, tyre marks, stipple |
 | light canvas | headlight pools, tail-light glow, road studs, on the road plane |
 | front SVG | hill, portals with their bores, trees, posts, signs, windsock, the car (depth-sorted each frame) |
-| fx canvas | spray, tyre smoke, beams in the mist, light on the portal walls and down the bores, sodium glow |
+| fx canvas | spray, tyre smoke, sea mist, beams in the mist, light on the portal walls and down the bores, sodium glow |
+| detail SVG | Detail A: the car at 3:1, redrawn each frame from the model, with its path, its nose, the drift angle and the gap to the edge; a ring and leader mark the car in the main view. Hidden on phones |
 
 ## Checked
 
