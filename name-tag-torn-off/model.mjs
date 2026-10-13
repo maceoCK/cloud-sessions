@@ -793,6 +793,14 @@ export const PEEL = (() => {
     return out;
   })();
 
+  // Where the plate shows a bare spot the adhesive went with the paper, so the back of the flap
+  // carries the same spots, thick with adhesive: the plate's rows, mirrored onto the curl.
+  const BACK_SPOTS = RESIDUE.holes.filter((h) => h.length >= 11).map((h) => {
+    const step = h.length / 8;
+    const pts = Array.from({ length: 8 }, (_, i) => toDW(h[Math.floor(i * step)]));
+    return { pts, mid: pts.reduce((a, p) => a + p[0], 0) / pts.length };
+  });
+
   // ---- The numbers -----------------------------------------------------------------------------------
   // Kendall's thin-film peel: F = G·b / (1 − cos θ), b the length of the front still on the flap.
   // A label acrylic on steel tears at about G = 100 J/m² (≈ 1.3 N per 25 mm at 180°).
@@ -961,7 +969,7 @@ export const PEEL = (() => {
     const order = new Map(strips.map((s, i) => [s.index, i]));
     const slots = strips.map((s) => ({
       fill: pathOf(s.scr, true),
-      side: s.side, band: s.band, edge: [], tear: [], seam: [], crease: [], ink: [], ghost: [], fuzz: [], fringe: [],
+      side: s.side, band: s.band, edge: [], tear: [], seam: [], crease: [], ink: [], ghost: [], fuzz: [], fringe: [], spots: [],
       width: clamp(s.facing / dot(N, C.V), 0.3, 1.3),
     }));
     strips.forEach((s, at) => {
@@ -1014,7 +1022,23 @@ export const PEEL = (() => {
       const pb = b[0] - a[0] < 0.1 && b[0] - a[0] > -0.1 && b[1] - a[1] < 0.1 && b[1] - a[1] > -0.1 ? [pa[0] + 0.05, pa[1]] : project(C, frame.sheet.at(b[0], b[1]));
       slots[near].fuzz.push(pathOf([pa, pb]));
     }
-    out.strips = slots.map((slot) => ({ ...slot, edge: slot.edge.join(""), tear: slot.tear.join(""), seam: slot.seam.join(""), ink: slot.ink.join(""), ghost: slot.ghost.join(""), fuzz: slot.fuzz.join(""), crease: slot.crease.join(""), fringe: slot.fringe.join("") }));
+    // The adhesive spots on the back, the same way.
+    for (const spot of BACK_SPOTS) {
+      const m = spot.mid;
+      if (m >= st.f - 0.4 || !cuts.length) continue;
+      let lo = 0, hi = cuts.length - 1;
+      while (hi - lo > 1) {
+        const k = (lo + hi) >> 1;
+        if (cuts[k] > m) lo = k;
+        else hi = k;
+      }
+      const strip = byIndex.get(lo);
+      if (!strip || strip.side !== "back") continue;
+      const at = order.get(lo);
+      const near = Math.max(at, order.get(lo - 1) ?? -1, order.get(lo + 1) ?? -1);
+      slots[near].spots.push(pathOf(spot.pts.map(([d, w]) => project(C, frame.sheet.at(d, w))), true));
+    }
+    out.strips = slots.map((slot) => ({ ...slot, spots: slot.spots.join(""), edge: slot.edge.join(""), tear: slot.tear.join(""), seam: slot.seam.join(""), ink: slot.ink.join(""), ghost: slot.ghost.join(""), fuzz: slot.fuzz.join(""), crease: slot.crease.join(""), fringe: slot.fringe.join("") }));
     return out;
   }
 

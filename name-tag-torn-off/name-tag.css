@@ -130,6 +130,7 @@
 .nt-tear { fill: none; stroke: var(--nt-tear); stroke-width: .6px; stroke-linecap: round; stroke-linejoin: round; }
 .nt-ink { fill: none; stroke: var(--nt-ink); stroke-linecap: round; stroke-linejoin: round; }
 .nt-ghost { fill: none; stroke: color-mix(in srgb, var(--nt-ink) var(--nt-ghost), var(--nt-paper)); stroke-width: 1.3px; stroke-linecap: round; stroke-linejoin: round; }
+.nt-backspot { fill: color-mix(in srgb, var(--nt-tear) 32%, var(--nt-paper)); stroke: none; }
 .nt-backfuzz { fill: none; stroke: color-mix(in srgb, var(--nt-fuzzfibre) 70%, var(--nt-paper)); stroke-width: .7px; stroke-linecap: round; }
 .nt-fringe { fill: none; stroke: color-mix(in srgb, var(--nt-fuzzfibre) 80%, var(--nt-paper)); stroke-width: 2.2px; stroke-linecap: round; stroke-linejoin: round; }
 .nt-slot[data-empty] { display: none; }

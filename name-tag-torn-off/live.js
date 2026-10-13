@@ -30,6 +30,7 @@ const slots = [...svg.querySelectorAll(".nt-slot")].map((g) => ({
   seam: g.querySelector(".nt-seam"),
   ghost: g.querySelector(".nt-ghost"),
   fuzz: g.querySelector(".nt-backfuzz"),
+  spots: g.querySelector(".nt-backspot"),
   fringe: g.querySelector(".nt-fringe"),
   tear: g.querySelector(".nt-tear"),
   crease: g.querySelector(".nt-crease"),
@@ -186,6 +187,7 @@ function draw(force = false) {
       put(slot.memo, "seam", slot.seam, "d", s.seam);
       put(slot.memo, "ghost", slot.ghost, "d", s.ghost);
       put(slot.memo, "fuzz", slot.fuzz, "d", s.fuzz);
+      put(slot.memo, "spots", slot.spots, "d", s.spots);
       put(slot.memo, "fringe", slot.fringe, "d", s.fringe);
       put(slot.memo, "tear", slot.tear, "d", s.tear);
       put(slot.memo, "crease", slot.crease, "d", s.crease);
