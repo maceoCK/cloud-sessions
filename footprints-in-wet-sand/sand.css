@@ -1,0 +1,180 @@
+.fp .iso-plate {
+  overflow: hidden;
+}
+
+.fp {
+  --fp-wet: #2e2a25;
+  --fp-dry: #5e564b;
+  --fp-sky-lo: #8a9196;
+  --fp-sky-hi: #353b41;
+  --fp-water: #59605e;
+  --fp-foam: #eef1f0;
+  --fp-glint: #ffffff;
+  --fp-lamina: #3a3530;
+  --fp-old: #322e29;
+  --fp-band: #0b0a09;
+  --fp-shell: #3b3833;
+  --fp-pebble: #24211d;
+  --fp-soak: #000000;
+  --fp-soak-opacity: 0.22;
+}
+
+.iso[data-theme="light"] .fp,
+.fp[data-theme="light"] {
+  --fp-wet: #6b6256;
+  --fp-dry: #bdb19d;
+  --fp-sky-lo: #f3f5f6;
+  --fp-sky-hi: #c4ccd1;
+  --fp-water: #a5aaa5;
+  --fp-foam: #ffffff;
+  --fp-glint: #ffffff;
+  --fp-lamina: #bcb09e;
+  --fp-old: #c8bdad;
+  --fp-band: #7a6f61;
+  --fp-shell: #f7f4ee;
+  --fp-pebble: #cdc4b6;
+  --fp-soak: #4a4036;
+  --fp-soak-opacity: 0.12;
+}
+
+.fp-cut {
+  --anatomy-paper: #1f1d1a;
+  --anatomy-shade-0: #1c1a17;
+  --anatomy-shade-1: #201e1a;
+  --anatomy-shade-2: #24211d;
+  --anatomy-shade-3: #282520;
+}
+
+.iso[data-theme="light"] .fp-cut,
+.fp[data-theme="light"] .fp-cut {
+  --anatomy-paper: #ebe5da;
+  --anatomy-shade-0: #d6cdbf;
+  --anatomy-shade-1: #ddd5c8;
+  --anatomy-shade-2: #e4ddd1;
+  --anatomy-shade-3: #ebe5da;
+}
+
+.fp-cut > .iso-top.fp-wet {
+  fill: var(--fp-wet);
+}
+
+.fp-wet-zone > path {
+  fill: var(--fp-soak);
+  opacity: var(--fp-soak-opacity);
+}
+
+.fp-bands > path {
+  fill: var(--fp-band);
+  opacity: 0.55;
+}
+
+.fp-pebbles > path {
+  fill: var(--fp-pebble);
+  stroke: var(--anatomy-lo);
+  stroke-width: var(--anatomy-weight);
+  vector-effect: non-scaling-stroke;
+}
+
+.fp-shell-body {
+  fill: var(--fp-shell);
+}
+
+.fp-lamina.iso-line {
+  stroke: var(--fp-lamina);
+}
+
+.fp-old.iso-line {
+  stroke: var(--fp-old);
+}
+
+.fp-sheet {
+  fill: var(--fp-water);
+  opacity: 0.55;
+}
+
+.fp-lace {
+  fill: none;
+  stroke: var(--fp-foam);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.fp-print-rim {
+  fill: none;
+  stroke: var(--fp-dry);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.fp-print-floor {
+  fill: #00000040;
+}
+
+.iso[data-theme="light"] .fp-print-floor,
+.fp[data-theme="light"] .fp-print-floor {
+  fill: #2a221a40;
+}
+
+.fp-stage {
+  position: relative;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: crosshair;
+}
+
+.fp-stage[data-gl] .fp-fallback {
+  display: none;
+}
+
+.fp-said {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.fp-stage:focus-visible {
+  outline: 1px solid var(--anatomy-muted);
+  outline-offset: 6px;
+}
+
+.fp-stage > svg,
+.fp-stage > canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.fp-stage > .fp-layer {
+  position: absolute;
+  inset: 0;
+  height: 100% !important;
+  pointer-events: none;
+}
+
+@media (max-width: 560px) {
+  .fp .iso-plate {
+    padding: 48px 6px 70px;
+  }
+
+  .fp-stage {
+    width: 108%;
+    margin: -2% -4% 0;
+  }
+
+  .fp-stage:focus-visible {
+    outline: none;
+  }
+
+  .fp .iso-plate:has(.fp-stage:focus-visible) {
+    outline: 1px solid var(--anatomy-muted);
+    outline-offset: 4px;
+  }
+}
