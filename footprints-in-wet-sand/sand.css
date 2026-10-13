@@ -1,5 +1,4 @@
 .fp .iso-plate {
-  padding: 0;
   overflow: hidden;
 }
 
@@ -9,11 +8,15 @@
   --fp-sky-lo: #8a9196;
   --fp-sky-hi: #353b41;
   --fp-water: #59605e;
-  --fp-sea: #263130;
   --fp-foam: #eef1f0;
   --fp-glint: #ffffff;
+  --fp-lamina: #4a443c;
+  --fp-old: #3d3832;
   --fp-band: #0b0a09;
-  --fp-pill: rgba(19, 19, 19, 0.66);
+  --fp-shell: #3b3833;
+  --fp-pebble: #24211d;
+  --fp-soak: #000000;
+  --fp-soak-opacity: 0.22;
 }
 
 .iso[data-theme="light"] .fp,
@@ -23,35 +26,67 @@
   --fp-sky-lo: #f3f5f6;
   --fp-sky-hi: #c4ccd1;
   --fp-water: #a5aaa5;
-  --fp-sea: #7d8b89;
   --fp-foam: #ffffff;
   --fp-glint: #ffffff;
+  --fp-lamina: #84796a;
+  --fp-old: #918677;
   --fp-band: #3a332b;
-  --fp-pill: rgba(250, 250, 248, 0.72);
+  --fp-shell: #f4f0e8;
+  --fp-pebble: #b3a998;
+  --fp-soak: #3a3128;
+  --fp-soak-opacity: 0.2;
 }
 
-.fp .iso-plate-corners {
-  z-index: 2;
+.fp-cut {
+  --anatomy-paper: #1f1d1a;
+  --anatomy-shade-0: #1c1a17;
+  --anatomy-shade-1: #201e1a;
+  --anatomy-shade-2: #24211d;
+  --anatomy-shade-3: #282520;
 }
 
-.fp .iso-plate-corner {
-  padding: 4px 7px;
-  margin: -4px -7px;
-  border-radius: 3px;
-  background: var(--fp-pill);
+.iso[data-theme="light"] .fp-cut,
+.fp[data-theme="light"] .fp-cut {
+  --anatomy-paper: #b8ae9e;
+  --anatomy-shade-0: #a99e8d;
+  --anatomy-shade-1: #b0a595;
+  --anatomy-shade-2: #b5ab9b;
+  --anatomy-shade-3: #b8ae9e;
+  --anatomy-lo: #6b6257;
+  --anatomy-faint: #908676;
 }
 
-.fp-ground {
+.fp-cut > .iso-top.fp-wet {
   fill: var(--fp-wet);
 }
 
-.fp-dry-ground {
-  fill: var(--fp-dry);
-  opacity: 0.6;
+.fp-wet-zone > path {
+  fill: var(--fp-soak);
+  opacity: var(--fp-soak-opacity);
 }
 
-.fp-sea {
-  fill: var(--fp-sea);
+.fp-bands > path {
+  fill: var(--fp-band);
+  opacity: 0.55;
+}
+
+.fp-pebbles > path {
+  fill: var(--fp-pebble);
+  stroke: var(--anatomy-lo);
+  stroke-width: var(--anatomy-weight);
+  vector-effect: non-scaling-stroke;
+}
+
+.fp-shell-body {
+  fill: var(--fp-shell);
+}
+
+.fp-lamina.iso-line {
+  stroke: var(--fp-lamina);
+}
+
+.fp-old.iso-line {
+  stroke: var(--fp-old);
 }
 
 .fp-sheet {
@@ -127,12 +162,8 @@
 }
 
 .fp-stage:focus-visible {
-  outline: none;
-}
-
-.fp .iso-plate:has(.fp-stage:focus-visible) {
   outline: 1px solid var(--anatomy-muted);
-  outline-offset: 4px;
+  outline-offset: 6px;
 }
 
 .fp-stage > svg,
@@ -151,12 +182,20 @@
 
 @media (max-width: 560px) {
   .fp .iso-plate {
-    padding: 0;
+    padding: 48px 6px 70px;
   }
 
   .fp-stage {
-    width: 120%;
-    margin-left: -10%;
+    width: 117%;
+    margin: -4% 0 -2% -9.5%;
   }
 
+  .fp-stage:focus-visible {
+    outline: none;
+  }
+
+  .fp .iso-plate:has(.fp-stage:focus-visible) {
+    outline: 1px solid var(--anatomy-muted);
+    outline-offset: 4px;
+  }
 }
