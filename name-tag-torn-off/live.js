@@ -22,6 +22,7 @@ const flat = {
   fill: flatG.querySelector(".nt-face"),
   grain: flatG.querySelector(".nt-grainpaper"),
   ink: flatG.querySelector(".nt-ink"),
+  bleed: flatG.querySelector(".nt-bleed"),
   edge: flatG.querySelector(".nt-edge"),
 };
 const slots = [...svg.querySelectorAll(".nt-slot")].map((g) => ({
@@ -171,6 +172,7 @@ function draw(force = false) {
       put(memoFlat, "fill", flat.fill, "d", f.fill);
       put(memoFlat, "grain", flat.grain, "d", f.fill);
       put(memoFlat, "ink", flat.ink, "d", f.ink);
+      put(memoFlat, "bleed", flat.bleed, "d", f.ink);
       put(memoFlat, "edge", flat.edge, "d", f.edge);
     }
     for (let i = 0; i < slots.length; i++) {

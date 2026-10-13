@@ -129,6 +129,8 @@
 .nt-crease { fill: none; stroke: color-mix(in srgb, var(--nt-tear) 55%, var(--nt-paper)); stroke-width: .55px; stroke-linecap: round; }
 .nt-tear { fill: none; stroke: var(--nt-tear); stroke-width: .6px; stroke-linecap: round; stroke-linejoin: round; }
 .nt-ink { fill: none; stroke: var(--nt-ink); stroke-linecap: round; stroke-linejoin: round; }
+/* marker feathers a little into the paper's fibre */
+.nt-bleed { fill: none; stroke: var(--nt-ink); stroke-width: 3.4px; opacity: .1; stroke-linecap: round; stroke-linejoin: round; filter: blur(.5px); }
 .nt-ghost { fill: none; stroke: color-mix(in srgb, var(--nt-ink) var(--nt-ghost), var(--nt-paper)); stroke-width: 1.3px; stroke-linecap: round; stroke-linejoin: round; }
 .nt-backspot { fill: color-mix(in srgb, var(--nt-tear) 32%, var(--nt-paper)); stroke: none; }
 .nt-backfuzz { fill: none; stroke: color-mix(in srgb, var(--nt-fuzzfibre) 70%, var(--nt-paper)); stroke-width: .7px; stroke-linecap: round; }
