@@ -1,6 +1,6 @@
-// Fig 4A · Name tag, torn off. A blank name sticker with an illegible scribble on a brushed steel
-// plate, screwed to a brick wall. A corner lifts, the label rolls up into one curl, tears unevenly
-// and comes away; a ragged piece and the residue stay on the plate.
+// Fig 4A · Name tag, torn off. A blank name sticker with an illegible scribble, slapped straight on
+// a brick wall across a mortar joint. A corner lifts, the label rolls up into one curl, tears
+// unevenly and comes away; a ragged piece and the residue stay on the bricks.
 // `node build.mjs` writes name-tag-torn-off.html, `--light` writes name-tag-torn-off-light.html.
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -17,20 +17,20 @@ const flag = (name) => argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.
 const POSE = Number(flag("s") ?? 0);
 if (flag("tune")) Object.assign(PEEL.TUNE, JSON.parse(flag("tune")));
 
-const { BRICK, JOINT, RAKE, COURSE, MODULE, BOND, PLATE, STANDOFF, Y_FACE, SCREW_IN, RESIDUE, STUCK_EDGE } = PEEL;
+const { BRICK, JOINT, RAKE, COURSE, MODULE, BOND, CENTRE, TAG, RESIDUE, STUCK_EDGE, bricksOf } = PEEL;
 
 const WIDTH = 600;
 const HEIGHT = 470;
 const AZIMUTH = Number(process.env.NT_AZ ?? 58);
 const ELEVATION = Number(process.env.NT_EL ?? 26);
-// The wall is a crop: an ellipse of brickwork round the plate that fades into the card.
-const VIEW = { x: 0, z: PLATE.z + PLATE.h / 2 - 6, rx: 255, rz: 190 };
+// The wall is a crop: an ellipse of brickwork round the label that fades into the card.
+const VIEW = { x: CENTRE[0], z: CENTRE[1] - 8, rx: 230, rz: 172 };
 
 const P = k.fitProjection(
   [
     [VIEW.x - VIEW.rx * 0.93, 0, VIEW.z], [VIEW.x + VIEW.rx * 0.93, 0, VIEW.z],
     [VIEW.x, 0, VIEW.z + VIEW.rz * 0.93], [VIEW.x, 0, VIEW.z - VIEW.rz * 0.93],
-    [PLATE.x, 70, PLATE.z + PLATE.h + 30], [PLATE.x + PLATE.w, 70, PLATE.z - 40],
+    [CENTRE[0] - TAG.w / 2, 40, CENTRE[1] + TAG.h / 2 + 20], [CENTRE[0] + TAG.w / 2, 40, CENTRE[1] - TAG.h / 2 - 40],
   ],
   WIDTH,
   HEIGHT,
@@ -53,7 +53,7 @@ const affine = (o, a, b) => {
 const FRONT = affine([0, 0, 0], [1, 0, 0], [0, 0, -1]); // wall face: x right, z down the page
 const ROOF = affine([0, 0, 0], [1, 0, 0], [0, -1, 0]); // tops: x right, y back into the wall
 const END = affine([0, 0, 0], [0, -1, 0], [0, 0, -1]); // ends: y back, z down
-const LABEL = affine(PEEL.onFace([0, 0]), PEEL.EX, PEEL.EY); // the label plane on the plate face
+const LABEL = affine(PEEL.onFace([0, 0]), PEEL.EX, PEEL.EY); // the label plane on the brick face
 
 const tile = (id, w, h, transform, body) => `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${w}" height="${h}" patternTransform="${transform}">${body}</pattern>`;
 const R = PEEL.rng(1234);
@@ -153,14 +153,9 @@ function wall() {
   const inView = (x, z) => ((x - VIEW.x) / (VIEW.rx + 30)) ** 2 + ((z - VIEW.z) / (VIEW.rz + 30)) ** 2 < 1.25;
   const bricks = [];
   for (let c = Math.floor(z0 / COURSE); c * COURSE < z1; c++) {
-    const zb = c * COURSE, zt = zb + BRICK.h;
-    const shift = c % 2 ? -MODULE / 2 : 0;
-    for (let n = -4; n <= 4; n++) {
-      const b0 = BOND + shift + n * MODULE, b1 = b0 + BRICK.l;
-      if (b1 < x0 || b0 > x1) continue;
+    for (const [b0, b1, zb, zt] of bricksOf(c, x0, x1)) {
       const near = [[b0, zb], [b1, zb], [b0, zt], [b1, zt], [(b0 + b1) / 2, (zb + zt) / 2]].some(([x, z]) => inView(x, z));
-      if (!near) continue;
-      bricks.push([b0, b1, zb, zt]);
+      if (near) bricks.push([b0, b1, zb, zt]);
     }
   }
   // Paint far to near: lower courses first (higher ones are nearer from above), then along x.
@@ -203,7 +198,7 @@ function wall() {
     out.push(`<path class="nt-bloom" d="${d}"/><path class="nt-bloomgrain" d="${d}" fill="url(#nt-grainlight-front)"/>`);
   }
   out.push(weathering());
-  // Hairline cracks in the mortar: one along a bed joint under the plate, one stepping up a head
+  // Hairline cracks in the mortar: one along a bed joint below the label, one stepping up a head
   // joint and along the bed joint above it, as walls crack.
   {
     const Rc = PEEL.rng(3131);
@@ -223,7 +218,9 @@ function wall() {
       return pathOf(pts);
     };
     const bed = (c) => c * COURSE + BRICK.h + JOINT / 2;
-    const d = crack([[-236, bed(0) + 2], [-196, bed(0) - 1], [-150, bed(0) + 1]]) + crack([[100, 356], [100, bed(2)], [168, bed(2) - 1], [226, bed(2) + 2]]);
+    // the middle of course 1's head joint right of the label
+    const head = BOND + MODULE / 2 - JOINT / 2;
+    const d = crack([[-196, bed(0) + 2], [-150, bed(0) - 1], [-100, bed(0) + 1]]) + crack([[head, 150], [head, bed(1)], [head + 46, bed(1) - 1], [head + 96, bed(1) + 2]]);
     out.push(`<path class="nt-crack" d="${d}"/>`);
   }
   // The crop: the card's own paper closes over the brickwork in an ellipse on the wall.
@@ -242,38 +239,11 @@ function wall() {
 }
 
 
-// Years on a wall: rain has run grime off the plate's lower edge down the bricks below it, and
-// an earlier sign left two wall plugs in the brick to the right.
+// An earlier sign left two wall plugs in the brick above the label.
 function weathering() {
   const out = [];
-  const Rw = PEEL.rng(606);
-  const top = PLATE.z - 2;
-  const down = at([0, 0, -1]);
-  const o = at([0, 0, 0]);
-  const dir = [down[0] - o[0], down[1] - o[1]];
-  for (let i = 0; i < 7; i++) {
-    const x = PLATE.x + 14 + Rw() * (PLATE.w - 28);
-    const len = 40 + Rw() * 110, w0 = 3 + Rw() * 7;
-    const pts = [];
-    const n = 12;
-    for (let k = 0; k <= n; k++) {
-      const t = k / n;
-      const wob = Math.sin(t * 5 + i) * 1.2;
-      pts.push([x - w0 * (1 - 0.6 * t) + wob, top - len * t]);
-    }
-    for (let k = n; k >= 0; k--) {
-      const t = k / n;
-      const wob = Math.sin(t * 5 + i) * 1.2;
-      pts.push([x + w0 * (1 - 0.6 * t) + wob, top - len * t]);
-    }
-    const a = at([x, 0, top]), b = at([x, 0, top - len]);
-    const id = `nt-run-${i}`;
-    out.push(`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${fx(a[0])}" y1="${fx(a[1])}" x2="${fx(b[0])}" y2="${fx(b[1])}"><stop offset="0" class="nt-run-0" style="stop-opacity:${(0.24 + Rw() * 0.16).toFixed(2)}"/><stop offset=".5" class="nt-run-0" style="stop-opacity:${(0.06 + Rw() * 0.06).toFixed(2)}"/><stop offset="1" class="nt-run-0" style="stop-opacity:0"/></linearGradient>`);
-    out.push(`<path class="nt-run" d="${pathOf(pts.map(([px, pz]) => at([px, 0.2, pz])), true)}" fill="url(#${id})"/>`);
-  }
-  void dir;
   // the old plugs: a drilled hole, a grey plastic rim, one with a snapped screw in it
-  for (const [x, z, screw] of [[214, 300, false], [218, 212, true]]) {
+  for (const [x, z, screw] of [[-130, 362, false], [140, 360, true]]) {
     out.push(`<path class="nt-plug" d="${faceRing(x, z, 4.2, 0.1, 24)}"/>`);
     out.push(`<path class="nt-plughole" d="${faceRing(x + 0.4, z - 0.3, 2.6, 0.1, 20)}"/>`);
     if (screw) out.push(`<path class="nt-plugscrew" d="${faceRing(x + 0.3, z - 0.2, 1.4, 0.15, 14)}"/>`);
@@ -281,120 +251,19 @@ function weathering() {
   return `<g class="nt-weather">${out.join("")}</g>`;
 }
 
-// ---- The plate on its spacers -----------------------------------------------------------------------
-const SCREWS = [
-  [PLATE.x + SCREW_IN, PLATE.z + SCREW_IN],
-  [PLATE.x + PLATE.w - SCREW_IN, PLATE.z + SCREW_IN],
-  [PLATE.x + SCREW_IN, PLATE.z + PLATE.h - SCREW_IN],
-  [PLATE.x + PLATE.w - SCREW_IN, PLATE.z + PLATE.h - SCREW_IN],
-];
-const roundedXZ = ({ x, z, w, h, r }, steps = 8) => k.roundedPlan({ x, y: z, w, d: h, r }, steps);
 const faceRing = (cx, cz, r, y, steps = 40) => pathOf(k.circleRing(cx, cz, r, steps).map(([a, b]) => at([a, y, b])), true);
-function plate() {
-  const out = [];
-  const shadow = roundedXZ({ x: PLATE.x + 4, z: PLATE.z - 6, w: PLATE.w, h: PLATE.h, r: PLATE.r }).map(([x, z]) => at([x, 0, z]));
-  out.push(`<path class="nt-plate-halo" d="${pathOf(shadow, true)}"/>`);
-  for (const [x, z] of [...SCREWS].sort((a, b) => k.depthOf([a[0], 0, a[1]], P) - k.depthOf([b[0], 0, b[1]], P))) {
-    out.push(S(G.disc(0, STANDOFF, 7.5, G.frameAlong([x, 0, z], [0, 1, 0]), P), { tone: "mid" }));
-  }
-  const ring = roundedXZ(PLATE, 8);
-  const slab = G.prismOf(ALONG_Y, ring, STANDOFF, Y_FACE, P);
-  // brushed grain: fine lines along x across the face, each running edge to edge
-  const span = (z) => {
-    const xs = [];
-    for (let i = 0; i < ring.length; i++) {
-      const [x0, z0] = ring[i], [x1, z1] = ring[(i + 1) % ring.length];
-      if ((z0 - z) * (z1 - z) <= 0 && z0 !== z1) xs.push(x0 + ((x1 - x0) * (z - z0)) / (z1 - z0));
-    }
-    return xs.length >= 2 ? [Math.min(...xs), Math.max(...xs)] : null;
-  };
-  const grain = [[], [], []];
-  const Rg = PEEL.rng(77);
-  for (let z = PLATE.z + 1.6; z < PLATE.z + PLATE.h - 1.2; z += 1.3 + Rg() * 2.2) {
-    const s = span(z);
-    if (s) grain[Math.floor(Rg() * 3)].push(pathOf([at([s[0], Y_FACE, z]), at([s[1], Y_FACE, z])]));
-  }
-  const grainSvg = `<g class="nt-grain">${grain.map((list, i) => `<g data-weight="${i}">${L(list.join(""), { tone: "faint" })}</g>`).join("")}</g>`;
-  const chamfer = L(pathOf(roundedXZ({ x: PLATE.x + 1.8, z: PLATE.z + 1.8, w: PLATE.w - 3.6, h: PLATE.h - 3.6, r: PLATE.r - 1.8 }).map(([x, z]) => at([x, Y_FACE, z])), true), { tone: "faint" });
-  // Stainless sheen: a soft band of light across the brushed face, dark toward the far corners.
-  const g0 = at([PLATE.x, Y_FACE, PLATE.z + PLATE.h]), g1 = at([PLATE.x + PLATE.w, Y_FACE, PLATE.z]);
-  const sheen = `<linearGradient id="nt-sheen" gradientUnits="userSpaceOnUse" x1="${fx(g0[0])}" y1="${fx(g0[1])}" x2="${fx(g1[0])}" y2="${fx(g1[1])}"><stop offset="0" class="nt-sheen-dark"/><stop offset=".3" class="nt-sheen-none"/><stop offset=".44" class="nt-sheen-light"/><stop offset=".56" class="nt-sheen-none"/><stop offset=".78" class="nt-sheen-soft"/><stop offset="1" class="nt-sheen-dark"/></linearGradient><path class="nt-sheen" d="${slab.shades[2]}" fill="url(#nt-sheen)"/>`;
-  // The ground bevel round the face catches the light along its top and left, and falls dark
-  // along its bottom and right.
-  const b0 = at([PLATE.x, Y_FACE, PLATE.z + PLATE.h]), b1 = at([PLATE.x + PLATE.w, Y_FACE, PLATE.z]);
-  const bevelRing = pathOf(roundedXZ({ x: PLATE.x + 0.9, z: PLATE.z + 0.9, w: PLATE.w - 1.8, h: PLATE.h - 1.8, r: PLATE.r - 0.9 }).map(([x, z]) => at([x, Y_FACE, z])), true);
-  const bevel = `<linearGradient id="nt-bevel" gradientUnits="userSpaceOnUse" x1="${fx(b0[0])}" y1="${fx(b0[1])}" x2="${fx(b1[0])}" y2="${fx(b1[1])}"><stop offset="0" class="nt-bevel-hi"/><stop offset=".45" class="nt-bevel-none"/><stop offset=".6" class="nt-bevel-none"/><stop offset="1" class="nt-bevel-lo"/></linearGradient><path class="nt-bevel" d="${bevelRing}" stroke="url(#nt-bevel)"/>`;
-  out.push(S(slab, { tone: "mid", className: "nt-steel", inner: sheen + grainSvg + chamfer + bevel }));
-  // Tea staining: outdoors, stainless browns faintly round its screws, where water sits, and the
-  // lower screws weep a short streak down the face.
-  for (const [x, z] of SCREWS) {
-    out.push(`<path class="nt-tea" d="${faceRing(x, z, 9.5, Y_FACE)}"/>`);
-    if (z < PLATE.z + PLATE.h / 2) {
-      const streak = [[x - 2.2, z - 4], [x + 2.2, z - 4], [x + 1.4, z - 15], [x + 0.6, PLATE.z + 2.5], [x - 0.6, PLATE.z + 2.5], [x - 1.4, z - 15]];
-      out.push(`<path class="nt-tea nt-tea-run" d="${pathOf(streak.map(([a, b]) => at([a, Y_FACE, b])), true)}"/>`);
-    }
-  }
-  for (const [x, z] of SCREWS) {
-    out.push(L(faceRing(x, z, 6.4, Y_FACE), { tone: "lo" }));
-    out.push(`<path class="nt-screw" d="${faceRing(x, z, 5.3, Y_FACE)}"/>`);
-    out.push(L(faceRing(x, z, 5.3, Y_FACE), { tone: "mid" }));
-    const a = 0.5 + R() * 0.8, r = 5.3;
-    const seg = (c, s) => pathOf([at([x - c * r, Y_FACE, z - s * r]), at([x + c * r, Y_FACE, z + s * r])]);
-    out.push(L(seg(Math.cos(a), Math.sin(a)) + seg(Math.cos(a + Math.PI / 2), Math.sin(a + Math.PI / 2)), { tone: "mid" }));
-    out.push(L(faceRing(x, z, 1.4, Y_FACE, 16), { tone: "lo" }));
-  }
-  // Dust has settled on the plate's top edge.
-  if (slab.top) out.push(`<path class="nt-dust" d="${slab.top}" fill="url(#nt-grain-front)"/>`);
-  // Light scratches in the steel, from keys and cleaning; each fades out at both ends.
-  const Rs = PEEL.rng(919);
-  for (let i = 0; i < 7; i++) {
-    const x = PLATE.x + 14 + Rs() * (PLATE.w - 28), z = PLATE.z + 12 + Rs() * (PLATE.h - 24);
-    const a = -0.4 + Rs() * 0.8, len = 10 + Rs() * 26;
-    const pts = [];
-    for (let k = 0; k <= 6; k++) pts.push(at([x + Math.cos(a) * len * (k / 6 - 0.5), Y_FACE, z + Math.sin(a) * len * (k / 6 - 0.5) + Math.sin(k) * 0.3]));
-    out.push(k.fadeLineSvg(pts, { fade: [len * 0.3, len * 0.35], tone: "lo", className: "nt-scratch" }));
-  }
-  out.push(fingerprints());
-  return `<g class="nt-plate">${out.join("")}</g>`;
-}
-
-// Whoever picked at the corner left greasy prints on the steel beside it: a soft smear of oil and,
-// in it, the broken ridges of a fingertip. In the label's coordinates, on the plate's face.
-function fingerprints() {
-  const Rf = PEEL.rng(4242);
-  const prints = [
-    { c: [-99, -38], r: [8.5, 11.5], turn: 0.35 },
-    { c: [-62, -71], r: [7, 9.5], turn: -1.2 },
-    { c: [-106, -63], r: [5.5, 7.5], turn: 0.9, part: true },
-  ];
-  const out = [];
-  for (const { c, r, turn, part } of prints) {
-    const ring = (k, dx = 0, from = 0, to = Math.PI * 2, wob = 0) => {
-      const pts = [];
-      const ph = Rf() * 6;
-      for (let i = 0; i <= 40; i++) {
-        const a = from + ((to - from) * i) / 40;
-        const q = 1 + wob * Math.sin(a * 5 + ph);
-        const x = Math.cos(a) * r[0] * k * q + dx, y = Math.sin(a) * r[1] * k * q;
-        pts.push([c[0] + x * Math.cos(turn) - y * Math.sin(turn), c[1] + x * Math.sin(turn) + y * Math.cos(turn)]);
-      }
-      return pts;
-    };
-    out.push(`<path class="nt-smear" d="${onPlate(ring(1.15))}"/>`);
-    const ridges = [];
-    for (let k = 0.22; k <= 1.02; k += 0.105 + Rf() * 0.02) {
-      // a loop print: the ridges' centres drift to one side, and a partial print loses an arc
-      const from = part ? 0.6 + Rf() * 0.4 : Rf() * 0.5, to = from + (part ? 3.6 : Math.PI * 2 - 0.3 - Rf() * 0.6);
-      const d = onPlate(ring(k, (1 - k) * r[0] * 0.35, from, to, 0.025), 0, false);
-      ridges.push(`<path d="${d}" style="stroke-dasharray:${(1.2 + Rf() * 1.6).toFixed(1)} ${(0.4 + Rf() * 0.8).toFixed(1)} ${(0.6 + Rf() * 2.4).toFixed(1)} ${(0.5 + Rf() * 0.7).toFixed(1)};stroke-dashoffset:${(Rf() * 4).toFixed(1)}"/>`);
-    }
-    out.push(`<g class="nt-ridges">${ridges.join("")}</g>`);
-  }
-  return `<g class="nt-prints">${out.join("")}</g>`;
-}
 
 // ---- Residue and the piece that stayed ---------------------------------------------------------------
 const onPlate = (ring, h = 0, closed = true) => pathOf(ring.map((p) => at(PEEL.onFace(p, h))), closed);
+// The brick faces round the label, as one clip: adhesive only ever touched brick, never the joints.
+function brickFaces() {
+  const xa = CENTRE[0] - TAG.w * 0.8, xb = CENTRE[0] + TAG.w * 0.8, za = CENTRE[1] - TAG.h, zb = CENTRE[1] + TAG.h;
+  const faces = [];
+  for (let c = Math.floor(za / COURSE) - 1; c * COURSE < zb; c++) {
+    for (const [b0, b1, z0, z1] of bricksOf(c, xa, xb)) faces.push(pathOf([[b0, z0], [b1, z0], [b1, z1], [b0, z1]].map(([x, z]) => at([x, 0, z])), true));
+  }
+  return `<clipPath id="nt-faces"><path d="${faces.join("")}"/></clipPath>`;
+}
 // A ring offset outward from a convex outline, each vertex pushed along its corner's bisector.
 function offsetRing(ring, o) {
   const n = ring.length;
@@ -407,10 +276,7 @@ function offsetRing(ring, o) {
   });
 }
 function residue() {
-  const out = [];
-  // The ghost of an earlier label: a faint film of its adhesive and a dusty line along its edge.
-  // Someone half cleaned it: the film is patchy and its edge line broken.
-  out.push(`<path class="nt-oldfilm" d="${onPlate(PEEL.OLD_LABEL)}"/><path class="nt-tex nt-oldfuzz" d="${onPlate(PEEL.OLD_LABEL)}" fill="url(#nt-drift-img)"/><path class="nt-ooze nt-oldedge" d="${onPlate(PEEL.OLD_LABEL)}" style="stroke-dasharray:38 7 22 13 51 5 17 9"/>`);
+  const out = [brickFaces(), `<g clip-path="url(#nt-faces)">`];
   // Years on the wall: adhesive crept a hair past the die-cut edge and caught dust, most along the
   // top edge, where dust settles. It was there before the peel and stays after it.
   const ring = offsetRing(PEEL.OUTLINE, 0.7);
@@ -418,8 +284,8 @@ function residue() {
   const runTop = [...top.filter(([, i]) => i > ring.length / 2), ...top.filter(([, i]) => i <= ring.length / 2)].map(([p]) => p);
   out.push(`<path class="nt-ooze" d="${onPlate(ring)}"/><path class="nt-ooze nt-ooze-top" d="${onPlate(runTop, 0, false)}"/>`);
   const region = onPlate(PEEL.FLAP);
-  // The clip is the region with every bare spot and scrape cut out of it, so the steel and its
-  // grain show through the holes in the residue.
+  // The clip is the region with every bare spot and scrape cut out of it, so the clean brick shows
+  // through the holes in the residue.
   const cuts = [...RESIDUE.holes, ...RESIDUE.scratches].map((h) => onPlate(h)).join("");
   out.push(`<clipPath id="nt-where"><path clip-rule="evenodd" d="${region}${cuts}"/></clipPath>`);
   out.push(`<g clip-path="url(#nt-where)">`);
@@ -439,6 +305,7 @@ function residue() {
   const kinds = PEEL.SPLIT.flapKind;
   const die = PEEL.FLAP.filter((_, i) => kinds[i] === "die" || kinds[(i + n - 1) % n] === "die");
   out.push(L(onPlate(die, 0, false), { tone: "lo" }));
+  out.push(`</g>`);
   return `<g class="nt-residue">${out.join("")}</g>`;
 }
 // The piece that stayed. Along the tear the top layer of paper went with the flap, ink and all, so
@@ -447,7 +314,7 @@ function stuck() {
   const paint = PEEL.stuckPaint(P);
   const band = onPlate(STUCK_EDGE.band, PEEL.TAG_T);
   const fibres = STUCK_EDGE.fibres.map((f) => onPlate(f, PEEL.TAG_T * 0.5, false)).join("");
-  return `<g class="nt-stuck" data-band="${paint.band}"><path class="nt-under" d="${paint.under}"/>${paint.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${paint.fill}"/><path class="nt-tex" d="${paint.fill}" fill="url(#nt-paper-img)"/><path class="nt-bleed" d="${paint.ink}"/><path class="nt-ink" d="${paint.ink}" style="stroke-width:${INK_W}px"/><path class="nt-delam" d="${band}"/><path class="nt-tex" d="${band}" fill="url(#nt-fuzz-img)"/>${L(fibres, { tone: "lo", className: "nt-fibre" })}<path class="nt-tear" d="${paint.tear}"/><path class="nt-edge" d="${paint.edge}"/></g>`;
+  return `<g class="nt-stuck" data-band="${paint.band}"><path class="nt-under" d="${paint.under}"/>${paint.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${paint.fill}"/><path class="nt-tex" d="${paint.fill}" fill="url(#nt-paper-img)"/><path class="nt-tex nt-press" d="${paint.fill}" fill="url(#nt-clay-front)"/><path class="nt-emboss" data-tone="dk" d="${paint.embossDk}"/><path class="nt-emboss" data-tone="lt" d="${paint.embossLt}"/><path class="nt-bleed" d="${paint.ink}"/><path class="nt-ink" d="${paint.ink}" style="stroke-width:${INK_W}px"/><path class="nt-delam" d="${band}"/><path class="nt-tex" d="${band}" fill="url(#nt-fuzz-img)"/>${L(fibres, { tone: "lo", className: "nt-fibre" })}<path class="nt-tear" d="${paint.tear}"/><path class="nt-edge" d="${paint.edge}"/></g>`;
 }
 
 // ---- The label: a pool of paths the page rewrites every frame; the build fills it once --------------
@@ -456,7 +323,7 @@ const INK_W = 1.7;
 function tagLayer(s) {
   const st = PEEL.stateAt(s);
   const paint = PEEL.paintOf(st, P);
-  const flat = paint.flat ?? { fill: "", under: "", sides: ["", "", "", ""], edge: "", ink: "", band: 2 };
+  const flat = paint.flat ?? { fill: "", under: "", sides: ["", "", "", ""], edge: "", ink: "", seam: "", embossDk: "", embossLt: "", band: 2 };
   const slots = [];
   for (let i = 0; i < POOL; i++) {
     const x = paint.strips[i];
@@ -464,13 +331,13 @@ function tagLayer(s) {
       `<g class="nt-slot" data-side="${x?.side ?? "face"}" data-band="${x?.band ?? 2}" style="--f:${x?.mix ?? 0}%;--g:${x?.gloss ?? 0}%"${x ? "" : ' data-empty=""'}><path class="nt-strip" d="${x?.fill ?? ""}"/><path class="nt-seam" d="${x?.seam ?? ""}"/><path class="nt-backspot" d="${x?.spots ?? ""}"/><path class="nt-backscar" d="${x?.scars ?? ""}"/><path class="nt-ghost" d="${x?.ghost ?? ""}"/><path class="nt-backfuzz" d="${x?.fuzz ?? ""}"/><path class="nt-fringe" d="${x?.fringe ?? ""}"/><path class="nt-ink" d="${x?.ink ?? ""}" style="stroke-width:${(INK_W * (x?.width ?? 1)).toFixed(2)}px"/><path class="nt-crease" d="${x?.crease ?? ""}"/><path class="nt-tear" d="${x?.tear ?? ""}"/><path class="nt-edge" d="${x?.edge ?? ""}"/></g>`,
     );
   }
-  return `<g class="nt-tag" data-part="tag"><g class="nt-flat" data-part="flat" data-band="${flat.band}"${paint.flat ? "" : ' style="display:none"'}><path class="nt-under" d="${flat.under}"/>${flat.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${flat.fill}"/><path class="nt-seam" d="${flat.seam}"/><path class="nt-tex nt-grainpaper" d="${flat.fill}" fill="url(#nt-paper-img)"/><path class="nt-seamgrain" d="${flat.seam}" style="stroke:url(#nt-paper-img)"/><path class="nt-bleed" d="${flat.ink}"/><path class="nt-ink" d="${flat.ink}" style="stroke-width:${INK_W}px"/><path class="nt-edge" d="${flat.edge}"/></g><path class="nt-halo" data-part="halo" d="${paint.halo || "M0 0"}" style="opacity:${paint.haloOpacity.toFixed(2)};filter:blur(${paint.haloBlur.toFixed(1)}px)"/><path class="nt-halo nt-contact" data-part="contact" d="${paint.contact || "M0 0"}" style="opacity:${paint.contactOpacity.toFixed(2)}"/><g class="nt-curl" data-part="curl">${slots.join("")}</g></g>`;
+  return `<g class="nt-tag" data-part="tag"><g class="nt-flat" data-part="flat" data-band="${flat.band}"${paint.flat ? "" : ' style="display:none"'}><path class="nt-under" d="${flat.under}"/>${flat.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${flat.fill}"/><path class="nt-seam" d="${flat.seam}"/><path class="nt-tex nt-grainpaper" d="${flat.fill}" fill="url(#nt-paper-img)"/><path class="nt-seamgrain" d="${flat.seam}" style="stroke:url(#nt-paper-img)"/><path class="nt-tex nt-press" d="${flat.fill}" fill="url(#nt-clay-front)"/><path class="nt-emboss" data-tone="dk" d="${flat.embossDk}"/><path class="nt-emboss" data-tone="lt" d="${flat.embossLt}"/><path class="nt-bleed" d="${flat.ink}"/><path class="nt-ink" d="${flat.ink}" style="stroke-width:${INK_W}px"/><path class="nt-edge" d="${flat.edge}"/></g><path class="nt-halo" data-part="halo" d="${paint.halo || "M0 0"}" style="opacity:${paint.haloOpacity.toFixed(2)};filter:blur(${paint.haloBlur.toFixed(1)}px)"/><path class="nt-halo nt-contact" data-part="contact" d="${paint.contact || "M0 0"}" style="opacity:${paint.contactOpacity.toFixed(2)}"/><g class="nt-curl" data-part="curl">${slots.join("")}</g></g>`;
 }
 
 const CSS = readFileSync(join(HERE, "name-tag.css"), "utf8");
-const STATIC = () => [DEFS, wall(), plate(), residue(), stuck()].join("");
+const STATIC = () => [DEFS, wall(), residue(), stuck()].join("");
 const LABEL_TEXT =
-  "A section of brick wall with a brushed stainless steel plate screwed to it on four spacers. Stuck to the plate is a blank 86 by 59 millimetre name sticker with an illegible marker scribble. A corner lifts and the sticker rolls up into one curl, adhesive side out; it tears unevenly, so about three fifths come away and fall while a ragged piece with the end of the scribble stays stuck. Where it came off, the plate holds a fuzz of adhesive and paper fibre with rows of bare spots.";
+  "A section of grey brick wall. Stuck straight onto the bricks, across a mortar joint, is a blank 86 by 59 millimetre name sticker with an illegible marker scribble. A corner lifts and the sticker rolls up into one curl, adhesive side out; it tears unevenly, so about three fifths come away and fall while a ragged piece with the end of the scribble stays stuck. Where it came off, the bricks hold a stain of adhesive and paper fibre with rows of bare spots, and the joints between them are clean.";
 
 const sheetArg = flag("sheet");
 if (sheetArg) {
@@ -505,9 +372,9 @@ const body = k.plateHtml({
   readout: "stuck · name on",
   keys: [
     { mark: "lit", label: "The label: a blank name sticker, 86 × 59 mm" },
-    { mark: "flat", label: "Residue: adhesive and paper fibre left on the steel" },
+    { mark: "flat", label: "Residue: adhesive and paper fibre left on the brick" },
   ],
-  caption: `A blank name sticker on a brushed steel plate, screwed to a brick wall. Picked at one corner, it rolls up into a single curl with the printed face inside, then tears unevenly: ${Math.round(PEEL.SHARE_OFF * 100)}% comes away with most of the scribble and the rest stays, a ragged piece with a fibrous torn edge. Where it came off, the adhesive split and kept a fuzz of paper fibre, broken by rows of bare spots where the front stuck and slipped. The force is Kendall's peel, F = G·b / (1 − cos θ), with G = 100 J/m² and b the length of the front.`,
+  caption: `A blank name sticker slapped straight on a brick wall, bridging a mortar joint. Picked at one corner, it rolls up into a single curl with the printed face inside, then tears unevenly: ${Math.round(PEEL.SHARE_OFF * 100)}% comes away with most of the scribble and the rest stays, a ragged piece with a fibrous torn edge. Where it came off, the adhesive split and stained the brick with a fuzz of paper fibre, broken by rows of bare spots where the front stuck and slipped; the joints it bridged are clean. The force is Kendall's peel, F = G·b / (1 − cos θ), with G = ${PEEL.G_ADHESIVE} J/m² and b the length of the front.`,
   body: `<div class="iso-stage nt-stage" tabindex="0" role="slider" aria-label="Name tag peel: drag across or use the arrow keys to peel the sticker; Space tears it off or lays a new one" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="Stuck down, the scribble on it">${svg}</div><p class="nt-live" aria-live="polite"></p>`,
 });
 if (ARTIFACT) {

@@ -1,4 +1,4 @@
-// A blank name sticker torn off a steel plate on a brick wall: one curl that comes away, a ragged
+// A blank name sticker torn off a brick wall: one curl that comes away, a ragged
 // piece that stays, the residue in between, and the numbers the card reads. Pure: no DOM, no
 // imports. The build imports PEEL; the page inlines this file with `export` stripped, so every
 // name lives inside PEEL and nothing clashes with anything else on the page.
@@ -59,33 +59,31 @@ export const PEEL = (() => {
   const RAKE = 4;
   const COURSE = BRICK.h + JOINT;
   const MODULE = BRICK.l + JOINT;
-  const BOND = 110; // where the bond sits along the wall
-  // Each course's extent: toothed ends, as a wall left mid-build.
-  const COURSES = [
-    [-300, 294],
-    [-298, 206],
-    [-250, 294],
-    [-298, 250],
-  ];
-  // The plate: 128 × 88 mm of 3 mm brushed stainless, 6 mm off the bricks on four spacers.
-  const PLATE = { x: -128, z: 174, w: 256, h: 176, r: 8 };
-  const STANDOFF = 12;
-  const PLATE_T = 6;
-  const Y_FACE = STANDOFF + PLATE_T;
-  const SCREW_IN = 15;
+  const BOND = -25; // where the bond sits along the wall: a head joint runs under the label
+  // The bricks of the course that starts at z = c · COURSE, as [x0, x1, z0, z1], within [xa, xb].
+  const bricksOf = (c, xa, xb) => {
+    const out = [];
+    const shift = c % 2 ? -MODULE / 2 : 0;
+    for (let n = Math.floor((xa - BOND - shift) / MODULE) - 1; BOND + shift + n * MODULE < xb; n++) {
+      const b0 = BOND + shift + n * MODULE;
+      if (b0 + BRICK.l > xa) out.push([b0, b0 + BRICK.l, c * COURSE, c * COURSE + BRICK.h]);
+    }
+    return out;
+  };
 
-  // The label: an 86 × 59 mm name badge, die-cut with 3.2 mm corners, stuck on by hand a little
-  // askew. Its own plane: u to the right, v down the wall, normal N out of the plate.
+  // The label: an 86 × 59 mm name badge, die-cut with 3.2 mm corners, slapped on the bricks by hand
+  // a little askew. It is taller than a brick, so it bridges a bed joint, and a head joint runs
+  // under its upper left. Its own plane: u to the right, v down the wall, normal N out of it.
   const TAG = { w: 86 * MM, h: 59 * MM, r: 3.2 * MM };
   const TAG_T = 0.45;
-  const CENTRE = [5, 263]; // x, z on the plate face
+  const CENTRE = [5, 275]; // x, z on the brick face
   const ROT = -1.4 * RAD;
   const N = [0, 1, 0];
   const E1 = [1, 0, 0];
   const E2 = [0, 0, -1];
   const EX = add(mul(E1, Math.cos(ROT)), mul(E2, Math.sin(ROT)));
   const EY = add(mul(E1, -Math.sin(ROT)), mul(E2, Math.cos(ROT)));
-  const FACE0 = [CENTRE[0], Y_FACE, CENTRE[1]]; // the plate face under the label's centre
+  const FACE0 = [CENTRE[0], 0, CENTRE[1]]; // the brick face under the label's centre
   const onFace = ([u, v], h = 0) => add(FACE0, add(mul(EX, u), add(mul(EY, v), mul(N, h))));
   const uvDir = ([a, b]) => add(mul(EX, a), mul(EY, b));
 
@@ -138,11 +136,6 @@ export const PEEL = (() => {
     return out;
   }
   const OUTLINE = roundedRing(TAG, 10);
-  // An earlier, larger label, put on a little crooked; its adhesive left a faint ghost. In (u, v).
-  const OLD_LABEL = roundedRing({ w: 92 * MM, h: 63 * MM, r: 4 * MM }, 10).map(([u, v]) => {
-    const a = 2.2 * RAD;
-    return [u * Math.cos(a) - v * Math.sin(a) - 5, u * Math.sin(a) + v * Math.cos(a) + 2];
-  });
   const OUTLINE_DW = OUTLINE.map(toDW);
   const TAG_AREA = Math.abs(areaOf(OUTLINE));
 
@@ -422,8 +415,8 @@ export const PEEL = (() => {
     const rock = Math.sin(off * Math.PI * 2.6) * off, sway = Math.sin(off * Math.PI * 1.9 + 0.6) * off;
     return { roll: (34 * e + 9 * rock) * RAD, spin: (-16 * e + 7 * sway) * RAD, move: add(mul(N, 46 * e), [10 * e + 9 * sway, 0, -125 * off * off]) };
   }
-  // A new label goes on top edge first: held tilted out from the plate on that edge, it comes in,
-  // the edge meets the plate, and the rest swings down flat. `place` is how far its lower edge
+  // A new label goes on top edge first: held tilted out from the wall on that edge, it comes in,
+  // the edge meets the bricks, and the rest swings down flat. `place` is how far its lower edge
   // still stands off, in world units.
   const HINGE = onFace([0, -TAG.h / 2], TAG_T);
   const tiltOf = (place) => (place > 0 ? Math.asin(Math.min(1, (0.65 * place) / TAG.h)) : 0);
@@ -617,6 +610,47 @@ export const PEEL = (() => {
       (side ? flap : stuck).push(run);
     }
     return { flap: flap.filter((r) => r.length > 1).map((r) => r.map(toDW)), stuck: stuck.filter((r) => r.length > 1), all: SCRIBBLE.map((s) => s.map(toDW)) };
+  })();
+
+  // Where the label bridges a joint the paper dips a hair into it, so each joint edge shows through
+  // as a faint line: dark where the paper turns away from the light (the top edge of a bed joint, the
+  // left edge of a head joint), pale where it turns back toward it. In (u, v), clipped a little inside
+  // the label; `dk`/`lt` for the whole label, `dkDW`/`ltDW` for the live flat part, and the parts on
+  // the piece that stays.
+  const EMBOSS = (() => {
+    const toUVw = ([x, z]) => {
+      const q = [x - FACE0[0], 0, z - FACE0[2]];
+      return [dot(q, EX), dot(q, EY)];
+    };
+    const inner = OUTLINE.map(([u, v]) => [u * (1 - 2.4 / TAG.w), v * (1 - 2.4 / TAG.h)]);
+    const clip = (poly, a, b) => {
+      // sample the segment a–b finely and keep the runs inside the polygon
+      const out = [];
+      const n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]));
+      let run = [];
+      for (let i = 0; i <= n; i++) {
+        const p = [a[0] + ((b[0] - a[0]) * i) / n, a[1] + ((b[1] - a[1]) * i) / n];
+        if (inside(poly, p)) run.push(p);
+        else if (run.length) (out.push(run), (run = []));
+      }
+      if (run.length) out.push(run);
+      return out.filter((r) => r.length > 1).map((r) => [r[0], r[r.length - 1]]);
+    };
+    const xa = CENTRE[0] - TAG.w, xb = CENTRE[0] + TAG.w, za = CENTRE[1] - TAG.h, zb = CENTRE[1] + TAG.h;
+    const dk = [], lt = [];
+    for (let c = Math.floor(za / COURSE) - 1; c * COURSE < zb; c++) {
+      // the bed joint above course c: its lower edge is the brick's top, its upper edge the next course
+      const top = c * COURSE + BRICK.h, next = (c + 1) * COURSE;
+      lt.push(...clip(inner, toUVw([xa, top]), toUVw([xb, top])));
+      dk.push(...clip(inner, toUVw([xa, next]), toUVw([xb, next])));
+      for (const [b0, b1, z0, z1] of bricksOf(c, xa, xb)) {
+        // the head joint to the right of this brick
+        dk.push(...clip(inner, toUVw([b1, z0]), toUVw([b1, z1])));
+        lt.push(...clip(inner, toUVw([b1 + JOINT, z0]), toUVw([b1 + JOINT, z1])));
+      }
+    }
+    const onStuck = (runs) => runs.flatMap(([a, b]) => clip(STUCK, a, b));
+    return { dk, lt, dkDW: dk.map((r) => r.map(toDW)), ltDW: lt.map((r) => r.map(toDW)), stuckDk: onStuck(dk), stuckLt: onStuck(lt) };
   })();
 
   // Polylines on the label, cut where they cross strip boundaries, mapped, keyed by strip (-1 for
@@ -832,7 +866,7 @@ export const PEEL = (() => {
     return out;
   })();
 
-  // Fibre the plate did not keep, left on the flap's adhesive side: specks and short fibres in
+  // Fibre the brick did not keep, left on the flap's adhesive side: specks and short fibres in
   // (d, w), drawn wherever the back of the flap faces the viewer, so they move with the paper.
   const BACK_FUZZ = (() => {
     const R = rng(8821);
@@ -848,9 +882,9 @@ export const PEEL = (() => {
     return out;
   })();
 
-  // Where the plate shows a bare spot the adhesive went with the paper, so the back of the flap
-  // carries the same spots, thick with adhesive: the plate's rows, mirrored onto the curl.
-  // Where paper stayed on the plate, the back is torn rough instead: pale, fibrous scars.
+  // Where the brick shows a bare spot the adhesive went with the paper, so the back of the flap
+  // carries the same spots, thick with adhesive: the brick's rows, mirrored onto the curl.
+  // Where paper stayed on the brick, the back is torn rough instead: pale, fibrous scars.
   const backOf = (h, n, kind) => {
     const step = h.length / n;
     const pts = Array.from({ length: n }, (_, i) => toDW(h[Math.floor(i * step)]));
@@ -863,8 +897,9 @@ export const PEEL = (() => {
 
   // ---- The numbers -----------------------------------------------------------------------------------
   // Kendall's thin-film peel: F = G·b / (1 − cos θ), b the length of the front still on the flap.
-  // A label acrylic on steel tears at about G = 100 J/m² (≈ 1.3 N per 25 mm at 180°).
-  const G_ADHESIVE = 100;
+  // A label acrylic on brick holds at about G = 70 J/m² (≈ 0.9 N per 25 mm at 180°): it only wets the
+  // high points of the rough face, but it soaks into them, so the paper tears before it lets go.
+  const G_ADHESIVE = 70;
   function forceAt(st) {
     const b = st.chord / MM / 1000;
     const c = 1 - Math.cos(Math.max(st.theta, 1 * RAD));
@@ -950,7 +985,7 @@ export const PEEL = (() => {
     return runs;
   }
 
-  // A flat piece of label on the plate: its face, the thin paper edge on the sides that face the
+  // A flat piece of label on the wall: its face, the thin paper edge on the sides that face the
   // viewer, its die-cut outline and its torn edge. `flat2` are its points in a plane basis whose
   // directions `dir2` maps to the world; `nrm` is its face normal.
   function slabPaint(C, world, flat2, kinds, dir2, nrm) {
@@ -985,15 +1020,15 @@ export const PEEL = (() => {
     };
   }
 
-  const CAST = [0.22, 0, -0.33]; // shadow offset per mm of height, as the plate's: 4 mm right, 6 mm down for 18 mm
+  const CAST = [0.22, 0, -0.33]; // shadow offset per unit of height: the light is up and to the left
   function paintOf(st, P, { place = 0, coarse = 1 } = {}) {
     const frame = frameOf(st, P, { place, coarse });
     const C = frame.C;
     const ink = inkOf(frame);
     const out = { halo: "", haloOpacity: 0, haloBlur: 3, contact: "", contactOpacity: 0, flat: null, strips: [] };
-    // Shadow: everything off the plate, cast back onto it by the light from the upper left. It falls
-    // down and to the right, the same way the plate's own shadow falls from its spacers: a soft one
-    // from the whole curl, and a tight dark one from the paper just leaving the plate.
+    // Shadow: everything off the wall, cast back onto it by the light from the upper left. It falls
+    // down and to the right: a soft one from the whole curl, and a tight dark one from the paper
+    // just leaving the bricks.
     const lifted = [], low = [];
     let heights = 0, count = 0;
     const drop = (p, front = false) => {
@@ -1028,6 +1063,9 @@ export const PEEL = (() => {
       const nrm = frame.sheet.poseDir(N);
       out.flat = slabPaint(C, pts, dw, kind, (v) => frame.sheet.poseDir(dwDir(v)), nrm);
       out.flat.ink = (ink.get(-1) || []).map((r) => pathOf(r)).join("");
+      const flatOnly = (key) => key === -1;
+      out.flat.embossDk = (runsOf(frame, [[EMBOSS.dkDW, flatOnly]]).get(-1) || []).map((r) => pathOf(r)).join("");
+      out.flat.embossLt = (runsOf(frame, [[EMBOSS.ltDW, flatOnly]]).get(-1) || []).map((r) => pathOf(r)).join("");
     }
     // The curl, far to near. A strip's outline and ink go in the slot of whichever of it and its
     // two neighbours comes last, so the neighbours' fills never notch them at the joints.
@@ -1131,12 +1169,15 @@ export const PEEL = (() => {
     const world = STUCK.map((p) => onFace(p, TAG_T));
     const paint = slabPaint(C, world, STUCK, SPLIT.stuckKind, uvDir, N);
     paint.ink = INK.stuck.map((r) => pathOf(r.map((p) => project(C, onFace(p, TAG_T))))).join("");
+    const lines = (runs) => runs.map((r) => pathOf(r.map((p) => project(C, onFace(p, TAG_T))))).join("");
+    paint.embossDk = lines(EMBOSS.stuckDk);
+    paint.embossLt = lines(EMBOSS.stuckLt);
     return paint;
   }
 
   return {
-    TUNE, MM, BRICK, JOINT, RAKE, COURSE, MODULE, BOND, COURSES, PLATE, STANDOFF, PLATE_T, Y_FACE, SCREW_IN,
-    TAG, TAG_T, CENTRE, ROT, EX, EY, N, D_MIN, D_END, LIFT, OFF, S_END, OUTLINE, OLD_LABEL, FLAP, STUCK, TEAR, SPLIT, TRIS,
+    TUNE, MM, BRICK, JOINT, RAKE, COURSE, MODULE, BOND, bricksOf, EMBOSS,
+    TAG, TAG_T, CENTRE, ROT, EX, EY, N, D_MIN, D_END, LIFT, OFF, S_END, OUTLINE, FLAP, STUCK, TEAR, SPLIT, TRIS,
     SCRIBBLE, INK, RESIDUE, STUCK_EDGE, G_ADHESIVE, TAG_AREA, FLAP_AREA, SHARE_OFF,
     frontAt, sAtFront, slipAt, toDW, toUV, onFace, uvDir, camera, project, bandOf, stateAt, sheetOf, frameOf, inkOf, cutsOf,
     paintOf, stuckPaint, planeMatrix, pathOf, hull2, peeledArea, chordAt, forceAt, profileOf, profileAt, rng, smooth, clamp, mix, inside, areaOf,

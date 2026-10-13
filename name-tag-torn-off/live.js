@@ -25,6 +25,9 @@ const flat = {
   grain: flatG.querySelector(".nt-grainpaper"),
   ink: flatG.querySelector(".nt-ink"),
   bleed: flatG.querySelector(".nt-bleed"),
+  press: flatG.querySelector(".nt-press"),
+  embossDk: flatG.querySelector('.nt-emboss[data-tone="dk"]'),
+  embossLt: flatG.querySelector('.nt-emboss[data-tone="lt"]'),
   edge: flatG.querySelector(".nt-edge"),
 };
 const slots = [...svg.querySelectorAll(".nt-slot")].map((g) => ({
@@ -89,7 +92,7 @@ function tourAt(t) {
   if ((u = span("hold")) !== null) return { s: S_END, place: 0, alpha: 0, phase: "gone" };
   if ((u = span("place")) !== null) {
     // A fresh label comes down flat, fading in high up, and is pressed onto the residue.
-    // It is held out in front, fades in while still well off the plate, and is pressed on.
+    // It is held out in front, fades in while still well off the wall, and is pressed on.
     const drop = 1 - easeOut(u);
     return { s: 0, place: 120 * drop, alpha: ease(clamp(u / 0.22, 0, 1)), phase: "place" };
   }
@@ -119,7 +122,7 @@ const WORDS = {
   lift: "A corner is lifting",
   peel: "Peeling: the label rolls up into one curl and starts to tear",
   off: "Torn: the curl comes away and falls, a ragged piece stays stuck",
-  gone: "Gone: a torn piece and residue are left on the plate",
+  gone: "Gone: a torn piece and residue are left on the bricks",
   place: "A new label is being laid down",
 };
 
@@ -177,6 +180,15 @@ function draw(force = false) {
       put(memoFlat, "grain", flat.grain, "d", f.fill);
       put(memoFlat, "ink", flat.ink, "d", f.ink);
       put(memoFlat, "bleed", flat.bleed, "d", f.ink);
+      // Pressed onto the bricks, the paper takes their grain and dips over the joints; held off the
+      // wall it is smooth.
+      put(memoFlat, "press", flat.press, "d", f.fill);
+      put(memoFlat, "embossDk", flat.embossDk, "d", f.embossDk);
+      put(memoFlat, "embossLt", flat.embossLt, "d", f.embossLt);
+      const pressed = state.place > 0 ? Math.max(0, 1 - state.place / 6).toFixed(2) : null;
+      put(memoFlat, "pressed", flat.press, "style", pressed === null ? null : `--k:${pressed}`);
+      put(memoFlat, "pressedDk", flat.embossDk, "style", pressed === null ? null : `--k:${pressed}`);
+      put(memoFlat, "pressedLt", flat.embossLt, "style", pressed === null ? null : `--k:${pressed}`);
       put(memoFlat, "edge", flat.edge, "d", f.edge);
     }
     for (let i = 0; i < slots.length; i++) {
