@@ -1,4 +1,4 @@
-// Fig. VIII · school. A precision linear stage on a lead screw that runs two
+// Fig. V · school. A precision linear stage on a lead screw that runs two
 // years end to end, from Penn State to Virginia Tech. A handwheel turns the
 // screw; the carriage rides a ruler graduated in months, 0 to 24, and the
 // gauge on the carriage reads the cumulative GPA: 4.0.

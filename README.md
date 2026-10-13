@@ -1,7 +1,7 @@
 # maceo.dev, drawn
 
 The personal site of Maceo Cardinale Kwik, rebuilt as a folio in ink on paper:
-a monogram cover (a hairline Michelangelus M over the name), then eight
+a monogram cover (a hairline Michelangelus M over the name), then five
 working isometric figures, one for each part of the work. Every figure is a
 small machine whose mechanism is the point of that entry, drawn in code with
 the [Anatomy](https://github.com/wheresryan22/anatomy) kit and moved by a
@@ -13,10 +13,7 @@ model whose numbers show in the card's corner.
 | II | Datost | A card cabinet of sixteen drawers, one per private repository, every one locked |
 | III | Traba | A punch time clock and a rack of eight shift cards, filled at market speed |
 | IV | SimonComputing | An indexing production line: measured, then stamped, then counted (rev 02 to rev 07) |
-| V | pravost | A beam balance: money on one pan, a sealed intention on the other, latched when they match |
-| VI | h668-z37 | A dividing head with a 37-hole index plate and a rack of the eight multiplier subgroups |
-| VII | conway | A Life pin table (B3/S23, bounded) that you win by leaving nothing alive |
-| VIII | Virginia Tech | A lead-screw stage that runs two years from Penn State to Virginia Tech; the gauge reads 4.0 |
+| V | Virginia Tech | A lead-screw stage that runs two years from Penn State to Virginia Tech; the gauge reads 4.0 |
 
 ## Commands
 

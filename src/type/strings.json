@@ -41,21 +41,6 @@
   "text": "V"
  },
  {
-  "id": "roman.VI",
-  "style": "regular",
-  "text": "VI"
- },
- {
-  "id": "roman.VII",
-  "style": "regular",
-  "text": "VII"
- },
- {
-  "id": "roman.VIII",
-  "style": "regular",
-  "text": "VIII"
- },
- {
   "id": "group.now",
   "style": "italic",
   "text": "Now"
@@ -64,11 +49,6 @@
   "id": "group.before",
   "style": "italic",
   "text": "Before"
- },
- {
-  "id": "group.open",
-  "style": "italic",
-  "text": "Open work"
  },
  {
   "id": "group.school",
@@ -97,24 +77,6 @@
   "id": "name.simon",
   "style": "regular",
   "text": "SIMONCOMPUTING",
-  "tracking": 0.03
- },
- {
-  "id": "name.pravost",
-  "style": "regular",
-  "text": "PRAVOST",
-  "tracking": 0.03
- },
- {
-  "id": "name.h668",
-  "style": "regular",
-  "text": "H668-Z37",
-  "tracking": 0.03
- },
- {
-  "id": "name.conway",
-  "style": "regular",
-  "text": "CONWAY",
   "tracking": 0.03
  },
  {
@@ -182,27 +144,6 @@
   "flow": true
  },
  {
-  "id": "flow.kicker.pravost",
-  "style": "regular",
-  "text": "REPOSITORY",
-  "tracking": 0.14,
-  "flow": true
- },
- {
-  "id": "flow.kicker.h668",
-  "style": "regular",
-  "text": "MATHEMATICS",
-  "tracking": 0.14,
-  "flow": true
- },
- {
-  "id": "flow.kicker.conway",
-  "style": "regular",
-  "text": "GAME",
-  "tracking": 0.14,
-  "flow": true
- },
- {
   "id": "flow.kicker.school",
   "style": "regular",
   "text": "B.S. COMPUTER SCIENCE",
@@ -219,18 +160,6 @@
   "id": "flow.body.traba.0",
   "style": "regular",
   "text": "Industrial labor marketplace.",
-  "flow": true
- },
- {
-  "id": "flow.body.h668.0",
-  "style": "regular",
-  "text": "Some of it does not exist.",
-  "flow": true
- },
- {
-  "id": "flow.body.conway.0",
-  "style": "regular",
-  "text": "A game grown from Life.",
   "flow": true
  },
  {
@@ -270,24 +199,6 @@
   "flow": true
  },
  {
-  "id": "flow.line.pravost",
-  "style": "italic",
-  "text": "Money held against intention.",
-  "flow": true
- },
- {
-  "id": "flow.line.h668",
-  "style": "italic",
-  "text": "The smallest Hadamard order nobody has settled.",
-  "flow": true
- },
- {
-  "id": "flow.line.conway",
-  "style": "italic",
-  "text": "You win when nothing is left alive.",
-  "flow": true
- },
- {
   "id": "flow.line.school",
   "style": "italic",
   "text": "Two years, start to finish.",
@@ -315,24 +226,6 @@
   "id": "flow.name.simon",
   "style": "italic",
   "text": "SimonComputing",
-  "flow": true
- },
- {
-  "id": "flow.name.pravost",
-  "style": "italic",
-  "text": "pravost",
-  "flow": true
- },
- {
-  "id": "flow.name.h668",
-  "style": "italic",
-  "text": "h668-z37",
-  "flow": true
- },
- {
-  "id": "flow.name.conway",
-  "style": "italic",
-  "text": "conway",
   "flow": true
  },
  {

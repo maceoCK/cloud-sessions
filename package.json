@@ -3,7 +3,7 @@
   "private": true,
   "version": "2.0.0",
   "type": "module",
-  "description": "Maceo Cardinale Kwik: a personal site drawn as eight working isometric figures",
+  "description": "Maceo Cardinale Kwik: a personal site drawn as five working isometric figures",
   "scripts": {
     "build": "node scripts/build.mjs",
     "shoot": "node scripts/shoot.mjs",

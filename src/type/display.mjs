@@ -9,7 +9,7 @@ export const DISPLAY = [
   { id: "cover.word", style: "italic", text: PERSON.name },
   { id: "cover.M", style: "regular", text: "M" },
   { id: "cover.line", style: "regular", text: COVER.line.toUpperCase(), tracking: 0.16 },
-  ...ROMAN.slice(0, 8).map((n) => ({ id: `roman.${n}`, style: "regular", text: n })),
+  ...ROMAN.slice(0, Object.keys(ENTRIES).length).map((n) => ({ id: `roman.${n}`, style: "regular", text: n })),
   ...GROUPS.map((g) => ({ id: `group.${g.id}`, style: "italic", text: g.title })),
   ...Object.entries(ENTRIES).map(([id, e]) => ({ id: `name.${id}`, style: "regular", text: e.name.toUpperCase(), tracking: 0.03 })),
   { id: "contact.mail", style: "italic", text: PERSON.email },

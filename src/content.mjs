@@ -30,7 +30,6 @@ export const LEDE = [
 export const GROUPS = [
   { id: "now", title: "Now", figures: ["ed1th", "datost"] },
   { id: "before", title: "Before", figures: ["traba", "simon"] },
-  { id: "open", title: "Open work", figures: ["pravost", "h668", "conway"] },
   { id: "school", title: "School", figures: ["school"] },
 ];
 
@@ -62,27 +61,6 @@ export const ENTRIES = {
     line: "A release is a promise made to strangers.",
     body: [],
     links: [],
-  },
-  pravost: {
-    kicker: "Repository",
-    name: "pravost",
-    line: "Money held against intention.",
-    body: [],
-    links: [["github.com/maceoCK/pravost", "https://github.com/maceoCK/pravost"]],
-  },
-  h668: {
-    kicker: "Mathematics",
-    name: "h668-z37",
-    line: "The smallest Hadamard order nobody has settled.",
-    body: ["Some of it does not exist."],
-    links: [["github.com/maceoCK/h668-z37", "https://github.com/maceoCK/h668-z37"]],
-  },
-  conway: {
-    kicker: "Game",
-    name: "conway",
-    line: "You win when nothing is left alive.",
-    body: ["A game grown from Life."],
-    links: [["github.com/maceoCK/conway", "https://github.com/maceoCK/conway"]],
   },
   school: {
     kicker: "B.S. Computer Science",
