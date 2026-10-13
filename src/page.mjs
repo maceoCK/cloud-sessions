@@ -18,8 +18,6 @@ const OUTLINES = JSON.parse(readFileSync(join(HERE, "type/outlines.json"), "utf8
 const CAP = OUTLINES.metrics.cap;
 
 const esc = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-// running text: escaped, with ED1TH kept in lining figures so its 1 reads as a 1
-const txt = (text) => esc(text).replace(/ED1TH/g, '<span class="ln">ED1TH</span>');
 const font = (file) => `url(data:font/woff2;base64,${readFileSync(join(HERE, "fonts", file)).toString("base64")}) format("woff2")`;
 const external = (href) => /^https?:/.test(href);
 const link = ([text, href], className = "") =>
@@ -46,7 +44,7 @@ function flow(id, text) {
   const f = OUTLINES.flows?.[id];
   if (!f || f.text !== text) {
     console.warn(`outline for "${id}" is ${f ? "stale" : "missing"}: run npm run outline; setting it in the fallback serif`);
-    return txt(text);
+    return esc(text);
   }
   const words = f.words.map(([w, glyphs]) => {
     const uses = glyphs
@@ -123,7 +121,6 @@ a:hover{text-decoration-color:var(--ink)}
 .skip{position:absolute;left:var(--gutter);top:-80px;z-index:20;background:var(--anatomy-card);color:var(--ink);padding:10px 14px;font:13px var(--mono);box-shadow:0 0 0 1px var(--anatomy-mid)}
 .skip:focus{top:12px}
 .ol{display:block;height:1em;width:auto;overflow:visible;fill:currentColor}
-.sc{font-variant:small-caps;font-variant-caps:all-small-caps;font-size:1.12em;letter-spacing:.11em;font-variant-numeric:lining-nums}
 
 /* cover: a monogram, centred, with nothing else to say */
 .cover{min-height:600px;height:100svh;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr;color:var(--ink)}
@@ -204,7 +201,6 @@ a:hover{text-decoration-color:var(--ink)}
 .iso-plate-corner[data-corner="fig"]{display:none}
 .iso-plate-corner[data-corner="title"]{left:0;right:auto}
 @media (max-width:560px){.iso-plate{overflow:hidden}.iso-plate .iso-svg{width:118%;max-width:none;margin-left:-9%}}
-.ln{font-variant-numeric:lining-nums}
 .iso-stage{touch-action:pan-y;outline:none}
 .iso-stage:focus-visible{outline:1px solid var(--anatomy-muted);outline-offset:-10px}
 
