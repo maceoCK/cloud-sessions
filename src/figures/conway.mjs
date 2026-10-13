@@ -18,7 +18,7 @@ const ZT = 16; // board top
 const PEG = { r: 2.5, h: 5.6 };
 const SEED = 7;
 const SCRIPT = [[22, 9], [27, 136]]; // [generation, cell]: placements that clear the board
-const STEP = 0.32; // seconds per generation
+const STEP = 0.42; // seconds per generation
 
 const BOARDS = replay(SEED, SCRIPT, 200);
 if (aliveOf(BOARDS[BOARDS.length - 1]) !== 0) throw new Error("the tour script no longer clears the board");

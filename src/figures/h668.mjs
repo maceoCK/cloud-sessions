@@ -347,7 +347,7 @@ export default {
         wait -= dt;
         if (wait <= 0) {
           load((loaded + 1) % D.groups.length);
-          wait = 1.7;
+          wait = 2.4;
         }
       }
       const h = want();
