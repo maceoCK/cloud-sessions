@@ -98,7 +98,9 @@ for (const r of only || args.includes("--pages") ? rendered : []) {
 if (!only) {
   const html = sitePage({ figures: rendered, script: scriptOf(rendered) });
   writeFileSync(join(DIST, "index.html"), html);
-  writeFileSync(join(DIST, "fragment.html"), sitePage({ figures: rendered, script: scriptOf(rendered), fragment: true }));
+  // a bare fragment for previews in hosts that supply their own document; kept out of dist
+  mkdirSync(join(ROOT, "preview"), { recursive: true });
+  writeFileSync(join(ROOT, "preview", "fragment.html"), sitePage({ figures: rendered, script: scriptOf(rendered), fragment: true }));
   // static files (the share image) ship next to the page
   if (existsSync(join(ROOT, "public"))) cpSync(join(ROOT, "public"), DIST, { recursive: true });
   console.log(`index.html ${(html.length / 1024).toFixed(0)} KB`);

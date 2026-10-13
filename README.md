@@ -21,7 +21,7 @@ model whose numbers show in the card's corner.
 ## Commands
 
 ```sh
-node scripts/build.mjs               # dist/index.html (the site) and dist/fragment.html
+node scripts/build.mjs               # dist/index.html (the site), plus preview/fragment.html
 node scripts/build.mjs --only traba  # one figure's check pages: dist/fig/traba.html and -dark.html
 node scripts/shoot.mjs --full        # full-page screenshot into shots/site (needs Playwright)
 node scripts/perf.mjs                # frame times idle, scrolling and at the busiest figures
