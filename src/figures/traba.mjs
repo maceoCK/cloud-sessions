@@ -33,7 +33,10 @@ const SINK = 17; // how deep a card goes into the clock
 const START = 52; // the clock starts at 05:52
 const SHIFT = "06:00 to 14:00";
 
-const P = k.fitProjection([...k.boxCorners(PLATE, -PLATE_H - FOOT_H, 0), [CX, 0, CLOCK_H + 34]], WIDTH, HEIGHT, { pad: 30, azimuth: AZIMUTH });
+// the frame holds the plate, the clock and a card at the top of its flight
+const FLIGHT_TOP = CLOCK_H + 3 + 2.4 + 4 + CARD.h;
+const flight = [CARD_X, CARD_X + CARD.w].flatMap((x) => [cardY(0), cardY(CARDS - 1), SLOT.y].map((y) => [x, y, FLIGHT_TOP]));
+const P = k.fitProjection([...k.boxCorners(PLATE, -PLATE_H - FOOT_H, 0), [CX, 0, CLOCK_H + 34], ...flight], WIDTH, HEIGHT, { pad: 22, azimuth: AZIMUTH });
 
 const at = (p) => k.iso(p, P);
 const S = (paths, style) => k.solidSvg(paths, style);
