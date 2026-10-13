@@ -11,7 +11,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
 import { ISO_CSS } from "../kit/iso-kit.mjs";
-import { COLOPHON, CONTACT, ENTRIES, GROUPS, LEDE, META, PERSON, RECORD } from "./content.mjs";
+import { COLOPHON, CONTACT, ENTRIES, GROUPS, HOW, LEDE, META, PERSON, RECORD } from "./content.mjs";
 import { ROMAN } from "./type/display.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -475,7 +475,7 @@ ${lozenges()}
 <div class="cover-foot wrap"><p class="cover-big"><span class="vh">Engineer and founder.</span>${bigWords.map((k) => line(k)).join("")}</p><p class="cover-small"><span class="vh">Founder of Datost, backed by Y Combinator and OpenAI, in New York City.</span>${smallWords.map((k) => line(k)).join("")}</p></div>
 </header>`;
 
-  const standfirst = `<section class="standfirst wrap" aria-label="Introduction"><p class="lead">${txt(LEDE[0])}</p><p>${txt(LEDE[1])}</p></section>`;
+  const standfirst = `<section class="standfirst wrap" aria-label="Introduction"><p class="lead">${txt(LEDE[0])}</p><p>${txt(LEDE[1])} <span class="hint-fine">${esc(HOW.fine)}</span><span class="hint-touch">${esc(HOW.touch)}</span></p></section>`;
 
   const body = `<a class="skip" href="#figures">Skip to the figures</a>${cover}<main>${standfirst}<div class="wrap" id="figures">${contents}${groups}${record}${contact}${colophon}</div></main>${ruler}<script type="module">${script}\n${pageScript}</script>`;
   // a fragment for hosts that supply their own document around the page

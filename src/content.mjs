@@ -25,8 +25,10 @@ export const COVER = {
 
 export const LEDE = [
   "Engineer and founder in New York City. I started Datost, an applied research lab backed by Y Combinator and OpenAI, and we are building ED1TH: glasses that put a quiet, capable computer in the corner of your eye.",
-  "Everything below is a working drawing. Each figure is a small machine that does what that part of my work does. Hover, click, or use the arrow keys.",
+  "Everything below is a working drawing. Each figure is a small machine that does what that part of my work does.",
 ];
+// how to work the figures, by pointer and by finger
+export const HOW = { fine: "Hover, click, or use the arrow keys.", touch: "Tap them." };
 
 // Page order: groups of figures. Each entry is keyed by figure id.
 export const GROUPS = [
