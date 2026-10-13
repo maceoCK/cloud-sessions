@@ -1669,10 +1669,11 @@ void main(){
   film*=1.-.9*paleA;
   vec3 R=reflect(-V,n);
   float dryTop=1.-.85*wcover;
-  col+=fresnel(dot(n,V))*envOf(R)*film*uGain.x*dryTop;
+  float inPrint=mix(1.,uPool,floorWet);
+  col+=fresnel(dot(n,V))*envOf(R)*film*uGain.x*dryTop*inPrint;
   vec3 H=normalize(L+V);
   float gl=pow(max(dot(n,H),0.),mix(40.,160.,clamp(film,0.,1.)));
-  col+=lin(uGlint)*gl*film*uGain.y*shadow*dryTop;
+  col+=lin(uGlint)*gl*film*uGain.y*shadow*dryTop*inPrint;
   col+=lin(uSkyLo)*pow(max(dot(n,H),0.),9.)*.045*uGain.y*shadow*dryTop*(1.-.8*paleA);
 
   if(pool>.001){
@@ -1680,7 +1681,7 @@ void main(){
     vec3 under=col*mix(vec3(1.),lin(uWater)/max(lin(uWet),vec3(.02)),.2)*.7;
     vec3 pw=under+fresnel(dot(nw,V))*envOf(reflect(-V,nw))*uGain.x*.4*uPool;
     float g2=pow(max(dot(nw,H),0.),260.);
-    pw+=lin(uGlint)*g2*uGain.y*.8;
+    pw+=lin(uGlint)*g2*uGain.y*.8*uPool;
     col=mix(col,pw,pool*(1.-wcover));
   }
 
@@ -1763,7 +1764,7 @@ const themeOf = () => ({
   uFoam: tokenOf("--fp-foam"),
   uGlint: tokenOf("--fp-glint"),
   uGain: isPale() ? [5.5, 0.7, 1, 0.2] : [7, 1.1, 0.92, 0.2],
-  uPool: isPale() ? 0.45 : 1,
+  uPool: isPale() ? 0.28 : 1,
 });
 const layerAt = (maxRatio) =>
   glLayer({
