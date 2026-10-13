@@ -412,7 +412,7 @@ const body = k.plateHtml({
     { mark: "lit", label: "The label: a blank name sticker, 86 × 59 mm" },
     { mark: "flat", label: "Residue: adhesive and paper fibre left on the steel" },
   ],
-  caption: `A blank name sticker on a brushed steel plate, screwed to a brick wall. Picked at one corner, it rolls up into a single curl with the printed face inside, then tears unevenly: ${Math.round(PEEL.SHARE_OFF * 100)}% comes away with half the scribble and the rest stays, a ragged piece with a fibrous torn edge. Where it came off, the adhesive split and kept a fuzz of paper fibre, broken by rows of bare spots where the front stuck and slipped. The force is Kendall's peel, F = G·b / (1 − cos θ), with G = 100 J/m² and b the length of the front.`,
+  caption: `A blank name sticker on a brushed steel plate, screwed to a brick wall. Picked at one corner, it rolls up into a single curl with the printed face inside, then tears unevenly: ${Math.round(PEEL.SHARE_OFF * 100)}% comes away with most of the scribble and the rest stays, a ragged piece with a fibrous torn edge. Where it came off, the adhesive split and kept a fuzz of paper fibre, broken by rows of bare spots where the front stuck and slipped. The force is Kendall's peel, F = G·b / (1 − cos θ), with G = 100 J/m² and b the length of the front.`,
   body: `<div class="iso-stage nt-stage" tabindex="0" role="slider" aria-label="Name tag peel: drag across or use the arrow keys to peel the sticker; Space tears it off or lays a new one" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="Stuck down, the scribble on it">${svg}</div><p class="nt-live" aria-live="polite"></p>`,
 });
 if (ARTIFACT) {

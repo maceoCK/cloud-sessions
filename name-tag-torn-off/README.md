@@ -6,7 +6,7 @@ The loop runs on its own:
 
 1. A corner lifts.
 2. The label rolls up into one curl, printed face inside, so the scribble goes into the roll and the adhesive side faces out. The curl is not a perfect cylinder: worn paper curls tighter in some places than others, so the sheet waves.
-3. It tears unevenly. About three fifths of the label comes away with half the scribble; a ragged piece stays stuck, its torn edge pale and fibrous where the top layer of paper split away.
+3. It tears unevenly. About three fifths of the label comes away with most of the scribble; a ragged piece stays stuck, its torn edge pale and fibrous where the top layer of paper split away.
 4. The torn-off curl falls. Where it was, the plate keeps a fuzz of adhesive and paper fibre, rows of bare spots where the peel front stuck and slipped, white islands of paper by the corner that was picked, and a fingernail's scrapes.
 5. A new label is laid down and the loop starts again.
 
