@@ -83,7 +83,7 @@ class Face:
         x0, y0, x1, y1 = pen.bounds
         return (x0 + dx, -y1, x1 + dx, -y0)
 
-    def flow(self, text, features, key, upright=None):
+    def flow(self, text, features, key, upright=None, tracking=0):
         """Shape running text once, then cut it into words at the spaces.
 
         Each word is a list of [glyph key, x] from the word's start plus its
@@ -132,8 +132,8 @@ class Face:
             if pos.y_offset:
                 item.append(rnd(-pos.y_offset))
             words[-1][1].append(item)
-            x += advance
-            words[-1][0] = rnd(x)
+            x += advance + tracking
+            words[-1][0] = rnd(x - tracking)
         return [w for w in words if w[1]], atlas
 
     def shape(self, text, features, tracking):
@@ -168,8 +168,9 @@ def main():
         face = faces[style]
         if item.get("flow"):
             upright = faces[style.replace("italic", "") or "regular"] if "italic" in style else None
-            words, atlas = face.flow(item["text"], item.get("features", {}), lambda gid: f"{short[style]}{gid}", upright)
-            space = face.tt["hmtx"][face.tt.getBestCmap()[32]][0]
+            tracking = item.get("tracking", 0) * face.metrics["upm"]
+            words, atlas = face.flow(item["text"], item.get("features", {}), lambda gid: f"{short[style]}{gid}", upright, tracking)
+            space = face.tt["hmtx"][face.tt.getBestCmap()[32]][0] + 2 * tracking
             out["flows"][item["id"]] = {"text": item["text"], "style": style, "space": space, "words": words}
             out["atlas"].update(atlas)
             continue

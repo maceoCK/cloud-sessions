@@ -55,12 +55,12 @@ The build needs only Node 20.10 or later; it has no dependencies. Deploy
 
 Display lines (the cover, section heads, names, Roman numerals, the email) are
 set in Michelangelus, the typeface studiogusto drew from Michelangelo's
-letters for the Fabbrica di San Pietro, and so is the display text that has to
-wrap: the standfirst, each entry's line and the contents. Its licence from
-Microsoft lets you install and use it but grants no right to distribute it
-("This agreement does not grant you a license to distribute nor sublicense all
-or part of the software to any third party"), so this site never ships the
-font file, not even as a webfont.
+letters for the Fabbrica di San Pietro, and so is every other serif word: the
+standfirst, each entry's line and body, the contents and the colophon. Its
+licence from Microsoft lets you install and use it but grants no right to
+distribute it ("This agreement does not grant you a license to distribute nor
+sublicense all or part of the software to any third party"), so this site
+never ships the font file, not even as a webfont.
 
 `scripts/outline.py` shapes the text with HarfBuzz from a local copy and
 stores only outlines in `src/type/outlines.json`. A line becomes one outline.
@@ -69,11 +69,9 @@ word as a small inline svg of `<use>` glyphs, with real spaces between words
 so they wrap, and the words themselves beside it for screen readers. In
 all-caps words set in the italic (ED1TH) the figures come from the upright,
 slanted to the italic's 20 degrees, because the italic's old-style 1 reads as
-an i. Body text uses `local("Michelangelus")` when a reader has it installed
-and Crimson Pro otherwise. If copy changes without a re-outline, the build
-warns and sets that text in Crimson Pro rather than showing stale outlines. To
-change a display line, edit `src/content.mjs`, install the font ([Microsoft
-Download
+an i. If copy changes without a re-outline, the build warns and sets that text
+in a system serif rather than showing stale outlines. To change a display
+line, edit `src/content.mjs`, install the font ([Microsoft Download
 Center](https://www.microsoft.com/en-us/download/details.aspx?id=108856)),
 then:
 
@@ -91,4 +89,5 @@ node scripts/build.mjs --only <id>
 CHROME_PATH=/path/to/chrome node <anatomy>/scripts/lines.mjs dist/fig/<id>.html --reduced
 ```
 
-Fonts: Crimson Pro and Geist Mono (SIL Open Font License, in `src/fonts/`).
+Labels are set in Geist Mono (SIL Open Font License, in `src/fonts/`); every
+serif word on the page is a Michelangelus outline.

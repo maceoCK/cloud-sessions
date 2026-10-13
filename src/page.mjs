@@ -3,10 +3,9 @@
 // spaced line and a small line set edge to edge), then the folio: the
 // contents, the figures, contact and colophon.
 //
-// Display lines are Michelangelus outlines from src/type/outlines.json (see
-// scripts/outline.py), and so are the standfirst, the entries' lines and
-// the contents, set as words that wrap. Body text is
-// Crimson Pro unless the reader has Michelangelus installed.
+// Every serif word is Michelangelus, carried as outlines from
+// src/type/outlines.json (see scripts/outline.py): display lines as single
+// outlines, running text as words that wrap. Labels are Geist Mono.
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -46,7 +45,7 @@ const USED = new Map(); // atlas key -> element id
 function flow(id, text) {
   const f = OUTLINES.flows?.[id];
   if (!f || f.text !== text) {
-    console.warn(`outline for "${id}" is ${f ? "stale" : "missing"}: run npm run outline; setting it in Crimson Pro`);
+    console.warn(`outline for "${id}" is ${f ? "stale" : "missing"}: run npm run outline; setting it in the fallback serif`);
     return txt(text);
   }
   const words = f.words.map(([w, glyphs]) => {
@@ -89,7 +88,6 @@ function seal(className) {
 }
 
 const FONTS = `
-@font-face{font-family:"Text";src:local("Michelangelus"),local("Michelangelus-Regular"),${font("CrimsonPro-Regular.woff2")};font-weight:400;font-display:swap}
 @font-face{font-family:"Geist Mono";src:${font("GeistMono-Regular.woff2")};font-weight:400;font-display:swap}
 `;
 
@@ -164,7 +162,8 @@ a:hover{text-decoration-color:var(--ink)}
 .contents .n{color:var(--ink);transition:color .2s}
 .contents .n .ol{height:26px}
 .contents .t{font-style:italic;font-size:20px;line-height:1.15;color:var(--ink)}
-.contents .s{font-size:14px;color:var(--anatomy-muted)}
+.contents .s{color:var(--anatomy-muted)}
+.contents .s{font-size:9.4px}
 .contents .t{transition:color .2s}
 .contents a:hover .n,.contents a:hover .t{color:var(--anatomy-muted)}
 @media (max-width:899px){
@@ -185,16 +184,16 @@ a:hover{text-decoration-color:var(--ink)}
 .entry .numeral{display:block;margin:0 0 20px;color:var(--ink)}
 .entry .numeral .ol{height:clamp(40px,3.6vw,56px);fill:none;stroke:currentColor;stroke-width:1.1px;vector-effect:non-scaling-stroke}
 .entry .numeral .ol path{vector-effect:non-scaling-stroke}
-.entry .kicker{margin:0 0 10px;font-size:15px;color:var(--anatomy-muted)}
+.entry .kicker{margin:0 0 12px;font-size:10.3px;color:var(--anatomy-muted)}
 .entry h3{margin:0}
 .entry h3 .ol{height:clamp(17px,1.5vw,22px);max-width:100%}
-.entry .line{margin:14px 0 0;font:italic 400 clamp(20px,1.7vw,24px)/1.2 var(--serif);color:var(--ink);max-width:20ch;text-wrap:balance}
-.entry .body{margin:16px 0 0;max-width:38ch;color:var(--anatomy-text)}
+.entry .line{margin:14px 0 0;font:italic 400 clamp(20px,1.7vw,24px)/1.2 var(--serif);color:var(--ink);max-width:11.3em;text-wrap:balance}
+.entry .body{margin:16px 0 0;max-width:21.5em;color:var(--anatomy-text)}
 .entry .body p{margin:0 0 .6em}
 .entry .links{display:flex;flex-wrap:wrap;gap:6px 18px;margin:14px 0 0;padding:0;list-style:none;font:13px/1.5 var(--mono)}
 .entry .iso-figure{margin:0}
 .entry.wide{grid-template-columns:minmax(0,3fr) minmax(0,9fr)}
-.entry.wide .entry-text .line{max-width:16ch}
+.entry.wide .entry-text .line{max-width:9.05em}
 @media (max-width:899px){
   .entry,.entry.flip,.entry.wide{display:block}
   .entry-text,.entry.wide .entry-text{position:static;display:block;margin-bottom:26px}
@@ -238,7 +237,7 @@ a:hover{text-decoration-color:var(--ink)}
 /* colophon */
 .colophon{margin:clamp(56px,7vw,96px) 0 0;padding:28px 0 56px;border-top:1px solid var(--rule);display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(20px,3vw,48px);align-items:center;font-size:15px;line-height:1.55;color:var(--anatomy-muted)}
 .colophon .seal{width:112px;height:112px;color:var(--ink);display:block}
-.colophon p{margin:0 0 .6em;max-width:64ch}
+.colophon p{margin:0 0 .6em;max-width:36em}
 @media (max-width:899px){.colophon{grid-template-columns:1fr}}
 
 `;
@@ -251,8 +250,8 @@ function entryHtml(rendered, index, flip, wide) {
   const fig = rendered.fig;
   const e = ENTRIES[fig.id];
   const links = e.links.length ? `<ul class="links">${e.links.map((l) => `<li>${link(l)}</li>`).join("")}</ul>` : "";
-  const body = e.body.length ? `<div class="body">${e.body.map((p) => `<p>${txt(p)}</p>`).join("")}</div>` : "";
-  const who = `<span class="numeral" aria-hidden="true">${line(`roman.${ROMAN[index]}`)}</span><p class="kicker sc">${esc(e.kicker)}</p><h3 id="h-${fig.id}"><span class="vh">${esc(e.name)}</span>${line(`name.${fig.id}`)}</h3>`;
+  const body = e.body.length ? `<div class="body">${e.body.map((p, i) => `<p>${flow(`flow.body.${fig.id}.${i}`, p)}</p>`).join("")}</div>` : "";
+  const who = `<span class="numeral" aria-hidden="true">${line(`roman.${ROMAN[index]}`)}</span><p class="kicker">${flow(`flow.kicker.${fig.id}`, e.kicker.toUpperCase())}</p><h3 id="h-${fig.id}"><span class="vh">${esc(e.name)}</span>${line(`name.${fig.id}`)}</h3>`;
   const what = `<p class="line">${flow(`flow.line.${fig.id}`, e.line)}</p>${body}${links}`;
   const text = `<div class="entry-text">${who}${what}</div>`;
   return `<article class="entry${flip ? " flip" : ""}${wide ? " wide" : ""}" id="${fig.id}" aria-labelledby="h-${fig.id}">${text}${rendered.html}</article>`;
@@ -266,7 +265,7 @@ export function sitePage({ figures, script, fragment = false }) {
   const contents = `<ol class="contents" aria-label="Figures">${order
     .map((id) => {
       const fig = byId[id].fig;
-      return `<li><a href="#${id}"><span class="n"><span class="vh">Figure ${numberOf(id) + 1}</span>${line(`roman.${ROMAN[numberOf(id)]}`)}</span><span class="t">${flow(`flow.name.${id}`, ENTRIES[id].name)}</span><span class="s sc">${esc(ENTRIES[id].kicker)}</span></a></li>`;
+      return `<li><a href="#${id}"><span class="n"><span class="vh">Figure ${numberOf(id) + 1}</span>${line(`roman.${ROMAN[numberOf(id)]}`)}</span><span class="t">${flow(`flow.name.${id}`, ENTRIES[id].name)}</span><span class="s">${flow(`flow.kicker.${id}`, ENTRIES[id].kicker.toUpperCase())}</span></a></li>`;
     })
     .join("")}</ol>`;
 
@@ -287,7 +286,7 @@ export function sitePage({ figures, script, fragment = false }) {
 
   const contact = `<section class="contact" id="contact" aria-labelledby="g-contact"><header class="group-head"><h2 id="g-contact" class="vh">Contact</h2></header><a class="mail" href="mailto:${PERSON.email}"><span class="vh">${esc(PERSON.email)}</span>${line("contact.mail")}</a><ul>${CONTACT.links.map((l) => `<li>${link(l)}</li>`).join("")}</ul></section>`;
 
-  const colophon = `<footer class="colophon">${seal("seal")}<div>${COLOPHON.map((p) => `<p>${esc(p)}</p>`).join("")}</div></footer>`;
+  const colophon = `<footer class="colophon">${seal("seal")}<div>${COLOPHON.map((p, i) => `<p>${flow(`flow.colophon.${i}`, p)}</p>`).join("")}</div></footer>`;
 
   const ld = {
     "@context": "https://schema.org",
@@ -329,7 +328,7 @@ export function sitePage({ figures, script, fragment = false }) {
 <div class="cover-lockup wrap"><div class="cover-m" aria-hidden="true">${line("cover.M")}</div><h1 class="cover-word"><span class="vh">${esc(PERSON.name)}</span>${line("cover.word")}</h1><p class="cover-line"><span class="vh">${esc(COVER.line)}</span>${line("cover.line")}</p></div>
 </header>`;
 
-  const standfirst = `<section class="standfirst wrap" aria-label="Introduction"><p class="lead">${flow("flow.lede", LEDE[0])}</p><p>${txt(LEDE[1])}</p></section>`;
+  const standfirst = `<section class="standfirst wrap" aria-label="Introduction"><p class="lead">${flow("flow.lede", LEDE[0])}</p><p>${flow("flow.aside", LEDE[1])}</p></section>`;
 
   const body = `<a class="skip" href="#figures">Skip to the figures</a>${atlas()}${cover}<main>${standfirst}<div class="wrap" id="figures">${contents}${groups}${contact}${colophon}</div></main><script type="module">${script}\n${pageScript}</script>`;
   // a fragment for hosts that supply their own document around the page

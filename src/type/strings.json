@@ -148,6 +148,104 @@
   "flow": true
  },
  {
+  "id": "flow.aside",
+  "style": "regular",
+  "text": "Everything below works. Poke it.",
+  "flow": true
+ },
+ {
+  "id": "flow.kicker.ed1th",
+  "style": "regular",
+  "text": "DATOST",
+  "tracking": 0.14,
+  "flow": true
+ },
+ {
+  "id": "flow.kicker.datost",
+  "style": "regular",
+  "text": "FOUNDER",
+  "tracking": 0.14,
+  "flow": true
+ },
+ {
+  "id": "flow.kicker.traba",
+  "style": "regular",
+  "text": "ENGINEERING",
+  "tracking": 0.14,
+  "flow": true
+ },
+ {
+  "id": "flow.kicker.simon",
+  "style": "regular",
+  "text": "SOFTWARE ENGINEERING",
+  "tracking": 0.14,
+  "flow": true
+ },
+ {
+  "id": "flow.kicker.pravost",
+  "style": "regular",
+  "text": "REPOSITORY",
+  "tracking": 0.14,
+  "flow": true
+ },
+ {
+  "id": "flow.kicker.h668",
+  "style": "regular",
+  "text": "MATHEMATICS",
+  "tracking": 0.14,
+  "flow": true
+ },
+ {
+  "id": "flow.kicker.conway",
+  "style": "regular",
+  "text": "GAME",
+  "tracking": 0.14,
+  "flow": true
+ },
+ {
+  "id": "flow.kicker.school",
+  "style": "regular",
+  "text": "B.S. COMPUTER SCIENCE",
+  "tracking": 0.14,
+  "flow": true
+ },
+ {
+  "id": "flow.body.datost.0",
+  "style": "regular",
+  "text": "Backed by Y Combinator and OpenAI.",
+  "flow": true
+ },
+ {
+  "id": "flow.body.traba.0",
+  "style": "regular",
+  "text": "Industrial labor marketplace.",
+  "flow": true
+ },
+ {
+  "id": "flow.body.h668.0",
+  "style": "regular",
+  "text": "Some of it does not exist.",
+  "flow": true
+ },
+ {
+  "id": "flow.body.conway.0",
+  "style": "regular",
+  "text": "A game grown from Life.",
+  "flow": true
+ },
+ {
+  "id": "flow.body.school.0",
+  "style": "regular",
+  "text": "Started at Penn State.",
+  "flow": true
+ },
+ {
+  "id": "flow.colophon.0",
+  "style": "regular",
+  "text": "Drawn with the Anatomy kit by wheresryan22. Set in Michelangelus.",
+  "flow": true
+ },
+ {
   "id": "flow.line.ed1th",
   "style": "italic",
   "text": "The computers that come after the screen.",
