@@ -321,3 +321,34 @@
   fill: var(--anatomy-red);
   opacity: 0.9;
 }
+
+/* what the headlights fall on: the item's own tones pulled toward lamp light */
+.cr {
+  --cr-warm: #ffd49a;
+}
+
+.iso[data-theme="light"] .cr,
+.cr[data-theme="light"] {
+  --cr-warm: #ffd77a;
+}
+
+.cr-items {
+  --cr-top0: var(--anatomy-top);
+  --cr-paper0: var(--anatomy-paper);
+  --cr-s0: var(--anatomy-shade-0);
+  --cr-s1: var(--anatomy-shade-1);
+  --cr-s2: var(--anatomy-shade-2);
+  --cr-s3: var(--anatomy-shade-3);
+  --cr-hi0: var(--anatomy-hi);
+  --cr-mid0: var(--anatomy-mid);
+}
+
+.cr-items > g[data-lit-by] {
+  --anatomy-top: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 100%), var(--cr-top0));
+  --anatomy-paper: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 60%), var(--cr-paper0));
+  --anatomy-shade-0: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 45%), var(--cr-s0));
+  --anatomy-shade-1: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 55%), var(--cr-s1));
+  --anatomy-shade-2: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 65%), var(--cr-s2));
+  --anatomy-shade-3: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 75%), var(--cr-s3));
+  --anatomy-mid: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 70%), var(--cr-mid0));
+}

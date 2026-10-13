@@ -399,7 +399,7 @@ for (const [index, pt] of PORTALS.entries()) {
 
 // ---- things that stand on the plateau, sorted with the car each frame -----------------------------------
 const items = [];
-const put = (name, at3, svg) => items.push({ name, key: depth(at3), svg });
+const put = (name, at3, svg, high = 4) => items.push({ name, key: depth(at3), svg, at: [at3[0], at3[1], at3[2] + high] });
 for (const [i, t] of [[66, -12, 30, 1], [82, -26, 22, 2], [48, -30, 18, 3], [-106, -14, 24, 4], [-109, -38, 15, 5]].entries()) {
   const [x, y, h, seed] = t;
   const tree = SC.cypress({ P, x, y, z: Z.road + (KNOLL(x, y) < -0.42 ? 4.8 : KNOLL(x, y) < 0 ? 2.6 : 0), height: h, seed });
@@ -476,7 +476,7 @@ const carKey = depth([STILL.x, STILL.y, Z.road]);
 const stillCar = `<g data-item="car" data-k="${carKey.toFixed(2)}" class="cr-car">${carSvg(STILL, P, G, k)}</g>`;
 const before = items.filter((it) => it.key <= carKey);
 const after = items.filter((it) => it.key > carKey);
-const itemSvg = (it) => `<g data-item="${it.name}" data-k="${it.key.toFixed(2)}">${it.svg}</g>`;
+const itemSvg = (it) => `<g data-item="${it.name}" data-k="${it.key.toFixed(2)}" data-at="${it.at.map((v) => v.toFixed(1)).join(",")}">${it.svg}</g>`;
 front.push(`<g class="cr-items">${before.map(itemSvg).join("")}${stillCar}${after.map(itemSvg).join("")}</g>`);
 
 // ---- the vitrine: glass on the two sawn sea faces, a corner post --------------------------------------

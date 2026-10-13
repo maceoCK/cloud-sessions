@@ -333,7 +333,7 @@ void main(){
     }
   }
   if(uPale<.5){
-    vec3 c=vec3(.52,.58,.64)*(1.-exp(-spray*1.1))*.85+vec3(.6,.62,.65)*(1.-exp(-smoke*.9))*.75+vec3(.9,.25,.15)*smoke*heat*.18;
+    vec3 c=vec3(.52,.58,.64)*(1.-exp(-spray*1.1))*.85+vec3(.62,.64,.67)*(1.-exp(-smoke*1.2))*.95+vec3(.95,.18,.1)*(1.-exp(-smoke*heat*1.6))*.6;
     c+=vec3(1.,.9,.72)*(wall+bore)+vec3(.95,.9,.78)*beam*.16+vec3(1.,.48,.12)*sodium*.11;
     c=tonemap(c,1.2);
     col=vec4(c,max(c.r,max(c.g,c.b)));
@@ -353,6 +353,11 @@ void main(){
   gl_FragColor=dithered(col*uFade);
 }`;
 
+const realRatio = window.devicePixelRatio || 1;
+let slowGpu = false;
+try {
+  Object.defineProperty(window, "devicePixelRatio", { configurable: true, get: () => (slowGpu ? Math.min(realRatio, 0.7) : realRatio) });
+} catch (e) {}
 function gpuOf(D, stage, pale) {
   const seaCanvas = stage.querySelector(".cr-sea-gl");
   const lightCanvas = stage.querySelector(".cr-light-gl");
@@ -505,7 +510,7 @@ function gpuOf(D, stage, pale) {
       const rr = (p.r0 || 1) + 7.5 * Math.sqrt(Math.max(0, p.age));
       const a = p.age > p.life ? 0 : p.a0 * burst(p.age, 0.12, 0.85) * smooth(p.life, p.life * 0.7, p.age) * inBlock(p.x, p.y, rr) * (seen(p.x, p.y, p.z) * 0.85 + 0.15 * seen(p.x, p.y, p.z + rr));
       smk.set([p.x || 0, p.y || 0, p.z || 0, (p.r0 || 1) + 7.5 * Math.sqrt(Math.max(0, p.age))], i * 4);
-      smkB.set([a, Math.exp(-p.age * 1.8), 0, 0], i * 4);
+      smkB.set([a, Math.exp(-p.age * 1.2), 0, 0], i * 4);
     });
     spray.forEach((p, i) => {
       const r = (p.r0 || 1) + 9.5 * Math.sqrt(Math.max(0, p.age));
@@ -517,7 +522,20 @@ function gpuOf(D, stage, pale) {
     });
   }
 
+  let spent = 0;
+  let frames = 0;
   function draw(fade, clock, car, time) {
+    const t0 = performance.now();
+    drawAll(fade, clock, car, time);
+    spent += performance.now() - t0;
+    if (++frames === 40) {
+      // 40 frames averaging over 28 ms of drawing: drop to a coarser canvas
+      if (!slowGpu && spent / frames > 28) slowGpu = true;
+      spent = 0;
+      frames = 0;
+    }
+  }
+  function drawAll(fade, clock, car, time) {
     const pose = car.dark > 0 ? [0, 0, 0, 0] : [car.x, car.y, car.psi + car.beta, 1];
     const carB = [car.brake || 0, car.v, 0, 0];
     sea.draw({ uFade: fade }, time);

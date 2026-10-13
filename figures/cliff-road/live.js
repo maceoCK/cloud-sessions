@@ -33,7 +33,39 @@ const TOUR = [1, 0.72, 1, 0.35, 1, 0.85];
 const gpu = gpuOf(D, stage, pale);
 if (gpu) stage.setAttribute("data-gl", "");
 
-const items = [...itemsNode.children].filter((node) => node !== carNode).map((node) => ({ node, key: +node.dataset.k }));
+const items = [...itemsNode.children].filter((node) => node !== carNode).map((node) => ({ node, key: +node.dataset.k, at: (node.dataset.at || "").split(",").map(Number), lit: 0 }));
+// what the headlights fall on catches their light: the same lamp model as the road pool
+function lampOn(p, pose) {
+  const c = Math.cos(pose.yaw);
+  const s = Math.sin(pose.yaw);
+  let e = 0;
+  for (const side of [1, -1]) {
+    const lx = pose.x + c * 9.3 - s * side * 2.55;
+    const ly = pose.y + s * 9.3 + c * side * 2.55;
+    const dx = p[0] - lx;
+    const dy = p[1] - ly;
+    const r = Math.hypot(dx, dy) || 1;
+    const ah = Math.acos(Math.max(-1, Math.min(1, (dx * c + dy * s) / r)));
+    const pattern = Math.exp(-((ah / 0.4) ** 2)) * (1 + 2.2 * Math.exp(-((ah / 0.12) ** 2)));
+    e += (pattern / (r * r)) * smooth(1, 6, r);
+  }
+  return e;
+}
+function lightItems() {
+  const on = car.dark <= 0;
+  const pose = poseOf(car);
+  for (const it of items) {
+    if (it.at.length < 3) continue;
+    const e = on ? lampOn(it.at, pose) : 0;
+    const lit = Math.round(Math.min(0.85, 1 - Math.exp(-e * 900)) * 50) / 50;
+    if (lit !== it.lit) {
+      it.lit = lit;
+      if (lit > 0) it.node.style.setProperty("--lit", lit);
+      else it.node.style.removeProperty("--lit");
+      it.node.toggleAttribute("data-lit-by", lit > 0);
+    }
+  }
+}
 const sockNode = itemsNode.querySelector('[data-item="sock"]');
 const pointer = stage.querySelector('[data-part="pace-pointer"]');
 let pointerAt = -1;
@@ -145,6 +177,7 @@ function tick(now) {
     poseStill();
     placeCar();
     drawKnob();
+    lightItems();
     readout.textContent = readoutOf();
     if (gpu) {
       gpu.step(0, 6.2, car, true);
@@ -164,6 +197,7 @@ function tick(now) {
   placeCar();
   drawSock(state.clock);
   drawKnob();
+  lightItems();
   if (gpu) {
     gpu.step(dt, state.clock, car, false);
     gpu.draw(smooth(0, 1, (state.clock - 0.15) / 0.9), state.clock, { ...car, brake: brake.x }, state.clock);
