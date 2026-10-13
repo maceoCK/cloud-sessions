@@ -391,10 +391,12 @@ export default {
     const pick = (event) => {
       const p = pointAt(event);
       for (let i = D.discBoxes.length - 1; i >= 0; i--) if (inside(D.discBoxes[i], p)) {
+        stage.style.cursor = "pointer";
         tour.hold();
         load(i);
         return;
       }
+      stage.style.cursor = "";
     };
     stage.addEventListener("pointermove", pick);
     stage.addEventListener("pointerdown", pick);

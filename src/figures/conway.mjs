@@ -320,6 +320,7 @@ export default {
     };
     stage.addEventListener("pointermove", (event) => {
       const c = cellAt(event);
+      stage.style.cursor = c >= 0 ? "pointer" : "";
       if (c !== cursor) {
         cursor = c;
         drawCursor();

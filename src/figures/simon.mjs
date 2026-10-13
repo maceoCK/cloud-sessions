@@ -251,6 +251,7 @@ export default {
   ],
   caption: "Production systems, built with a consultancy's discipline: every sheet is measured before it is stamped, and every stamp moves the revision counter. A release is a promise made to strangers.",
   css: `
+#fig-simon .iso-stage{cursor:pointer}
 #fig-simon{--pl-window:#26262a;--pl-digit:#f4f4f1;--pl-glow:#3a3a3f}
 [data-theme="dark"] #fig-simon{--pl-window:#050505;--pl-digit:#e6e6e6;--pl-glow:#ededea}
 #fig-simon .pl-lamp>path{transition:fill .2s}

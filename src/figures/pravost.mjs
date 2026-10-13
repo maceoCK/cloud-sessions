@@ -184,6 +184,7 @@ export default {
   ],
   caption: "pravost holds money against intention. Here that is a beam balance: coins go on one pan, a sealed weight sits on the other, and when the two match the beam levels and a pawl latches it in place.",
   css: `
+#fig-pravost .iso-stage{cursor:pointer}
 #fig-pravost .pv-floor{fill:var(--anatomy-shade-2)}
 #fig-pravost .pv-bubble{fill:var(--anatomy-top);stroke:var(--anatomy-mid);stroke-width:.5}
 `,

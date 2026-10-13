@@ -328,6 +328,7 @@ export default {
     stage.addEventListener("pointermove", (event) => {
       const p = pointAt(event);
       const n = D.polys.findIndex((poly) => inside(poly, p));
+      stage.style.cursor = n >= 0 ? "pointer" : "";
       if (n !== hovered) {
         hovered = n;
         if (n >= 0) {

@@ -479,7 +479,11 @@ export default {
     };
     stage.addEventListener("pointermove", (event) => {
       const p = pointAt(event);
-      for (let i = D.CARDS - 1; i >= 0; i--) if (inside(D.quads[i], p)) return ask(i);
+      for (let i = D.CARDS - 1; i >= 0; i--) if (inside(D.quads[i], p)) {
+        stage.style.cursor = punched[i] ? "" : "pointer";
+        return ask(i);
+      }
+      stage.style.cursor = "";
     });
     stage.addEventListener("pointerdown", (event) => {
       const p = pointAt(event);
