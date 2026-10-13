@@ -52,6 +52,28 @@ function subgroup(m) {
 }
 const GROUPS = ORDERS.map((m) => ({ m, h: subgroup(m), open: OPEN.has(m), classes: 36 / m }));
 
+// A Hadamard matrix of order 12 by Paley's construction over GF(11): the
+// kind of object that is still not known to exist at order 668.
+const PALEY = (() => {
+  const q = 11;
+  const square = new Set(Array.from({ length: q - 1 }, (_, i) => ((i + 1) * (i + 1)) % q));
+  const chi = (a) => (a % q === 0 ? 0 : square.has(((a % q) + q) % q) ? 1 : -1);
+  const H = Array.from({ length: q + 1 }, (_, i) =>
+    Array.from({ length: q + 1 }, (_, j) => {
+      if (i === 0) return 1;
+      if (j === 0) return -1;
+      return i === j ? 1 : chi(j - i);
+    }),
+  );
+  // sanity: H H^T = 12 I
+  for (let a = 0; a <= q; a++)
+    for (let b = 0; b <= q; b++) {
+      const dot = H[a].reduce((sum, v, j) => sum + v * H[b][j], 0);
+      if (dot !== (a === b ? q + 1 : 0)) throw new Error("Paley H(12) is not Hadamard");
+    }
+  return H;
+})();
+
 const TABLE = [0, 26]; // table centre (x, y)
 const R_TABLE = 46;
 const R_PLATE = 38;
@@ -102,6 +124,27 @@ function base() {
   return out.join("");
 }
 
+// The tablet: H(12) inlaid in a plate on the open front corner, +1 filled.
+const TABLET = { x: 18, y: -92, w: 24, d: 24, r: 1.6 };
+function tablet() {
+  const out = [S(k.slabOf(TABLET, 0, 1.6, P, 3, 0.4), { tone: "mid" })];
+  const cell = 1.6;
+  const x0 = TABLET.x + (TABLET.w - cell * 12) / 2;
+  const y0 = TABLET.y + (TABLET.d - cell * 12) / 2;
+  const cells = [];
+  for (let i = 0; i < 12; i++)
+    for (let j = 0; j < 12; j++) {
+      if (PALEY[i][j] < 0) continue;
+      const a = x0 + i * cell + 0.12;
+      const b = y0 + j * cell + 0.12;
+      const e = cell - 0.24;
+      cells.push(k.pathOf([at([a, b, 1.6]), at([a + e, b, 1.6]), at([a + e, b + e, 1.6]), at([a, b + e, 1.6])], true));
+    }
+  out.push(`<path class="hx-cell" d="${cells.join("")}"/>`);
+  out.push(L(k.planOutline({ x: x0 - 0.8, y: y0 - 0.8, w: cell * 12 + 1.6, d: cell * 12 + 1.6, r: 0.6 }, 1.6, P), { tone: "lo" }));
+  return out.join("");
+}
+
 function table() {
   const out = [];
   const [cx, cy] = TABLE;
@@ -133,8 +176,13 @@ function table() {
   const z1 = holeAt(0, R_HOLES + 8);
   out.push(L(k.lineOnTop(z0, z1, Z_PLATE, P), { tone: "hi" }));
   // the single engraved label, on the plate
-  const lab = holeAt(N / 2, 12);
-  out.push(k.faceTextSvg(k.topMatrix([lab[0] - 1.6, lab[1]], Z_PLATE, P, "y"), "Z37", { size: 5.4, tone: "lo", anchor: "middle" }));
+  // read from the viewer: baseline along -y, glyphs standing toward -x, clear of the hub
+  const lab = holeAt(N / 2, 16);
+  const o = at([lab[0], lab[1], Z_PLATE]);
+  const ex = at([lab[0], lab[1] - 1, Z_PLATE]).map((v, i) => v - o[i]);
+  const ey = at([lab[0] + 1, lab[1], Z_PLATE]).map((v, i) => v - o[i]);
+  const m = [...ex, ...ey, ...o].map((v) => Math.round(v * 1000) / 1000).join(" ");
+  out.push(k.faceTextSvg(`matrix(${m})`, "Z37", { size: 5.4, tone: "lo", anchor: "middle" }));
   // hub
   out.push(S(k.cylinder(cx, cy, 7, Z_PLATE, 3, P, 40, 0.4), { tone: "mid" }));
   out.push(L(k.ring(cx, cy, 2.4, Z_PLATE + 3, P, 20), { tone: "lo" }));
@@ -213,7 +261,7 @@ export default {
   width: WIDTH,
   height: HEIGHT,
   label:
-    "A rotary index table whose plate is drilled with 37 holes, one per residue mod 37, beside a rack of eight discs, one for each multiplier subgroup of the units mod 37. Each disc carries dots at its subgroup's residues and a mark: filled for a closed case, an open ring for an open one. Loading a disc raises a pin in each of its holes.",
+    "A rotary index table whose plate is drilled with 37 holes, one per residue mod 37, beside a rack of eight discs, one for each multiplier subgroup of the units mod 37. Each disc carries dots at its subgroup's residues and a mark: filled for a closed case, an open ring for an open one. Loading a disc raises a pin in each of its holes. A tablet on the front corner is inlaid with a Hadamard matrix of order 12, the kind of object still not known to exist at order 668.",
   stage: { role: "slider", label: "Cyclotomic sieve. Arrow keys load the next or previous subgroup.", attrs: { "aria-valuemin": 2, "aria-valuemax": 36, "aria-valuenow": 12, "aria-valuetext": "Order 12 subgroup: 3 classes, no solution" } },
   keys: [
     { mark: "lit", label: "Pins of the loaded multiplier subgroup H" },
@@ -223,6 +271,7 @@ export default {
   css: `
 #fig-h668 .hx-hole{fill:var(--anatomy-shade-0);stroke:var(--anatomy-lo);stroke-width:.4}
 #fig-h668 .hx-closed{fill:var(--anatomy-hi)}
+#fig-h668 .hx-cell{fill:var(--anatomy-hi);opacity:.82}
 #fig-h668 .hx-open{fill:var(--anatomy-paper);stroke:var(--anatomy-hi);stroke-width:.7}
 `,
   build() {
@@ -238,6 +287,7 @@ export default {
       r.back,
       discs,
       r.front,
+      tablet(),
       table(),
       pins,
       pl.post,
