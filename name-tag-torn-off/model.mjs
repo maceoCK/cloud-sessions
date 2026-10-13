@@ -507,11 +507,13 @@ export const PEEL = (() => {
       [-52, 1], [-46, 4], [-42, -9], [-39, -2], [-36, -10], [-33, -1], [-29, -11], [-26, 1], [-22, -6], [-19, -32],
       [-22, -35], [-23, -24], [-18, 1], [-14, -8], [-11, -10], [-13, -6], [-9, 1], [-5, -9], [-2, -3], [1, -10],
       [4, 0], [7, -5], [9, -27], [6, -29], [7, -14], [11, 1], [14, -6], [16, -1], [16, 12], [12, 18], [8, 14],
-      [13, 4], [19, -4], [23, 1], [27, -7], [31, 0], [36, -6], [41, -1], [47, -5], [52, 2], [54, 7], [44, 11],
-      [18, 13], [-12, 12], [-40, 11],
+      [12, 4], [16, -3], [19, -7], [21.5, -6], [22.5, -2], [23, 1], [25, -5], [27.5, -8.5], [30, -7], [31, -2],
+      [31.5, 1], [33.5, -4], [36, -7.5], [38.2, -6], [39, -1.5], [39.6, 1], [42, -4], [45, -11], [47, -14.5],
+      [47.2, -10], [46.6, -4], [48.2, 0.5], [51, -1.5], [54, -4.5], [57, -3], [57.5, 2.5], [52, 8], [38, 11.5],
+      [14, 13], [-14, 12], [-36, 10.5],
     ];
     const bar = [[-31, -23], [-20, -26], [-6, -25.5]];
-    const tittle = [[25, -17], [26.4, -17.6]];
+    const tittle = [[31, -17], [32.4, -17.6]];
     const smoothStroke = (pts) => {
       const out = [];
       for (let i = 0; i < pts.length - 1; i++) {
@@ -715,6 +717,22 @@ export const PEEL = (() => {
     return { band: [...TEAR, ...[...inner].reverse()], inner, fibres };
   })();
 
+  // Fibre the plate did not keep, left on the flap's adhesive side: specks and short fibres in
+  // (d, w), drawn wherever the back of the flap faces the viewer, so they move with the paper.
+  const BACK_FUZZ = (() => {
+    const R = rng(8821);
+    const out = [];
+    while (out.length < 300) {
+      const p = [(R() - 0.5) * TAG.w, (R() - 0.5) * TAG.h];
+      if (!inside(FLAP, p)) continue;
+      const [d, w] = toDW(p);
+      const len = R() < 0.3 ? 1.2 + R() * 2.6 : 0.05;
+      const a = R() * Math.PI;
+      out.push([[d - (Math.cos(a) * len) / 2, w - (Math.sin(a) * len) / 2], [d + (Math.cos(a) * len) / 2, w + (Math.sin(a) * len) / 2]]);
+    }
+    return out;
+  })();
+
   // ---- The numbers -----------------------------------------------------------------------------------
   // Kendall's thin-film peel: F = G·b / (1 − cos θ), b the length of the front still on the flap.
   // A label acrylic on steel tears at about G = 100 J/m² (≈ 1.3 N per 25 mm at 180°).
@@ -866,7 +884,7 @@ export const PEEL = (() => {
     const order = new Map(strips.map((s, i) => [s.index, i]));
     const slots = strips.map((s) => ({
       fill: pathOf(s.scr, true),
-      side: s.side, band: s.band, edge: [], tear: [], seam: [], ink: [], ghost: [],
+      side: s.side, band: s.band, edge: [], tear: [], seam: [], ink: [], ghost: [], fuzz: [],
       width: clamp(s.facing / dot(N, C.V), 0.3, 1.3),
     }));
     strips.forEach((s, at) => {
@@ -889,7 +907,24 @@ export const PEEL = (() => {
       if (s.side === "face") slot.ink.push(d);
       else slot.ghost.push(d);
     });
-    out.strips = slots.map((slot) => ({ ...slot, edge: slot.edge.join(""), tear: slot.tear.join(""), seam: slot.seam.join(""), ink: slot.ink.join(""), ghost: slot.ghost.join("") }));
+    // Fibre on the back, in the slot that draws each strip's outline.
+    const cuts = cutsOf(st);
+    for (const [a, b] of BACK_FUZZ) {
+      const m = (a[0] + b[0]) / 2;
+      if (m >= st.f || !cuts.length) continue;
+      let lo = 0, hi = cuts.length - 1;
+      while (hi - lo > 1) {
+        const k = (lo + hi) >> 1;
+        if (cuts[k] > m) lo = k;
+        else hi = k;
+      }
+      const strip = byIndex.get(lo);
+      if (!strip || strip.side !== "back") continue;
+      const at = order.get(lo);
+      const near = Math.max(at, order.get(lo - 1) ?? -1, order.get(lo + 1) ?? -1);
+      slots[near].fuzz.push(pathOf([project(C, frame.sheet.at(a[0], a[1])), project(C, frame.sheet.at(b[0], b[1]))]));
+    }
+    out.strips = slots.map((slot) => ({ ...slot, edge: slot.edge.join(""), tear: slot.tear.join(""), seam: slot.seam.join(""), ink: slot.ink.join(""), ghost: slot.ghost.join(""), fuzz: slot.fuzz.join("") }));
     return out;
   }
 

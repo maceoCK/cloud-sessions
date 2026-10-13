@@ -204,12 +204,53 @@ function wall() {
     for (let i = 0, m = R() < 0.6 ? 1 + Math.floor(R() * 2) : 0; i < m; i++) chips += chipOn(b0, b1, zb, zt);
     out.push(texturedBox(box(b0, b1, zb, zt, -RAKE, 0), `data-part="brick" data-tint="${tint}"`, "nt-brick", chips));
   }
+  out.push(weathering());
   // The crop: the card's own paper closes over the brickwork in an ellipse on the wall.
   const fade = affine([VIEW.x, 0, VIEW.z], [VIEW.rx, 0, 0], [0, 0, -VIEW.rz]);
   out.push(`<radialGradient id="nt-crop" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="1" gradientTransform="${fade}"><stop offset=".62" class="nt-crop-0"/><stop offset=".8" class="nt-crop-1"/><stop offset=".93" class="nt-crop-2"/><stop offset="1" class="nt-crop-3"/></radialGradient>`);
   const cover = [[x0 - 200, z0 - 200], [x1 + 200, z0 - 200], [x1 + 200, z1 + 200], [x0 - 200, z1 + 200]].map(([x, z]) => at([x, 0, z]));
   out.push(`<path class="nt-crop" d="${pathOf(cover, true)}" fill="url(#nt-crop)"/>`);
   return `<g class="nt-wall">${out.join("")}</g>`;
+}
+
+
+// Years on a wall: rain has run grime off the plate's lower edge down the bricks below it, and
+// an earlier sign left two wall plugs in the brick to the right.
+function weathering() {
+  const out = [];
+  const Rw = PEEL.rng(606);
+  const top = PLATE.z - 2;
+  const down = at([0, 0, -1]);
+  const o = at([0, 0, 0]);
+  const dir = [down[0] - o[0], down[1] - o[1]];
+  for (let i = 0; i < 7; i++) {
+    const x = PLATE.x + 14 + Rw() * (PLATE.w - 28);
+    const len = 40 + Rw() * 110, w0 = 3 + Rw() * 7;
+    const pts = [];
+    const n = 12;
+    for (let k = 0; k <= n; k++) {
+      const t = k / n;
+      const wob = Math.sin(t * 5 + i) * 1.2;
+      pts.push([x - w0 * (1 - 0.6 * t) + wob, top - len * t]);
+    }
+    for (let k = n; k >= 0; k--) {
+      const t = k / n;
+      const wob = Math.sin(t * 5 + i) * 1.2;
+      pts.push([x + w0 * (1 - 0.6 * t) + wob, top - len * t]);
+    }
+    const a = at([x, 0, top]), b = at([x, 0, top - len]);
+    const id = `nt-run-${i}`;
+    out.push(`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${fx(a[0])}" y1="${fx(a[1])}" x2="${fx(b[0])}" y2="${fx(b[1])}"><stop offset="0" class="nt-run-0" style="stop-opacity:${(0.24 + Rw() * 0.16).toFixed(2)}"/><stop offset=".5" class="nt-run-0" style="stop-opacity:${(0.06 + Rw() * 0.06).toFixed(2)}"/><stop offset="1" class="nt-run-0" style="stop-opacity:0"/></linearGradient>`);
+    out.push(`<path class="nt-run" d="${pathOf(pts.map(([px, pz]) => at([px, 0.2, pz])), true)}" fill="url(#${id})"/>`);
+  }
+  void dir;
+  // the old plugs: a drilled hole, a grey plastic rim, one with a snapped screw in it
+  for (const [x, z, screw] of [[214, 300, false], [218, 212, true]]) {
+    out.push(`<path class="nt-plug" d="${faceRing(x, z, 4.2, 0.1, 24)}"/>`);
+    out.push(`<path class="nt-plughole" d="${faceRing(x + 0.4, z - 0.3, 2.6, 0.1, 20)}"/>`);
+    if (screw) out.push(`<path class="nt-plugscrew" d="${faceRing(x + 0.3, z - 0.2, 1.4, 0.15, 14)}"/>`);
+  }
+  return `<g class="nt-weather">${out.join("")}</g>`;
 }
 
 // ---- The plate on its spacers -----------------------------------------------------------------------
@@ -257,6 +298,15 @@ function plate() {
     out.push(L(seg(Math.cos(a), Math.sin(a)) + seg(Math.cos(a + Math.PI / 2), Math.sin(a + Math.PI / 2)), { tone: "mid" }));
     out.push(L(faceRing(x, z, 1.4, Y_FACE, 16), { tone: "lo" }));
   }
+  // Light scratches in the steel, from keys and cleaning; each fades out at both ends.
+  const Rs = PEEL.rng(919);
+  for (let i = 0; i < 7; i++) {
+    const x = PLATE.x + 14 + Rs() * (PLATE.w - 28), z = PLATE.z + 12 + Rs() * (PLATE.h - 24);
+    const a = -0.4 + Rs() * 0.8, len = 10 + Rs() * 26;
+    const pts = [];
+    for (let k = 0; k <= 6; k++) pts.push(at([x + Math.cos(a) * len * (k / 6 - 0.5), Y_FACE, z + Math.sin(a) * len * (k / 6 - 0.5) + Math.sin(k) * 0.3]));
+    out.push(k.fadeLineSvg(pts, { fade: [len * 0.3, len * 0.35], tone: "lo", className: "nt-scratch" }));
+  }
   return `<g class="nt-plate">${out.join("")}</g>`;
 }
 
@@ -281,6 +331,8 @@ function residue() {
   out.push(`</g>`);
   // the torn rims of the bare spots, where the adhesive film ends
   out.push(`<g class="nt-holes">${RESIDUE.holes.map((h) => `<path d="${onPlate(h)}"/>`).join("")}</g>`);
+  // the torn edge of the piece that stayed lifts a hair and throws a thin shadow on the residue
+  out.push(`<path class="nt-lift" d="${onPlate(PEEL.TEAR.map(([u, v]) => [u - 1.1, v + 0.5]), 0, false)}"/>`);
   // the line the label's die-cut edge left in the adhesive, from one end of the tear to the other
   const n = PEEL.FLAP.length;
   const kinds = PEEL.SPLIT.flapKind;
@@ -306,7 +358,7 @@ function tagLayer(s) {
   for (let i = 0; i < POOL; i++) {
     const x = paint.strips[i];
     slots.push(
-      `<g class="nt-slot" data-side="${x?.side ?? "face"}" data-band="${x?.band ?? 2}"${x ? "" : ' data-empty=""'}><path class="nt-strip" d="${x?.fill ?? ""}"/><path class="nt-seam" d="${x?.seam ?? ""}"/><path class="nt-ghost" d="${x?.ghost ?? ""}"/><path class="nt-ink" d="${x?.ink ?? ""}" style="stroke-width:${(INK_W * (x?.width ?? 1)).toFixed(2)}px"/><path class="nt-tear" d="${x?.tear ?? ""}"/><path class="nt-edge" d="${x?.edge ?? ""}"/></g>`,
+      `<g class="nt-slot" data-side="${x?.side ?? "face"}" data-band="${x?.band ?? 2}"${x ? "" : ' data-empty=""'}><path class="nt-strip" d="${x?.fill ?? ""}"/><path class="nt-seam" d="${x?.seam ?? ""}"/><path class="nt-ghost" d="${x?.ghost ?? ""}"/><path class="nt-backfuzz" d="${x?.fuzz ?? ""}"/><path class="nt-ink" d="${x?.ink ?? ""}" style="stroke-width:${(INK_W * (x?.width ?? 1)).toFixed(2)}px"/><path class="nt-tear" d="${x?.tear ?? ""}"/><path class="nt-edge" d="${x?.edge ?? ""}"/></g>`,
     );
   }
   return `<g class="nt-tag" data-part="tag"><path class="nt-halo" data-part="halo" d="${paint.halo || "M0 0"}" style="opacity:${paint.haloOpacity.toFixed(2)};filter:blur(${paint.haloBlur.toFixed(1)}px)"/><g class="nt-flat" data-part="flat" data-band="${flat.band}"${paint.flat ? "" : ' style="display:none"'}><path class="nt-under" d="${flat.under}"/>${flat.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${flat.fill}"/><path class="nt-ink" d="${flat.ink}" style="stroke-width:${INK_W}px"/><path class="nt-edge" d="${flat.edge}"/></g><g class="nt-curl" data-part="curl">${slots.join("")}</g></g>`;
