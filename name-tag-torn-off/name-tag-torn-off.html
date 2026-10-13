@@ -589,9 +589,9 @@ const PEEL = (() => {
   const LIFT_D = 8 * MM;
   const S_END = 1 + OFF;
   const TUNE = {
-    liftAngle: 46, peelAngle: 34,
+    liftAngle: 46, peelAngle: 46,
     rbLift: 7, rbPeel: 4.2,
-    curlLift: 1 / 200, curlPeel: 1 / 27,
+    curlLift: 1 / 200, curlPeel: 1 / 42, curlLate: 1 / 23, // the curl tightens as more paper comes up
     betaLift: 0.03, betaPeel: 0.05,
   };
   // Creases the paper took as it was handled: a sharp one across the corner that was picked with
@@ -625,7 +625,7 @@ const PEEL = (() => {
     const grow = smooth(0, 0.45, peel);
     const theta = (TUNE.liftAngle * lift + TUNE.peelAngle * grow) * RAD;
     const rb = mix(TUNE.rbLift, TUNE.rbPeel, lift);
-    const k0 = mix(0, TUNE.curlLift, lift) + mix(0, TUNE.curlPeel - TUNE.curlLift, grow);
+    const k0 = mix(0, TUNE.curlLift, lift) + mix(0, TUNE.curlPeel - TUNE.curlLift, grow) + mix(0, TUNE.curlLate - TUNE.curlPeel, smooth(0.35, 1, peel));
     const beta = mix(TUNE.betaLift, TUNE.betaPeel, grow);
     const off = smooth(1, S_END, s);
     const creases = CREASES.filter((c) => c.d < f).map((c) => ({ d: c.d, w: c.w, a: c.a * (c.early ? lift : grow) }));
