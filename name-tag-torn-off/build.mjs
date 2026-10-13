@@ -317,7 +317,12 @@ function plate() {
   // Stainless sheen: a soft band of light across the brushed face, dark toward the far corners.
   const g0 = at([PLATE.x, Y_FACE, PLATE.z + PLATE.h]), g1 = at([PLATE.x + PLATE.w, Y_FACE, PLATE.z]);
   const sheen = `<linearGradient id="nt-sheen" gradientUnits="userSpaceOnUse" x1="${fx(g0[0])}" y1="${fx(g0[1])}" x2="${fx(g1[0])}" y2="${fx(g1[1])}"><stop offset="0" class="nt-sheen-dark"/><stop offset=".3" class="nt-sheen-none"/><stop offset=".44" class="nt-sheen-light"/><stop offset=".56" class="nt-sheen-none"/><stop offset=".78" class="nt-sheen-soft"/><stop offset="1" class="nt-sheen-dark"/></linearGradient><path class="nt-sheen" d="${slab.shades[2]}" fill="url(#nt-sheen)"/>`;
-  out.push(S(slab, { tone: "mid", className: "nt-steel", inner: sheen + grainSvg + chamfer }));
+  // The ground bevel round the face catches the light along its top and left, and falls dark
+  // along its bottom and right.
+  const b0 = at([PLATE.x, Y_FACE, PLATE.z + PLATE.h]), b1 = at([PLATE.x + PLATE.w, Y_FACE, PLATE.z]);
+  const bevelRing = pathOf(roundedXZ({ x: PLATE.x + 0.9, z: PLATE.z + 0.9, w: PLATE.w - 1.8, h: PLATE.h - 1.8, r: PLATE.r - 0.9 }).map(([x, z]) => at([x, Y_FACE, z])), true);
+  const bevel = `<linearGradient id="nt-bevel" gradientUnits="userSpaceOnUse" x1="${fx(b0[0])}" y1="${fx(b0[1])}" x2="${fx(b1[0])}" y2="${fx(b1[1])}"><stop offset="0" class="nt-bevel-hi"/><stop offset=".45" class="nt-bevel-none"/><stop offset=".6" class="nt-bevel-none"/><stop offset="1" class="nt-bevel-lo"/></linearGradient><path class="nt-bevel" d="${bevelRing}" stroke="url(#nt-bevel)"/>`;
+  out.push(S(slab, { tone: "mid", className: "nt-steel", inner: sheen + grainSvg + chamfer + bevel }));
   // Tea staining: outdoors, stainless browns faintly round its screws, where water sits, and the
   // lower screws weep a short streak down the face.
   for (const [x, z] of SCREWS) {

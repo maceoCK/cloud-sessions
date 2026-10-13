@@ -13,7 +13,7 @@
   --nt-film: #dad9d2; --nt-island: #fbfaf6; --nt-speck: #5f5e57;
   --nt-delam: #f0eee7; --nt-tear: #8c8a84; --nt-fuzzfibre: #fbfaf5;
   --nt-halo: #5c5b54;
-  --nt-sheen-hi: #ffffff; --nt-sheen-hi-o: .75; --nt-sheen-lo: #6f7375; --nt-sheen-lo-o: .14;
+  --nt-sheen-hi: #ffffff; --nt-sheen-hi-o: .75; --nt-sheen-lo: #6f7375; --nt-sheen-lo-o: .14; --nt-bevel-hi-o: 1; --nt-bevel-lo-o: .35;
   --nt-flash: #5b3a2c; --nt-flash-o: .22; --nt-bloom: #fbfaf4; --nt-bloom-o: .5;
   --nt-grime: #6d5a4c; --nt-plug: #cfcfca; --nt-plughole: #4a3e37; --nt-ooze: #8f8b80; --nt-smudge: #7d8183; --nt-smudge-o: .1; --nt-teastain: #a0703f; --nt-tea-o: .16;
   --nt-clay-o: .32; --nt-sand-o: .7; --nt-sandlight-o: .8; --nt-fuzz-o: .62; --nt-drift-o: .42; --nt-paper-o: .13;
@@ -32,7 +32,7 @@
   --nt-film: #4b4a46; --nt-island: #9a9891; --nt-speck: #0a0a0a;
   --nt-delam: #a9a7a0; --nt-tear: #55534e; --nt-fuzzfibre: #c4c2bb;
   --nt-halo: #000000;
-  --nt-sheen-hi: #9aa0a3; --nt-sheen-hi-o: .16; --nt-sheen-lo: #000000; --nt-sheen-lo-o: .3;
+  --nt-sheen-hi: #9aa0a3; --nt-sheen-hi-o: .16; --nt-sheen-lo: #000000; --nt-sheen-lo-o: .3; --nt-bevel-hi-o: .55; --nt-bevel-lo-o: .5;
   --nt-flash: #000000; --nt-flash-o: .35; --nt-bloom: #6b6a64; --nt-bloom-o: .22;
   --nt-grime: #000000; --nt-plug: #3a3a38; --nt-plughole: #0b0908; --nt-ooze: #57554f; --nt-smudge: #9aa1a4; --nt-smudge-o: .05; --nt-teastain: #8a5a2e; --nt-tea-o: .13;
   --nt-clay-o: .7; --nt-sand-o: .9; --nt-sandlight-o: .18; --nt-fuzz-o: .34; --nt-drift-o: .55; --nt-paper-o: .16;
@@ -96,6 +96,10 @@
 .nt-sheen-light { stop-color: var(--nt-sheen-hi); stop-opacity: var(--nt-sheen-hi-o); }
 .nt-sheen-soft { stop-color: var(--nt-sheen-hi); stop-opacity: calc(var(--nt-sheen-hi-o) * .45); }
 .nt-sheen-none { stop-color: var(--nt-sheen-hi); stop-opacity: 0; }
+.nt-bevel { fill: none; stroke-width: 1.3px; }
+.nt-bevel-hi { stop-color: var(--nt-sheen-hi); stop-opacity: var(--nt-bevel-hi-o); }
+.nt-bevel-none { stop-color: var(--nt-sheen-hi); stop-opacity: 0; }
+.nt-bevel-lo { stop-color: var(--nt-sheen-lo); stop-opacity: var(--nt-bevel-lo-o); }
 .nt-sheen-dark { stop-color: var(--nt-sheen-lo); stop-opacity: var(--nt-sheen-lo-o); }
 .nt-tea { fill: var(--nt-teastain); stroke: none; opacity: var(--nt-tea-o); filter: blur(2px); }
 .nt-tea-run { opacity: calc(var(--nt-tea-o) * .8); filter: blur(1px); }
