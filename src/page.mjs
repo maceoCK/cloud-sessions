@@ -1,6 +1,6 @@
-// The page shell. A black cover after the Michelangelus announcement poster
-// (wordmark, one monumental capital over two iridescent lozenges, a spaced
-// line and a small line set edge to edge), then the folio on paper: the
+// The page shell. A cover after the Michelangelus announcement poster, kept
+// to ink on paper (wordmark, one monumental capital drawn in outline, a
+// spaced line and a small line set edge to edge), then the folio: the
 // contents, the figures, contact and colophon.
 //
 // Display lines are Michelangelus outlines from src/type/outlines.json (see
@@ -10,7 +10,6 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deflateSync } from "node:zlib";
 import { ISO_CSS } from "../kit/iso-kit.mjs";
 import { COLOPHON, CONTACT, COVER, ENTRIES, GROUPS, LEDE, META, PERSON } from "./content.mjs";
 import { ROMAN } from "./type/display.mjs";
@@ -89,68 +88,6 @@ function seal(className) {
   return `<svg class="${className}" viewBox="-1960 -1960 3920 3920" aria-hidden="true" focusable="false"><circle r="1900" fill="none" stroke="currentColor" stroke-width="22"/><circle r="1240" fill="none" stroke="currentColor" stroke-width="14"/><g fill="currentColor">${glyphs}${center}</g></svg>`;
 }
 
-// Film grain for the cover: a small seeded noise tile, as a PNG data URL.
-function grainPng(size = 160, seed = 7) {
-  let s = seed >>> 0;
-  const rand = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
-  const raw = Buffer.alloc((size + 1) * size);
-  for (let y = 0; y < size; y++) {
-    raw[y * (size + 1)] = 0;
-    for (let x = 0; x < size; x++) {
-      const v = (rand() + rand() + rand()) / 3;
-      raw[y * (size + 1) + 1 + x] = Math.round(v * 255);
-    }
-  }
-  const crcTable = Array.from({ length: 256 }, (_, n) => {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    return c >>> 0;
-  });
-  const crc = (buf) => {
-    let c = 0xffffffff;
-    for (const b of buf) c = crcTable[(c ^ b) & 0xff] ^ (c >>> 8);
-    return (c ^ 0xffffffff) >>> 0;
-  };
-  const chunk = (type, data) => {
-    const len = Buffer.alloc(4);
-    len.writeUInt32BE(data.length);
-    const td = Buffer.concat([Buffer.from(type), data]);
-    const c = Buffer.alloc(4);
-    c.writeUInt32BE(crc(td));
-    return Buffer.concat([len, td, c]);
-  };
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(size, 0);
-  ihdr.writeUInt32BE(size, 4);
-  ihdr[8] = 8;
-  ihdr[9] = 0;
-  const png = Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", deflateSync(raw, { level: 9 })), chunk("IEND", Buffer.alloc(0))]);
-  return `data:image/png;base64,${png.toString("base64")}`;
-}
-
-// The iridescent band, one cycle, sampled from the announcement poster.
-const BAND = [
-  [0, "#070807"], [0.07, "#0b2a26"], [0.15, "#175461"], [0.24, "#8f83a3"], [0.33, "#df9fc9"], [0.42, "#e3c2cd"],
-  [0.5, "#e8e0d4"], [0.58, "#dfc6a5"], [0.68, "#d39d68"], [0.77, "#bd7e47"], [0.88, "#4a2a16"], [1, "#070807"],
-];
-const bandStops = BAND.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join("");
-
-function lozenges() {
-  const L = "300,-40 650,560 300,1160 -50,560";
-  const R = "700,90 1050,690 700,1290 350,690";
-  return `<svg class="lozenges" viewBox="0 0 1000 1250" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
-<defs>
-<linearGradient id="band-l" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="640" spreadMethod="repeat">${bandStops}</linearGradient>
-<linearGradient id="band-r" gradientUnits="userSpaceOnUse" x1="0" y1="320" x2="0" y2="960" spreadMethod="repeat">${bandStops}</linearGradient>
-<filter id="soft" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="2.4"/></filter>
-</defs>
-<polygon points="${L}" fill="url(#band-l)"/>
-<polygon points="${R}" fill="url(#band-r)"/>
-<polygon points="${L}" fill="none" stroke="#e8dcc6" stroke-opacity=".55" stroke-width="2"/>
-<polygon points="${R}" fill="none" stroke="#e8dcc6" stroke-opacity=".55" stroke-width="2"/>
-</svg>`;
-}
-
 const FONTS = `
 @font-face{font-family:"Text";src:local("Michelangelus"),local("Michelangelus-Regular"),${font("CrimsonPro-Regular.woff2")};font-weight:400;font-display:swap}
 @font-face{font-family:"Text";src:local("Michelangelus Italic"),local("Michelangelus-Italic"),${font("CrimsonPro-Italic.woff2")};font-weight:400;font-style:italic;font-display:swap}
@@ -176,15 +113,14 @@ const CSS = `
   --mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
   --gutter:clamp(16px,4vw,56px);
   --wrap:min(1360px,100% - 2*var(--gutter));
-  --pink:#ff80eb;--cover:#070807;--cover-ink:#f4f0e8;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:400 19px/1.5 var(--serif);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden;font-variant-numeric:oldstyle-nums proportional-nums}
-::selection{background:var(--pink);color:#141414}
+::selection{background:var(--ink);color:var(--anatomy-page)}
 a{color:inherit;text-decoration-line:underline;text-decoration-thickness:1px;text-underline-offset:.2em;text-decoration-color:var(--anatomy-lo);transition:text-decoration-color .2s,color .2s}
-a:hover{text-decoration-color:var(--pink)}
+a:hover{text-decoration-color:var(--ink)}
 :focus-visible{outline:1px solid var(--anatomy-muted);outline-offset:6px}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .wrap{width:var(--wrap);margin-inline:auto}
@@ -193,48 +129,37 @@ a:hover{text-decoration-color:var(--pink)}
 .ol{display:block;height:1em;width:auto;overflow:visible;fill:currentColor}
 .sc{font-variant:small-caps;font-variant-caps:all-small-caps;font-size:1.12em;letter-spacing:.11em;font-variant-numeric:lining-nums}
 
-/* cover */
-.cover{position:relative;isolation:isolate;overflow:hidden;background:var(--cover);color:var(--cover-ink);min-height:640px;height:min(100svh,1100px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;color-scheme:dark}
-.cover a{color:var(--cover-ink)}
-.lozenges{position:absolute;z-index:-2;left:50%;top:0;height:100%;width:auto;aspect-ratio:1000/1250;transform:translateX(-50%)}
-.grain{position:absolute;inset:0;z-index:3;pointer-events:none;background-size:160px;mix-blend-mode:overlay;opacity:.42}
-.cover-bar{display:flex;align-items:center;gap:22px;padding:18px 0;font:12px/1 var(--mono);letter-spacing:.02em;color:#bdb8ad;position:relative;z-index:4}
-.cover-bar .seal-mini{width:40px;height:40px;color:var(--cover-ink);display:block}
-.cover-bar nav{display:flex;gap:20px;margin-left:auto}
-.cover-bar nav a{text-decoration:none;color:#d9d4c9}
-.cover-bar nav a:hover{color:#fff}
-.theme{display:inline-flex;border:1px solid #5a5850}
-.theme button{all:unset;cursor:pointer;padding:6px 9px;font:11px/1 var(--mono);color:#a29e94}
-.theme button[aria-pressed="true"]{background:var(--cover-ink);color:var(--cover)}
-.theme button:focus-visible{outline:1px solid #a29e94;outline-offset:2px}
-.cover-word{margin:clamp(6px,2vh,24px) auto 0;width:min(84%,940px);position:relative;z-index:2}
-.cover-word .ol{width:100%;height:auto}
-.cover-m{position:relative;z-index:1;display:grid;place-items:center;min-height:0}
-.cover-m .ol{height:min(50svh,560px,56vw);width:auto;fill:#fbf8f1;filter:drop-shadow(0 0 1px rgba(0,0,0,.4))}
-.cover-foot{position:relative;z-index:2;padding:0 0 clamp(18px,3.2vh,34px)}
-.cover-big,.cover-small{display:flex;justify-content:space-between;align-items:flex-end;margin:0}
-.cover-big .ol{height:clamp(15px,4.4vw,62px);overflow:visible;filter:drop-shadow(0 0 3px rgba(10,9,8,.85)) drop-shadow(0 0 12px rgba(10,9,8,.55))}
-.cover-small{margin-top:clamp(16px,2.6vh,30px);flex-wrap:wrap;row-gap:8px;column-gap:10px}
-.cover-small .ol{height:clamp(6.5px,.72vw,10px);overflow:visible;filter:drop-shadow(0 0 2px rgba(10,9,8,.9)) drop-shadow(0 0 5px rgba(10,9,8,.6))}
+/* cover: a monogram, centred, with nothing else to say */
+.cover{min-height:600px;height:min(100svh,1000px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr;color:var(--ink)}
+.cover-bar{display:flex;align-items:center;gap:24px;padding:22px 0;font:12px/1 var(--mono);letter-spacing:.02em;color:var(--anatomy-muted)}
+.cover-bar nav{display:flex;gap:24px}
+.cover-bar nav a{text-decoration:none;color:var(--anatomy-text)}
+.cover-bar nav a:hover{color:var(--ink)}
+.theme{display:inline-flex;gap:14px;margin-left:auto}
+.theme button{all:unset;cursor:pointer;font:12px/1 var(--mono);color:var(--anatomy-muted);padding:4px 0;border-bottom:1px solid transparent}
+.theme button[aria-pressed="true"]{color:var(--ink);border-bottom-color:currentColor}
+.theme button:focus-visible{outline:1px solid var(--anatomy-muted);outline-offset:4px}
+.cover-lockup{display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:clamp(40px,8vh,96px)}
+.cover-m .ol{height:min(38svh,420px,58vw);width:auto;fill:none;stroke:currentColor;stroke-width:1px}
+.cover-m .ol path{vector-effect:non-scaling-stroke}
+.cover-word{margin:clamp(36px,6vh,64px) 0 0}
+.cover-line{margin:clamp(14px,2vh,20px) 0 0;color:var(--anatomy-muted)}
+.cover-word .ol{height:clamp(22px,2.5vw,36px)}
+.cover-line .ol{height:clamp(6.5px,.6vw,8.5px)}
 @media (max-width:640px){
   .cover{height:auto;min-height:100svh}
-  .cover-bar{gap:12px;font-size:11px}
-  .cover-bar .seal-mini{width:34px;height:34px}
-  .cover-bar nav{gap:12px;flex:1;justify-content:flex-end}
-  .theme button{padding:6px 7px}
-  .cover-word{width:92%}
-  .cover-m .ol{height:min(46svh,72vw)}
-  .cover-small{column-gap:9px}
+  .cover-bar{gap:16px;font-size:11px}
+  .cover-m .ol{height:min(34svh,58vw)}
 }
 
 /* standfirst */
 .standfirst{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:clamp(20px,3vw,48px);padding-top:clamp(56px,8vw,120px)}
-.standfirst .lead{grid-column:1/9;margin:0;font:400 clamp(26px,2.9vw,42px)/1.18 var(--serif);color:var(--ink);letter-spacing:-.003em;text-wrap:pretty}
-.standfirst .lead + p{grid-column:9/13;align-self:end;margin:0;font-size:16px;line-height:1.5;color:var(--anatomy-muted)}
+.standfirst .lead{grid-column:1/9;margin:0;font:400 clamp(22px,2.2vw,32px)/1.25 var(--serif);color:var(--ink);letter-spacing:-.003em;text-wrap:pretty}
+.standfirst .lead + p{grid-column:9/13;align-self:end;margin:0;font-size:15px;line-height:1.5;color:var(--anatomy-muted)}
 @media (max-width:899px){.standfirst{display:block}.standfirst .lead + p{margin-top:20px}}
 
 /* contents */
-.contents{margin:clamp(56px,8vw,110px) 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--anatomy-hi)}
+.contents{margin:clamp(56px,8vw,110px) 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--rule)}
 .contents li{border-bottom:1px solid var(--rule)}
 .contents li:not(:nth-child(4n)){border-right:1px solid var(--rule)}
 .contents a{display:flex;flex-direction:column;gap:10px;padding:18px 18px 20px 0;text-decoration:none;color:var(--anatomy-text);min-height:118px}
@@ -243,7 +168,7 @@ a:hover{text-decoration-color:var(--pink)}
 .contents .n .ol{height:26px}
 .contents .t{font-style:italic;font-size:20px;line-height:1.15;color:var(--ink)}
 .contents .s{font-size:14px;color:var(--anatomy-muted)}
-.contents a:hover .n{color:#c13fae}
+.contents a:hover .t{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.2em}
 @media (max-width:899px){
   .contents{grid-template-columns:1fr 1fr}
   .contents li:not(:nth-child(4n)){border-right:0}
@@ -254,20 +179,20 @@ a:hover{text-decoration-color:var(--pink)}
 
 /* groups and entries */
 .group{margin-top:clamp(80px,10vw,150px)}
-.group-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;border-top:1px solid var(--anatomy-hi);padding-top:18px;color:var(--ink)}
+.group-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;border-top:1px solid var(--rule);padding-top:16px;color:var(--ink)}
 .group-head h2{margin:0;padding-bottom:.18em}
-.group-head h2 .ol{height:clamp(30px,3.3vw,46px)}
+.group-head h2 .ol{height:clamp(18px,1.7vw,24px)}
 .entry{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);column-gap:clamp(28px,4vw,64px);margin-top:clamp(44px,5vw,76px);scroll-margin-top:24px}
 .entry.flip{grid-template-columns:minmax(0,8fr) minmax(0,4fr)}
 .entry.flip .entry-text{order:2}
 .entry-text{align-self:start;position:sticky;top:32px;padding-top:4px;color:var(--ink)}
-.entry .numeral{display:block;margin:0 0 22px;color:var(--ink)}
-.entry .numeral .ol{height:clamp(72px,7.4vw,112px);fill:none;stroke:currentColor;stroke-width:1.1px;vector-effect:non-scaling-stroke}
+.entry .numeral{display:block;margin:0 0 20px;color:var(--ink)}
+.entry .numeral .ol{height:clamp(40px,3.6vw,56px);fill:none;stroke:currentColor;stroke-width:1.1px;vector-effect:non-scaling-stroke}
 .entry .numeral .ol path{vector-effect:non-scaling-stroke}
-.entry .kicker{margin:0 0 12px;font-size:17px;color:var(--anatomy-muted)}
+.entry .kicker{margin:0 0 10px;font-size:15px;color:var(--anatomy-muted)}
 .entry h3{margin:0}
-.entry h3 .ol{height:clamp(26px,2.6vw,38px);max-width:100%}
-.entry .line{margin:18px 0 0;font:italic 400 clamp(25px,2.3vw,33px)/1.12 var(--serif);color:var(--ink);max-width:20ch;text-wrap:balance}
+.entry h3 .ol{height:clamp(17px,1.5vw,22px);max-width:100%}
+.entry .line{margin:14px 0 0;font:italic 400 clamp(20px,1.7vw,24px)/1.2 var(--serif);color:var(--ink);max-width:20ch;text-wrap:balance}
 .entry .body{margin:16px 0 0;max-width:38ch;color:var(--anatomy-text)}
 .entry .body p{margin:0 0 .6em}
 .entry .links{display:flex;flex-wrap:wrap;gap:6px 18px;margin:14px 0 0;padding:0;list-style:none;font:13px/1.5 var(--mono)}
@@ -277,7 +202,7 @@ a:hover{text-decoration-color:var(--pink)}
 @media (max-width:899px){
   .entry,.entry.flip,.entry.wide{display:block}
   .entry-text,.entry.wide .entry-text{position:static;display:block;margin-bottom:26px}
-  .entry .numeral .ol{height:64px}
+  .entry .numeral .ol{height:40px}
   .entry.wide .entry-text .line{margin-top:18px}
 }
 .iso-plate{border-radius:0}
@@ -295,7 +220,7 @@ a:hover{text-decoration-color:var(--pink)}
 .contact{margin-top:clamp(100px,12vw,180px)}
 .contact .mail{display:block;margin-top:clamp(28px,4vw,56px);padding-bottom:min(4%,52px);color:var(--ink);text-decoration:none;width:min(100%,1180px)}
 .contact .mail .ol{width:100%;height:auto;transition:fill .3s}
-.contact .mail:hover .ol{fill:#c13fae}
+.contact .mail:hover .ol{fill:var(--anatomy-muted)}
 .contact ul{display:flex;flex-wrap:wrap;gap:6px 22px;margin:34px 0 0;padding:0;list-style:none;font:13px/1.5 var(--mono)}
 
 /* colophon */
@@ -304,17 +229,6 @@ a:hover{text-decoration-color:var(--pink)}
 .colophon p{margin:0 0 .6em;max-width:64ch}
 @media (max-width:899px){.colophon{grid-template-columns:1fr}}
 
-/* ruler: a fixed scale on the right edge, one major tick per figure */
-.ruler{position:fixed;right:clamp(10px,1.4vw,22px);top:50%;transform:translateY(-50%);z-index:5;height:min(56vh,520px);width:34px;opacity:0;transition:opacity .4s;pointer-events:none}
-.ruler.on{opacity:1;pointer-events:auto}
-.ruler::before{content:"";position:absolute;right:0;top:0;bottom:0;border-right:1px solid var(--anatomy-mid)}
-.ruler a{position:absolute;right:0;display:flex;align-items:center;gap:6px;transform:translateY(-50%);text-decoration:none;font:12px/1 var(--serif);font-variant:small-caps;letter-spacing:.06em;color:var(--anatomy-muted)}
-.ruler a::after{content:"";width:10px;border-top:1px solid var(--anatomy-mid)}
-.ruler a:hover,.ruler a[aria-current="true"]{color:var(--ink)}
-.ruler a[aria-current="true"]::after{border-color:var(--ink)}
-.ruler i{position:absolute;right:0;width:5px;border-top:1px solid var(--anatomy-lo)}
-.ruler .ptr{position:absolute;right:-1px;width:0;height:0;border-style:solid;border-width:4px 0 4px 6px;border-color:transparent transparent transparent #e05ccd;transform:translate(-14px,-50%)}
-@media (max-width:1279px),(max-height:520px){.ruler{display:none}}
 `;
 
 // Restore an explicit theme choice before first paint; otherwise follow the system.
@@ -363,16 +277,6 @@ export function sitePage({ figures, script, fragment = false }) {
 
   const colophon = `<footer class="colophon">${seal("seal")}<div>${COLOPHON.map((p) => `<p>${esc(p)}</p>`).join("")}</div></footer>`;
 
-  const ruler = `<nav class="ruler" aria-label="Figure scale">${order
-    .map((id, i) => {
-      const at = order.length > 1 ? (i / (order.length - 1)) * 100 : 50;
-      return `<a href="#${id}" style="top:${at.toFixed(3)}%" data-ruler="${id}">${ROMAN[i].toLowerCase()}</a>`;
-    })
-    .join("")}${order
-    .slice(0, -1)
-    .flatMap((_, i) => [1, 2, 3, 4].map((j) => `<i style="top:${(((i + j / 5) / (order.length - 1)) * 100).toFixed(3)}%"></i>`))
-    .join("")}<span class="ptr"></span></nav>`;
-
   const ld = {
     "@context": "https://schema.org",
     "@type": "Person",
@@ -399,87 +303,23 @@ export function sitePage({ figures, script, fragment = false }) {
   }));
   system.addEventListener?.("change", show);
   show();
-
-  // the lozenges drift like foil, and lean with the pointer
-  const cover = document.querySelector(".cover");
-  const bands = [document.getElementById("band-l"), document.getElementById("band-r")];
-  const still = matchMedia("(prefers-reduced-motion: reduce)");
-  let lean = 0, want = 0, shown = true, frame = 0, last = 0, phase = 0;
-  const paint = () => {
-    bands[0].setAttribute("gradientTransform", "translate(0 " + (phase + lean).toFixed(2) + ")");
-    bands[1].setAttribute("gradientTransform", "translate(0 " + (-phase * 0.8 - lean).toFixed(2) + ")");
-  };
-  const tick = (now) => {
-    const dt = last ? Math.min((now - last) / 1000, 1 / 30) : 1 / 60;
-    last = now;
-    phase = (phase + dt * 14) % 640;
-    lean += (want - lean) * (1 - Math.exp(-dt / 0.6));
-    paint();
-    frame = shown && !still.matches && !document.hidden ? requestAnimationFrame(tick) : 0;
-  };
-  const run = () => { if (!frame && shown && !still.matches) { last = 0; frame = requestAnimationFrame(tick); } };
-  new IntersectionObserver((e) => { shown = e[e.length - 1].isIntersecting; run(); }).observe(cover);
-  cover.addEventListener("pointermove", (event) => {
-    const box = cover.getBoundingClientRect();
-    want = ((event.clientY - box.top) / box.height - 0.5) * 160 + ((event.clientX - box.left) / box.width - 0.5) * 60;
-    run();
-  });
-  document.addEventListener("visibilitychange", run);
-  still.addEventListener?.("change", run);
-  paint();
-  run();
-
-  const ruler = document.querySelector(".ruler");
-  const ptr = ruler.querySelector(".ptr");
-  const marks = [...ruler.querySelectorAll("a")];
-  const entries = marks.map((a) => document.getElementById(a.dataset.ruler));
-  let ticking = false;
-  const place = () => {
-    ticking = false;
-    const mid = innerHeight * 0.45;
-    const tops = entries.map((e) => e.getBoundingClientRect().top + scrollY);
-    const y = scrollY + mid;
-    let at = 0;
-    if (y <= tops[0]) at = 0;
-    else if (y >= tops[tops.length - 1]) at = tops.length - 1;
-    else {
-      const i = tops.findIndex((t, k) => y >= t && y < tops[k + 1]);
-      at = i + (y - tops[i]) / (tops[i + 1] - tops[i]);
-    }
-    ptr.style.top = (at / Math.max(1, tops.length - 1)) * 100 + "%";
-    const near = Math.round(at);
-    marks.forEach((a, k) => a.setAttribute("aria-current", String(k === near)));
-    const first = entries[0].getBoundingClientRect().top;
-    const last = document.getElementById("contact").getBoundingClientRect().top;
-    ruler.classList.toggle("on", first < innerHeight * 0.9 && last > innerHeight * 0.5);
-  };
-  addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(place); } }, { passive: true });
-  addEventListener("resize", place);
-  place();
 })();
 `;
 
   const STYLE = `${FONTS}${ISO_CSS}${THEME}${CSS}${figures.map((f) => darkify(f.css)).join("")}`;
-  const head = `<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(META.title)}</title><meta name="description" content="${esc(META.description)}"><link rel="canonical" href="${PERSON.url}"><meta property="og:type" content="website"><meta property="og:title" content="${esc(PERSON.name)}"><meta property="og:description" content="${esc(META.description)}"><meta property="og:url" content="${PERSON.url}"><meta property="og:image" content="${PERSON.url}og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="#070807"><link rel="icon" href="data:image/svg+xml,${encodeURIComponent(
+  const head = `<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(META.title)}</title><meta name="description" content="${esc(META.description)}"><link rel="canonical" href="${PERSON.url}"><meta property="og:type" content="website"><meta property="og:title" content="${esc(PERSON.name)}"><meta property="og:description" content="${esc(META.description)}"><meta property="og:url" content="${PERSON.url}"><meta property="og:image" content="${PERSON.url}og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="theme-color" media="(prefers-color-scheme: light)" content="#edede9"><meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0b0b"><link rel="icon" href="data:image/svg+xml,${encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#070807"/><g transform="translate(16 25.5) scale(.026) translate(${-(OUTLINES.lines["cover.M"].box[0] + OUTLINES.lines["cover.M"].box[2]) / 2} 0)"><path fill="#f4f0e8" d="${OUTLINES.lines["cover.M"].d}"/></g></svg>`,
   )}"><script>${THEME_INIT}</script><script type="application/ld+json">${JSON.stringify(ld)}</script><style>${STYLE}</style>`;
 
-  const small = OUTLINES.lines;
-  const smallWords = Object.keys(small).filter((k) => k.startsWith("cover.small.")).sort((a, b) => Number(a.split(".")[2]) - Number(b.split(".")[2]));
-  const bigWords = Object.keys(small).filter((k) => k.startsWith("cover.big.")).sort((a, b) => Number(a.split(".")[2]) - Number(b.split(".")[2]));
 
   const cover = `<header class="cover" id="top">
-${lozenges()}
-<div class="grain" style="background-image:url(${grainPng()})"></div>
-<div class="cover-bar wrap"><a href="#top" aria-label="Maceo Cardinale Kwik, top of page">${seal("seal-mini")}</a><nav aria-label="Sections"><a href="#figures">Figures</a><a href="#contact">Contact</a></nav><div class="theme" role="group" aria-label="Theme"><button type="button" data-set="light" aria-pressed="false">Paper</button><button type="button" data-set="dark" aria-pressed="false">Carbon</button></div></div>
-<h1 class="cover-word"><span class="vh">${esc(PERSON.name)}</span>${line("cover.word")}</h1>
-<div class="cover-m" aria-hidden="true">${line("cover.M")}</div>
-<div class="cover-foot wrap"><p class="cover-big" aria-hidden="true">${bigWords.map((k) => line(k)).join("")}</p><p class="cover-small"><span class="vh">${esc(COVER.said)}</span>${smallWords.map((k) => line(k)).join("")}</p></div>
+<div class="cover-bar wrap"><nav aria-label="Sections"><a href="#figures">Figures</a><a href="#contact">Contact</a></nav><div class="theme" role="group" aria-label="Theme"><button type="button" data-set="light" aria-pressed="false">Paper</button><button type="button" data-set="dark" aria-pressed="false">Carbon</button></div></div>
+<div class="cover-lockup wrap"><div class="cover-m" aria-hidden="true">${line("cover.M")}</div><h1 class="cover-word"><span class="vh">${esc(PERSON.name)}</span>${line("cover.word")}</h1><p class="cover-line"><span class="vh">${esc(COVER.line)}</span>${line("cover.line")}</p></div>
 </header>`;
 
   const standfirst = `<section class="standfirst wrap" aria-label="Introduction"><p class="lead">${flow("flow.lede", LEDE[0])}</p><p>${txt(LEDE[1])}</p></section>`;
 
-  const body = `<a class="skip" href="#figures">Skip to the figures</a>${atlas()}${cover}<main>${standfirst}<div class="wrap" id="figures">${contents}${groups}${contact}${colophon}</div></main>${ruler}<script type="module">${script}\n${pageScript}</script>`;
+  const body = `<a class="skip" href="#figures">Skip to the figures</a>${atlas()}${cover}<main>${standfirst}<div class="wrap" id="figures">${contents}${groups}${contact}${colophon}</div></main><script type="module">${script}\n${pageScript}</script>`;
   // a fragment for hosts that supply their own document around the page
   if (fragment) return `<title>${esc(META.title)}</title><style>${STYLE}</style><script>${THEME_INIT}</script>${body}`;
   return `<!doctype html><html lang="en"><head>${head}</head><body>${body}</body></html>`;

@@ -16,12 +16,9 @@ export const META = {
     "Engineer and founder in New York City, building ED1TH at Datost: glasses that put a quiet, capable computer in the corner of your eye.",
 };
 
-// The cover, after the Michelangelus announcement poster: a wordmark, one
-// monumental capital, a spaced line, and a small line set edge to edge.
+// The cover: a monogram. The M in outline, the name, one quiet line.
 export const COVER = {
-  big: ["Engineer", "and", "Founder"].map((w) => w.toUpperCase()),
-  small: ["DATOST", "NEW YORK CITY"],
-  said: "Engineer and founder. Datost, New York City.",
+  line: "Engineer and founder · New York City",
 };
 
 export const LEDE = [

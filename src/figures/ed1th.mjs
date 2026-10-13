@@ -356,8 +356,8 @@ export default {
     "A pair of round glasses on a fitting stand, seen from the wearer's side. A nose rest and two ear rests hold the frame, two model eyes on cups sit where a wearer's eyes would be, a small computer pod rides the right temple, and a small display window sits in the upper outer corner of the right lens.",
   stage: { role: "group", label: "ED1TH fitting stand. Move the pointer or use the arrow keys to turn the model eyes; Enter glances into the corner of the right lens.", attrs: {} },
   css: `
-#fig-ed1th{--ed-light:#d6339f;--ed-glass:#e9eef0;--ed-window:#2a2d33}
-[data-theme="dark"] #fig-ed1th{--ed-light:#ff7fe0;--ed-glass:#1d2224;--ed-window:#0d0f12}
+#fig-ed1th{--ed-light:#18181a;--ed-glass:#ececea;--ed-window:#ffffff}
+[data-theme="dark"] #fig-ed1th{--ed-light:#ededea;--ed-glass:#1c1c1c;--ed-window:#0b0b0b}
 #fig-ed1th .ed-glass .iso-fill{fill:var(--ed-glass);fill-opacity:.42}
 #fig-ed1th .ed-glass .iso-shade,#fig-ed1th .ed-glass .iso-top{opacity:.35}
 #fig-ed1th .ed-glass .iso-edge{stroke:var(--anatomy-mid)}

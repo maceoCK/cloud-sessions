@@ -10,29 +10,10 @@
   "text": "M"
  },
  {
-  "id": "cover.big.0",
+  "id": "cover.line",
   "style": "regular",
-  "text": "ENGINEER"
- },
- {
-  "id": "cover.big.1",
-  "style": "regular",
-  "text": "AND"
- },
- {
-  "id": "cover.big.2",
-  "style": "regular",
-  "text": "FOUNDER"
- },
- {
-  "id": "cover.small.0",
-  "style": "regular",
-  "text": "DATOST"
- },
- {
-  "id": "cover.small.1",
-  "style": "regular",
-  "text": "NEW YORK CITY"
+  "text": "ENGINEER AND FOUNDER · NEW YORK CITY",
+  "tracking": 0.16
  },
  {
   "id": "roman.I",

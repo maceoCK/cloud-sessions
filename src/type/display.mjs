@@ -8,8 +8,7 @@ export const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X
 export const DISPLAY = [
   { id: "cover.word", style: "italic", text: PERSON.name },
   { id: "cover.M", style: "regular", text: "M" },
-  ...COVER.big.map((w, i) => ({ id: `cover.big.${i}`, style: "regular", text: w })),
-  ...COVER.small.map((w, i) => ({ id: `cover.small.${i}`, style: "regular", text: w })),
+  { id: "cover.line", style: "regular", text: COVER.line.toUpperCase(), tracking: 0.16 },
   ...ROMAN.slice(0, 8).map((n) => ({ id: `roman.${n}`, style: "regular", text: n })),
   ...GROUPS.map((g) => ({ id: `group.${g.id}`, style: "italic", text: g.title })),
   ...Object.entries(ENTRIES).map(([id, e]) => ({ id: `name.${id}`, style: "regular", text: e.name.toUpperCase(), tracking: 0.03 })),
