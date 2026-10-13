@@ -64,9 +64,9 @@ const BUMPS = [
   { x: 175, y: -104, r: 17, h: 36 },
   { x: -140, y: -14, r: 17, h: 34 },
   { x: 175, y: 76, r: 17, h: 35 },
-  { x: -28, y: -100, r: 19, h: 80 },
-  { x: -64, y: 76, r: 19, h: 80 },
-  { x: 74, y: -14, r: 19, h: 80 },
+  { x: -28, y: -100, r: 17, h: 80, spur: true },
+  { x: -64, y: 76, r: 17, h: 80, spur: true },
+  { x: 74, y: -14, r: 17, h: 80, spur: true },
   { x: 4, y: 34, r: 18, h: 30 },
 ];
 const SLOPE = (y) => 253 - 0.433 * (y + 150) + (y < -172 ? 0.9 * (-172 - y) : 0);
@@ -78,7 +78,9 @@ const mountain = (x, y) => {
   // knolls and spurs: rough-edged, not turned on a lathe
   for (const b of BUMPS) {
     const r = b.r * (1 + 0.38 * n(x, y, 31 + b.r, 8) + 0.12 * n(x, y, 37 + b.r, 3));
-    h += b.h * Math.exp(-((x - b.x) ** 2 + (y - b.y) ** 2) / (2 * r * r));
+    // the humps on the face run down the fall line, as spurs do; the knolls are round
+    const ry = r * (b.spur ? 1.6 : 1);
+    h += b.h * Math.exp(-((x - b.x) ** 2) / (2 * r * r) - ((y - b.y) ** 2) / (2 * ry * ry));
   }
   h += 52 * Math.exp(-((x + 110) ** 2) / 9000 - ((y + 205) ** 2) / 1800);
   const face = M.PORTAL_X + 5 * n(0, y, 24, 9) * (1 - nearPortals(y));
