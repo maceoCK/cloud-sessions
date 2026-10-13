@@ -413,7 +413,9 @@ export const PEEL = (() => {
   };
   function motionOf(off) {
     const e = off * off * (3 - 2 * off);
-    return { roll: 34 * RAD * e, spin: -16 * RAD * e, move: add(mul(N, 46 * e), [10 * e, 0, -150 * off * off]) };
+    // as it falls it rocks a little on its roll and side to side, as paper does in air
+    const rock = Math.sin(off * Math.PI * 2.6) * off, sway = Math.sin(off * Math.PI * 1.9 + 0.6) * off;
+    return { roll: (34 * e + 9 * rock) * RAD, spin: (-16 * e + 7 * sway) * RAD, move: add(mul(N, 46 * e), [10 * e + 9 * sway, 0, -150 * off * off]) };
   }
   // A new label goes on top edge first: held tilted out from the plate on that edge, it comes in,
   // the edge meets the plate, and the rest swings down flat. `place` is how far its lower edge
