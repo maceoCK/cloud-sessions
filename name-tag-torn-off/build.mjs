@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import * as k from "./kit/iso-kit.mjs";
 import * as G from "./kit/lathe.mjs";
 import { PEEL } from "./model.mjs";
-import { clayTexture, driftTexture, fuzzTexture, sandTexture } from "./textures.mjs";
+import { clayTexture, driftTexture, fuzzTexture, paperTexture, sandTexture } from "./textures.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const argv = process.argv.slice(2);
@@ -103,11 +103,12 @@ const IMAGES = [
   ["nt-img-clay", clayTexture(), 150],
   ["nt-img-sand", sandTexture(160, 41, true), 70],
   ["nt-img-sandlight", sandTexture(160, 43, false), 70],
+  ["nt-img-paper", paperTexture(), 80],
 ];
 const SIZE = Object.fromEntries(IMAGES.map(([id, , size]) => [id, size]));
 const imageDefs = IMAGES.map(([id, href, size]) => `<image id="${id}" href="${href}" width="${size}" height="${size}" preserveAspectRatio="none"/>`).join("");
 const rasterTile = (id, img, transform, cls) => tile(id, SIZE[img], SIZE[img], transform, `<use href="#${img}" class="${cls}"/>`);
-const DEFS = `<defs>${imageDefs}${brickTile("nt-brick-front", FRONT)}${brickTile("nt-brick-top", ROOF)}${brickTile("nt-brick-end", END)}${sandTile("nt-sand-front", FRONT)}${sandTile("nt-sand-top", ROOF)}${sandTile("nt-sand-end", END)}${rasterTile("nt-clay-front", "nt-img-clay", FRONT, "nt-rx-clay")}${rasterTile("nt-grain-front", "nt-img-sand", FRONT, "nt-rx-sand")}${rasterTile("nt-grainlight-front", "nt-img-sandlight", FRONT, "nt-rx-sandlight")}${rasterTile("nt-fuzz-img", "nt-img-fuzz", LABEL, "nt-rx-fuzz")}${rasterTile("nt-drift-img", "nt-img-drift", LABEL, "nt-rx-drift")}</defs>`;
+const DEFS = `<defs>${imageDefs}${brickTile("nt-brick-front", FRONT)}${brickTile("nt-brick-top", ROOF)}${brickTile("nt-brick-end", END)}${sandTile("nt-sand-front", FRONT)}${sandTile("nt-sand-top", ROOF)}${sandTile("nt-sand-end", END)}${rasterTile("nt-clay-front", "nt-img-clay", FRONT, "nt-rx-clay")}${rasterTile("nt-grain-front", "nt-img-sand", FRONT, "nt-rx-sand")}${rasterTile("nt-grainlight-front", "nt-img-sandlight", FRONT, "nt-rx-sandlight")}${rasterTile("nt-fuzz-img", "nt-img-fuzz", LABEL, "nt-rx-fuzz")}${rasterTile("nt-drift-img", "nt-img-drift", LABEL, "nt-rx-drift")}${rasterTile("nt-paper-img", "nt-img-paper", LABEL, "nt-rx-paper").replace("<pattern ", '<pattern data-part="paper" ')}</defs>`;
 
 // ---- The wall --------------------------------------------------------------------------------------
 const ALONG_Y = G.frameOf([0, 0, 0], [0, 1, 0], [1, 0, 0], [0, 0, 1]); // prisms out of the wall
@@ -320,7 +321,7 @@ function stuck() {
   const paint = PEEL.stuckPaint(P);
   const band = onPlate(STUCK_EDGE.band, PEEL.TAG_T);
   const fibres = STUCK_EDGE.fibres.map((f) => onPlate(f, PEEL.TAG_T * 0.5, false)).join("");
-  return `<g class="nt-stuck" data-band="${paint.band}"><path class="nt-under" d="${paint.under}"/>${paint.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${paint.fill}"/><path class="nt-delam" d="${band}"/><path class="nt-tex" d="${band}" fill="url(#nt-fuzz-img)"/><path class="nt-ink" d="${paint.ink}" style="stroke-width:${INK_W}px"/>${L(fibres, { tone: "lo", className: "nt-fibre" })}<path class="nt-tear" d="${paint.tear}"/><path class="nt-edge" d="${paint.edge}"/></g>`;
+  return `<g class="nt-stuck" data-band="${paint.band}"><path class="nt-under" d="${paint.under}"/>${paint.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${paint.fill}"/><path class="nt-tex" d="${paint.fill}" fill="url(#nt-paper-img)"/><path class="nt-delam" d="${band}"/><path class="nt-tex" d="${band}" fill="url(#nt-fuzz-img)"/><path class="nt-ink" d="${paint.ink}" style="stroke-width:${INK_W}px"/>${L(fibres, { tone: "lo", className: "nt-fibre" })}<path class="nt-tear" d="${paint.tear}"/><path class="nt-edge" d="${paint.edge}"/></g>`;
 }
 
 // ---- The label: a pool of paths the page rewrites every frame; the build fills it once --------------
@@ -337,7 +338,7 @@ function tagLayer(s) {
       `<g class="nt-slot" data-side="${x?.side ?? "face"}" data-band="${x?.band ?? 2}"${x ? "" : ' data-empty=""'}><path class="nt-strip" d="${x?.fill ?? ""}"/><path class="nt-seam" d="${x?.seam ?? ""}"/><path class="nt-ghost" d="${x?.ghost ?? ""}"/><path class="nt-backfuzz" d="${x?.fuzz ?? ""}"/><path class="nt-fringe" d="${x?.fringe ?? ""}"/><path class="nt-ink" d="${x?.ink ?? ""}" style="stroke-width:${(INK_W * (x?.width ?? 1)).toFixed(2)}px"/><path class="nt-crease" d="${x?.crease ?? ""}"/><path class="nt-tear" d="${x?.tear ?? ""}"/><path class="nt-edge" d="${x?.edge ?? ""}"/></g>`,
     );
   }
-  return `<g class="nt-tag" data-part="tag"><path class="nt-halo" data-part="halo" d="${paint.halo || "M0 0"}" style="opacity:${paint.haloOpacity.toFixed(2)};filter:blur(${paint.haloBlur.toFixed(1)}px)"/><g class="nt-flat" data-part="flat" data-band="${flat.band}"${paint.flat ? "" : ' style="display:none"'}><path class="nt-under" d="${flat.under}"/>${flat.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${flat.fill}"/><path class="nt-ink" d="${flat.ink}" style="stroke-width:${INK_W}px"/><path class="nt-edge" d="${flat.edge}"/></g><g class="nt-curl" data-part="curl">${slots.join("")}</g></g>`;
+  return `<g class="nt-tag" data-part="tag"><path class="nt-halo" data-part="halo" d="${paint.halo || "M0 0"}" style="opacity:${paint.haloOpacity.toFixed(2)};filter:blur(${paint.haloBlur.toFixed(1)}px)"/><g class="nt-flat" data-part="flat" data-band="${flat.band}"${paint.flat ? "" : ' style="display:none"'}><path class="nt-under" d="${flat.under}"/>${flat.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${flat.fill}"/><path class="nt-tex nt-grainpaper" d="${flat.fill}" fill="url(#nt-paper-img)"/><path class="nt-ink" d="${flat.ink}" style="stroke-width:${INK_W}px"/><path class="nt-edge" d="${flat.edge}"/></g><g class="nt-curl" data-part="curl">${slots.join("")}</g></g>`;
 }
 
 const CSS = readFileSync(join(HERE, "name-tag.css"), "utf8");
@@ -367,7 +368,7 @@ if (sheetArg) {
 const ARTIFACT = argv.includes("--artifact") ? argv[argv.indexOf("--artifact") + 1] || "artifact.html" : null;
 const svg = k.figureSvg({ width: WIDTH, height: HEIGHT, className: "nt-svg", label: LABEL_TEXT, body: [ARTIFACT ? "" : `<style>${CSS}</style>`, STATIC(), tagLayer(POSE)] });
 // `--hold=<s>` builds a page that rests at one pose, for close-ups.
-const DATA = { P, POOL, inkWidth: INK_W, hold: flag("hold") === undefined ? null : Number(flag("hold")) };
+const DATA = { P, POOL, inkWidth: INK_W, label: LABEL, hold: flag("hold") === undefined ? null : Number(flag("hold")) };
 const MODEL = readFileSync(join(HERE, "model.mjs"), "utf8").replace(/^export /gm, "");
 const LIVE = readFileSync(join(HERE, "live.js"), "utf8");
 const script = MODEL + `\nconst DATA = ${JSON.stringify(DATA)};\n` + LIVE;

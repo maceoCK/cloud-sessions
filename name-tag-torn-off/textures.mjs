@@ -178,3 +178,28 @@ export function sandTexture(size = 160, seed = 41, dark = true) {
   }
   return pngOf(size, size, a, dark ? 0 : 255);
 }
+// Label stock: a faint cloud of paper fibre, the formation you see when paper is held to light.
+export function paperTexture(size = 180, seed = 59) {
+  const R = rng(seed);
+  const cloud = fbm(6, 4, R, 0.55);
+  const fine = fbm(36, 2, R, 0.6);
+  const a = new Float32Array(size * size);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const u = x / size, v = y / size;
+      a[y * size + x] = 0.16 * smooth(0.42, 0.75, cloud(u, v)) + 0.1 * smooth(0.55, 0.85, fine(u, v));
+    }
+  }
+  for (let i = 0; i < 60; i++) {
+    let x = R() * size, y = R() * size, ang = R() * Math.PI * 2;
+    const pts = [[x, y]];
+    for (let k = 0; k < 4 + Math.floor(R() * 6); k++) {
+      ang += (R() - 0.5) * 0.6;
+      x += Math.cos(ang) * 2.2;
+      y += Math.sin(ang) * 2.2;
+      pts.push([x, y]);
+    }
+    stroke(a, size, size, pts, 0.5, 0.12 + R() * 0.1);
+  }
+  return pngOf(size, size, a, 0);
+}

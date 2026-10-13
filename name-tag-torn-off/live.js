@@ -17,6 +17,7 @@ const flat = {
   under: flatG.querySelector(".nt-under"),
   sides: [...flatG.querySelectorAll(".nt-side")],
   fill: flatG.querySelector(".nt-face"),
+  grain: flatG.querySelector(".nt-grainpaper"),
   ink: flatG.querySelector(".nt-ink"),
   edge: flatG.querySelector(".nt-edge"),
 };
@@ -35,6 +36,14 @@ const slots = [...svg.querySelectorAll(".nt-slot")].map((g) => ({
 }));
 
 const memoFlat = {};
+const paper = svg.querySelector('[data-part="paper"]');
+const C0 = PEEL.camera(P);
+// The paper grain is laid in the label's plane; while a new label comes in, it travels with it.
+function placeGrain(place) {
+  const o = PEEL.project(C0, [0, 0, 0]), q = PEEL.project(C0, PEEL.onFace([0, 0], place).map((v, i) => v - PEEL.onFace([0, 0])[i]));
+  const t = place > 0 ? `translate(${(q[0] - o[0]).toFixed(2)} ${(q[1] - o[1]).toFixed(2)}) ${DATA.label}` : DATA.label;
+  put(memoFlat, "grainT", paper, "patternTransform", t);
+}
 const put = (memo, key, el, name, value) => {
   if (memo[key] === value) return;
   memo[key] = value;
@@ -137,12 +146,14 @@ function draw(force = false) {
     halo.style.opacity = paint.halo ? paint.haloOpacity.toFixed(3) : "0";
     if (paint.haloBlur) halo.style.filter = `blur(${paint.haloBlur.toFixed(1)}px)`;
     const f = paint.flat;
+    placeGrain(state.place);
     put(memoFlat, "flatHidden", flat.g, "style", f ? null : "display:none");
     if (f) {
       put(memoFlat, "under", flat.under, "d", f.under);
       f.sides.forEach((d, i) => put(memoFlat, `side${i}`, flat.sides[i], "d", d));
       put(memoFlat, "band", flat.g, "data-band", String(f.band));
       put(memoFlat, "fill", flat.fill, "d", f.fill);
+      put(memoFlat, "grain", flat.grain, "d", f.fill);
       put(memoFlat, "ink", flat.ink, "d", f.ink);
       put(memoFlat, "edge", flat.edge, "d", f.edge);
     }
