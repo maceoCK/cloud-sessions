@@ -1,10 +1,10 @@
-export const STRIP = { length: 330, width: 180, sea: 22, rise: 1 / 12 };
+export const STRIP = { length: 270, width: 160, sea: 22, rise: 1 / 12 };
 export const GRAVITY = 981;
 export const SLOPE = Math.atan(STRIP.rise);
 export const DOWNHILL = GRAVITY * Math.sin(SLOPE);
 export const surfaceAt = (y) => STRIP.sea + STRIP.rise * y;
 
-export const GAIT = { step: 66, width: 10.4, toeOut: 7, gap: 0.9, depth: 1.6, line: 86, wander: 5 };
+export const GAIT = { step: 66, width: 10.4, toeOut: 7, gap: 0.9, depth: 1.6, line: 66, wander: 3 };
 
 export const FOOT = {
   length: 24.8,
@@ -27,11 +27,11 @@ export const FOOT = {
   rim: { height: 0.2, width: 1.25, front: 0.9 },
   pool: 0.3,
   seep: [0.5, 2.6],
-  pale: { rise: [0.06, 0.18], fall: [0.32, 1.3], reach: 1.8 },
+  pale: { rise: [0.06, 0.18], fall: [0.5, 1.7], reach: 3 },
 };
 
-export const SWASH = { from: -90, reach: 145, spread: 6, lobes: 0.035, erode: 0.6, flat: 0.1, drain: [1.6, 3.2] };
-export const LOOP = { first: 0.9, steps: 5, collapse: 6.6, period: 17 };
+export const SWASH = { from: -60, reach: 130, spread: 6, lobes: 0.035, smooth: 1.4, drain: [1.6, 3.2] };
+export const LOOP = { first: 0.9, steps: 4, collapse: 5.4, period: 14.5 };
 
 export const ramp = (a, b, x) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -86,7 +86,7 @@ export function exposureAt(wave, x, y, s, born) {
   return Math.max(0, Math.min(s, times[1]) - Math.max(times[0], born));
 }
 
-export const erosionOf = (exposure) => Math.min(1, (1 - Math.exp(-exposure / SWASH.erode)) / (1 - SWASH.flat));
+export const erosionOf = (exposure) => ramp(0, SWASH.smooth, exposure);
 
 export function tourSteps(cycle) {
   const shift = (hashOf(cycle * 5.7 + 1.3) - 0.5) * 2 * GAIT.wander;

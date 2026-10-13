@@ -11,7 +11,7 @@ const theme = process.argv.includes("--light") ? "light" : "dark";
 const strip = (file) => readFileSync(join(KIT, file), "utf8").replace(/^export /gm, "");
 
 const W = 880;
-const H = 520;
+const H = 540;
 const AZIMUTH = 70;
 const ELEVATION = 42;
 
@@ -27,7 +27,7 @@ const LABEL = { x: L + 5.5, y: 112, w: 9.5, d: 58, r: 1.4 };
 const SCALE = { x: L, y: D - 30, w: 1.4, d: 4.6, r: 0.3 };
 const SCALE_TOP = 30;
 
-const P = k.fitProjection([...k.boxCorners(PLATE, -PLATE_H - FOOT_H, 0), [0, 0, Z0], [L, 0, Z0], [L, D, Z1], [0, D, Z1]], W, H, { pad: 30, azimuth: AZIMUTH, elevation: ELEVATION });
+const P = k.fitProjection([...k.boxCorners(PLATE, -PLATE_H - FOOT_H, 0), [0, 0, Z0], [L, 0, Z0], [L, D, Z1], [0, D, Z1]], W, H, { pad: 16, azimuth: AZIMUTH, elevation: ELEVATION });
 const at = (point) => k.iso(point, P);
 const S = (paths, style) => k.solidSvg(paths, style);
 const Ln = (d, style) => k.lineSvg(d, style);
@@ -247,9 +247,9 @@ function plate() {
   const side = k.sideTicks(PLATE.x + 28, PLATE.x + PLATE.w - 28, 10, 5, PLATE.y + PLATE.d, 0, [2, 3.4], P, "x");
   out.push(Ln(side.minor, { tone: "faint" }), Ln(side.major, { tone: "lo" }));
   out.push(S(k.slabOf(RULER, 0, 0.7, P, 3), { tone: "lo", crease: "none" }));
-  const ticks = k.topTicks(0, L, 10, 5, RULER.y + 0.9, 0.7, [2.6, 4.6], P);
+  const ticks = k.topTicks(0, L, 10, 5, RULER.y + 0.5, 0.7, [2.6, 3.8], P);
   out.push(Ln(ticks.minor, { tone: "lo" }), Ln(ticks.major, { tone: "mid" }));
-  const half = k.topTicks(5, L - 5, 10, 1, RULER.y + 0.9, 0.7, [1.6, 1.6], P);
+  const half = k.topTicks(5, L - 5, 10, 1, RULER.y + 0.5, 0.7, [1.6, 1.6], P);
   out.push(Ln(half.minor + half.major, { tone: "faint" }));
   out.push(Dots([at([RULER.x + 2.6, RULER.y + RULER.d / 2, 0.7]), at([RULER.x + RULER.w - 2.6, RULER.y + RULER.d / 2, 0.7])], { size: 0.45 }));
   out.push(S(k.slabOf(LABEL, 0, 0.9, P, 3), { tone: "mid" }));
@@ -329,8 +329,9 @@ const body = `<div class="fp">${k.plateHtml({
   hint: "Click the sand to step · Space sends a wave",
   readout: "smooth",
   keys: [
+    { mark: "lit", label: "Wet sand, where the prints press in and the swash runs" },
+    { mark: "dotted", label: "Swash line: foam stranded where the wave turned" },
     { mark: "raised", label: "Beach block, cut to show its laminae and water table" },
-    { mark: "edge", label: "Storm scour with a shell and pebble lag" },
     { mark: "flat", label: "Ruler, 5 cm ticks; depth scale on the end, 1 cm" },
   ],
   caption,

@@ -106,13 +106,13 @@
 .fp-print-pale {
   fill: none;
   stroke: var(--fp-dry);
-  stroke-width: 7;
+  stroke-width: 3.5;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
 
 .fp-print-pool {
-  fill: var(--fp-sky-lo);
+  fill: var(--fp-water);
 }
 
 .fp-swash-line > path {

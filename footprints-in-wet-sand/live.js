@@ -32,10 +32,10 @@ uniform vec4 uWave;
 uniform vec4 uPrev;
 uniform vec3 uEdge[4];
 uniform vec3 uWet;uniform vec3 uDry;uniform vec3 uSkyLo;uniform vec3 uSkyHi;uniform vec3 uWater;uniform vec3 uFoam;uniform vec3 uGlint;
-uniform vec4 uGain;
+uniform vec4 uGain;uniform float uPool;
 uniform float uClock;
 const float LEN=${f1(STRIP.length)};const float WID=${f1(STRIP.width)};const float SEA=${f1(STRIP.sea)};const float RISE=${STRIP.rise.toFixed(6)};
-const float FROM=${f1(SWASH.from)};const float DOWN=${DOWNHILL.toFixed(4)};const float GRAV=${f1(GRAVITY)};const float LOBE=${f1(SWASH.lobes)};const float ERODE=${f1(SWASH.erode)};const float FLAT=${f1(SWASH.flat)};
+const float FROM=${f1(SWASH.from)};const float DOWN=${DOWNHILL.toFixed(4)};const float GRAV=${f1(GRAVITY)};const float LOBE=${f1(SWASH.lobes)};const float SMOOTH=${f1(SWASH.smooth)};
 const float DEPTH=${f1(GAIT.depth)};const float WALL=${f1(FOOT.wall)};
 const vec2 ROLL=${v2(FOOT.roll)};
 #define NS ${FOOT.sole.length}
@@ -91,7 +91,7 @@ float toeOf(vec2 q,vec4 t,vec2 b,float age,float wall,inout float d,inout float 
   return st;
 }
 float footH(vec2 q,float age,float ero,float scale,out float su,out float tl){
-  float wall=WALL*(1.+7.*ero);
+  float wall=WALL*(1.+4.*ero);
   float keep=1.-ero;
   float ss=sdSole(q);
   float pr=min(1.,PB+PHW*gauss(q,PH)+PLW*gauss(q,PL)+POW*gauss(q,PO));
@@ -148,13 +148,13 @@ float sparkleOf(vec2 p,float px){
   float h=hash12(ci+7.3);
   vec2 o=vec2(hash12(ci+1.1),hash12(ci+2.9))*.8+.1;
   float r=length(f-o)*.8;
-  float size=max(.75*px,.1);
-  float flick=pow(max(0.,sin(uClock*(1.3+2.*fract(h*91.))+h*517.)),10.);
-  return smoothstep(.995,.9995,h)*flick*exp(-r*r/(size*size));
+  float size=max(1.3*px,.16);
+  float flick=pow(max(0.,sin(uClock*(1.3+2.*fract(h*91.))+h*517.)),8.);
+  return smoothstep(.997,.9995,h)*flick*exp(-r*r/(size*size));
 }
 float fresnel(float c){return .02+.98*pow(1.-clamp(c,0.,1.),5.);}
 
-float erodeOf(float ex){return min(1.,(1.-exp(-ex/ERODE))/(1.-FLAT));}
+float erodeOf(float ex){return smoothstep(0.,SMOOTH,ex);}
 float exposureOf(vec4 w,vec2 t,float born){return w.w<.5?0.:max(0.,min(w.x,t.y)-max(t.x,born));}
 vec3 shoulder(vec3 c){vec3 k=vec3(.8);return mix(c,k+.2*(1.-exp(-(c-k)/.2)),step(k,c));}
 void geomOf(vec4 w,vec2 p,float ew,out float dist,out float up,out float turnW,out float topW,out float jag){
@@ -187,7 +187,7 @@ float foamOf(vec4 w,vec2 p,float px,float ew){
   float lineV=.65+.35*noise2(vec2(p.x/3.,s*.7)+seed);
   float tip=exp(-max(fy,0.)/mix(.9,1.6,pop))*lineV*mix(1.,.6,pop);
   float patchy=smoothstep(.38+.24*pop,.58+.24*pop,pa+.22*exp(-max(fy,0.)/2.5));
-  float bandF=exp(-max(fy,0.)/mix(5.5,8.,pop))*patchy*(.55+.45*walls);
+  float bandF=exp(-max(fy,0.)/mix(3.6,8.,pop))*patchy*(.55+.45*walls);
   float trail=exp(-max(fy,0.)/14.)*smoothstep(.66,.84,st)*smoothstep(.45,.65,pa)*.35*up;
   vec2 lp=vec2(p.x,fy*1.3)/5.+seed*.3+vec2(0.,flow*1.2);
   lp+=.9*(vec2(noise2(lp*.8+3.1),noise2(lp*.8+8.4))-.5);
@@ -196,7 +196,7 @@ float foamOf(vec4 w,vec2 p,float px,float ew){
   float thinL=.012+px/14.;
   float lace=max(smoothstep(.93-thinL*4.,.985,ridgeA),.7*smoothstep(.94-thinL*6.,.99,ridgeB));
   lace*=smoothstep(.3+.3*pop,.6+.3*pop,fbm2(vec2(p.x,fy)/8.+seed.yx+3.));
-  float laceAmt=exp(-max(fy,0.)/mix(10.,16.,pop))*smoothstep(1.,6.,fy+4.*pop)*mix(.5,.8,1.-up);
+  float laceAmt=exp(-max(fy,0.)/mix(6.5,16.,pop))*smoothstep(1.,6.,fy+4.*pop)*mix(.42,.8,1.-up);
   return clamp((max(tip,bandF)+trail*(.6+.4*walls)+laceAmt*lace*(.7+.3*walls))*edge*strength,0.,1.);
 }
 vec2 drainOf(vec4 w,vec2 p){
@@ -257,7 +257,7 @@ void main(){
     float ero=1.-(1.-A.w)*(1.-erodeOf(exPrev))*(1.-erodeOf(exNow));
     float born=max(tw.x,A.y);
     float live=uWave.w*smoothstep(born,born+.12,sWave)*(1.-smoothstep(tw.y-.12,tw.y,sWave));
-    float rate=live*exp(-exNow/(2.2*ERODE));
+    float rate=live*smoothstep(.12*SMOOTH,.4*SMOOTH,exNow)*(1.-smoothstep(.6*SMOOTH,SMOOTH,exNow));
     if(gHasA<.5){gPa=P;gAa=A;gEa=ero;gRa=rate;gHasA=1.;}
     else if(gHasB<.5){gPb=P;gAb=A;gEb=ero;gRb=rate;gHasB=1.;}
   }
@@ -289,8 +289,8 @@ void main(){
   vec3 L=lightDir();
   float e=.22;
   vec3 nflat=normalize(vec3(0.,-RISE,1.));
-  float ux=.012*cos(p.x/17.+p.y/41.)+.008*cos(p.x/7.3-p.y/11.)+.004*cos(p.x/3.1+p.y/2.3);
-  float uy=.010*cos(p.y/23.-p.x/53.)+.007*cos(p.y/9.1+p.x/13.)+.004*cos(p.y/2.7-p.x/3.9);
+  float ux=.026*cos(p.x/17.+p.y/41.)+.014*cos(p.x/7.3-p.y/11.)+.004*cos(p.x/3.1+p.y/2.3);
+  float uy=.022*cos(p.y/23.-p.x/53.)+.012*cos(p.y/9.1+p.x/13.)+.004*cos(p.y/2.7-p.x/3.9);
   vec3 n=nflat;
   float shadow=1.;
   float paleA=0.;
@@ -346,29 +346,31 @@ void main(){
   vec3 dry=lin(uDry);
   float mott=fbm2(p.xy/29.+vec2(3.1,7.7))-.5;
   float grain=noise2(p.xy*2.3)-.5;
-  vec3 alb=wet*(1.+.16*mott+.07*grain);
+  vec3 alb=wet*(1.+.16*mott+.12*grain);
   alb=mix(alb,dry,.09*smoothstep(70.,190.,p.y)*(1.-sheen));
   alb=mix(alb,dry,.72*paleA);
   alb*=1.-.32*floorWet;
   alb*=1.-.3*mark;
-  alb*=1.-.12*sheen;
+  alb*=1.-.22*sheen;
   float ndl=max(dot(n,L),0.);
   float ndl0=max(dot(nflat,L),.05);
   float amb=.55;
   float lit=(amb+(1.-amb)*ndl*shadow)/(amb+(1.-amb)*ndl0);
   vec3 col=alb*lit;
-  float film=.16+.62*sheen+.4*floorWet;
+  float film=.26+.34*sheen+.4*floorWet;
   film*=1.-.9*paleA;
   vec3 R=reflect(-V,n);
-  col+=fresnel(dot(n,V))*envOf(R)*film*uGain.x;
+  float dryTop=1.-.85*wcover;
+  col+=fresnel(dot(n,V))*envOf(R)*film*uGain.x*dryTop;
   vec3 H=normalize(L+V);
   float gl=pow(max(dot(n,H),0.),mix(40.,160.,clamp(film,0.,1.)));
-  col+=lin(uGlint)*gl*film*uGain.y*shadow;
+  col+=lin(uGlint)*gl*film*uGain.y*shadow*dryTop;
+  col+=lin(uSkyLo)*pow(max(dot(n,H),0.),9.)*.045*uGain.y*shadow*dryTop*(1.-.8*paleA);
 
   if(pool>.001){
     vec3 nw=normalize(vec3(-ux*.3,-RISE-uy*.3,1.));
     vec3 under=col*mix(vec3(1.),lin(uWater)/max(lin(uWet),vec3(.02)),.2)*.7;
-    vec3 pw=under+fresnel(dot(nw,V))*envOf(reflect(-V,nw))*uGain.x*.4;
+    vec3 pw=under+fresnel(dot(nw,V))*envOf(reflect(-V,nw))*uGain.x*.4*uPool;
     float g2=pow(max(dot(nw,H),0.),260.);
     pw+=lin(uGlint)*g2*uGain.y*.8;
     col=mix(col,pw,pool*(1.-wcover));
@@ -390,27 +392,31 @@ void main(){
     float w1=6.2832*fbm2(p.xy/14.+seed);
     float w2=6.2832*noise2(p.xy/8.3+seed.yx+5.);
     float w3=6.2832*noise2(p.xy/5.1+seed+9.);
-    g+=ripple*(.022*cos(dot(p.xy,r1)*1.9-sWave*7.+w1)*r1+.018*cos(dot(p.xy,r2)*1.45-sWave*5.5+w2)*r2+.014*cos(dot(p.xy,r3)*2.6-sWave*9.+w3)*r3);
+    vec3 lod=1.-smoothstep(vec3(.16),vec3(.3),pxw*vec3(1.9,1.45,2.6)/6.2832);
+    g+=1.8*ripple*(.022*lod.x*cos(dot(p.xy,r1)*1.9-sWave*7.+w1)*r1+.018*lod.y*cos(dot(p.xy,r2)*1.45-sWave*5.5+w2)*r2+.014*lod.z*cos(dot(p.xy,r3)*2.6-sWave*9.+w3)*r3);
     float kr=6.2832/6.5;
     vec2 d1=vec2(.574,.819);vec2 d2=vec2(-.574,.819);
     float om=sWave*2.4;
     float thinB=(1.-up)*smoothstep(1.,14.,dist)*exp(-max(hw-.1,0.)/.2);
-    g+=.02*thinB*(cos(kr*dot(p.xy,d1)+om+w2*.3)*d1+cos(kr*dot(p.xy,d2)+om+w3*.3)*d2);
+    g+=.009*thinB*(cos(kr*dot(p.xy,d1)+om+w2*.3)*d1+cos(kr*dot(p.xy,d2)+om+w3*.3)*d2);
+    float streak=(1.-up)*smoothstep(1.,12.,dist)*(1.-smoothstep(.3,.6,pxw/2.2));
+    g.x+=.03*streak*(noise2(vec2(p.x/2.2,p.y/18.+max(sWave-turnW,0.)*2.2)+seed)-.5);
     vec3 nw=normalize(vec3(-g.x,-RISE-g.y,1.));
     float puff=0.;
     if(gHasA>.5)puff=max(puff,gRa*exp(-max(gSuA+1.,0.)/3.5));
     if(gHasB>.5)puff=max(puff,gRb*exp(-max(gSuB+1.,0.)/3.5));
     puff*=.55+.45*fbm2(p.xy/3.+vec2(0.,sWave*.8));
-    vec3 seen=mix(col*(.86-.1*turb),lin(uWater),.6*uGain.w*turb);
-    seen=mix(seen,mix(lin(uWater),lin(uWet),.6)*.85,.5*clamp(puff,0.,1.));
-    seen+=fresnel(dot(nw,V))*envOf(reflect(-V,nw))*uGain.x*.26;
+    vec3 seen=mix(col*(.8-.1*turb)*(1.-.45*smoothstep(.1,1.2,deep)),lin(uWater),.35*uGain.w*turb);
+    seen=mix(seen,mix(lin(uWet),lin(uDry),.35)*.9,.45*clamp(puff,0.,1.));
+    seen+=fresnel(dot(nw,V))*envOf(reflect(-V,nw))*uGain.x*.9;
     float gw=pow(max(dot(nw,H),0.),320.);
     seen+=lin(uGlint)*gw*uGain.y*1.2;
-    seen+=lin(uFoam)*.05*exp(-max(dist,0.)/1.4)*(1.-up)*uGain.z;
+    float lip=exp(-max(dist,0.)/.7)*(1.-up)*(.55+.45*noise2(vec2(p.x/1.7,sWave*3.)+seed));
+    seen+=lin(uFoam)*.3*lip*uGain.z;
     col=mix(col,seen,wcover);
   }
   col=mix(col,lin(uFoam),foam*uGain.z);
-  col+=lin(uGlint)*sparkleOf(p.xy,pxw)*drainGlint*uGain.y*1.4*(1.-paleA)*(1.-wcover)*(1.-foam);
+  col+=mix(lin(uGlint),lin(uSkyLo),.4)*sparkleOf(p.xy,pxw)*drainGlint*uGain.y*1.2*(1.-paleA)*(1.-wcover)*(1.-foam);
   col=mix(col,bandCol,band);
   vec3 outc=pow(max(shoulder(col),0.),vec3(1./2.2));
   float a=max(smoothstep(-.5*pxv,.5*pxv,cover),band);
@@ -449,6 +455,7 @@ const themeOf = () => ({
   uFoam: tokenOf("--fp-foam"),
   uGlint: tokenOf("--fp-glint"),
   uGain: isPale() ? [5.5, 0.7, 1, 0.2] : [7, 1.1, 0.92, 0.2],
+  uPool: isPale() ? 0.45 : 1,
 });
 const layerAt = (maxRatio) =>
   glLayer({
@@ -460,7 +467,7 @@ const layerAt = (maxRatio) =>
     fixed: { uEdge: edges, uSole: FOOT.sole.flat(), ...themeOf() },
     maxRatio,
   });
-const RATIOS = [1.5, 1, 0.75];
+const RATIOS = [2, 1.5, 1, 0.75];
 let quality = 0;
 let layer = layerAt(RATIOS[quality]);
 const pace = { sum: 0, count: 0 };
@@ -650,7 +657,7 @@ function drawFallback() {
     const pale = ramp(rise[0], rise[1], age) * (1 - ramp(fall[0], fall[1], age));
     const seep = ramp(FOOT.seep[0], FOOT.seep[1], age) * ramp(0.4, 0.8, keep);
     const halo = pale > 0.02 ? `<path class="fp-print-pale" d="${rings[0].d}" opacity="${pale.toFixed(2)}"/>` : "";
-    const pools = seep > 0.02 ? POOLS.map((pool) => `<path class="fp-print-pool" d="${ellipseAt(print, pool)}" opacity="${seep.toFixed(2)}"/>`).join("") : "";
+    const pools = seep > 0.02 ? POOLS.map((pool) => `<path class="fp-print-pool" d="${ellipseAt(print, pool)}" opacity="${(0.6 * seep).toFixed(2)}"/>`).join("") : "";
     parts.push(`<g opacity="${keep.toFixed(3)}">${halo}${shown.map((ring) => `<path class="fp-print-rim" d="${ring.d}" opacity="${ring.on.toFixed(2)}"/>`).join("")}${shown.map((ring) => `<path class="fp-print-floor" d="${ring.d}" opacity="${ring.on.toFixed(2)}"/>`).join("")}${pools}</g>`);
   }
   printLayer.innerHTML = parts.join("");
@@ -695,7 +702,7 @@ function draw() {
 
 function tick(now) {
   const raw = last ? (now - last) / 1000 : 0;
-  const dt = last ? Math.min(raw, 1 / 30) : 1 / 60;
+  const dt = last ? Math.min(raw, 0.25) : 1 / 60;
   last = now;
   const calm = still.matches;
   if (!calm && !frozen) {
@@ -749,6 +756,13 @@ function stepAt(x, y, step = 0) {
   press(foot, state.clock, step);
 }
 
+function clearLine() {
+  const lines = [GAIT.line, GAIT.line - 26, GAIT.line + 26, GAIT.line + 48];
+  const near = state.prints.filter((print) => print.x < FOOT.length + GAIT.step);
+  const gap = (y) => Math.min(Infinity, ...near.map((print) => Math.abs(print.y - y)));
+  return lines.reduce((best, y) => (gap(y) > gap(best) ? y : best));
+}
+
 let down = null;
 stage.addEventListener("pointerdown", (event) => {
   down = event.pointerType === "mouse" ? null : { x: event.clientX, y: event.clientY, at: performance.now(), id: event.pointerId };
@@ -790,13 +804,16 @@ stage.addEventListener("keydown", (event) => {
     event.preventDefault();
     hold();
     const lastPrint = state.prints[state.prints.length - 1];
-    let x = lastPrint ? lastPrint.x + GAIT.step + FOOT.length / 2 : 40;
+    const lineOf = (print) => print.y - (print.side * GAIT.width) / 2;
+    let x = lastPrint ? lastPrint.x + GAIT.step + FOOT.length / 2 : FOOT.length / 2 + 12;
+    let y = lastPrint ? lineOf(lastPrint) : GAIT.line;
     let step = lastPrint && lastPrint.step ? lastPrint.step + 1 : 1;
     if (x > STRIP.length - FOOT.length / 2 - 4) {
-      x = 40;
+      x = FOOT.length / 2 + 12;
+      y = clearLine();
       step = 1;
     }
-    stepAt(x, GAIT.line, step);
+    stepAt(x, y, step);
     run();
   }
 });
@@ -844,7 +861,7 @@ function tourScene() {
 function stillScene() {
   Object.assign(state, { clock: 0, prints: [], wave: null, prev: null, waves: 0, cycle: 0, plan: [], next: 0, lastStep: -10, side: 1 });
   tourSteps(0).forEach((foot, index) => press(foot, -9, index + 1));
-  launchWave(-1.05);
+  launchWave(-timesAt(waveOf(0, 0), STRIP.length / 2, GAIT.line - 24)[0]);
   state.lastStep = -10;
 }
 
