@@ -28,7 +28,7 @@ Every number the figure shows comes from this one module: the readout, the tyre 
 
 ## How the mountain is drawn
 
-The mountain is a heightfield. It's built from a slope that falls toward the sea, a summit at the back, and a rock wall at the left that holds both tunnel mouths. It also has a knoll inside each hairpin and two spurs on the face. The road cuts a level bench into it: gravel on the drop side, a shoulder and a cut bank on the hill side. The heightfield is then sliced into 7-unit terraces, like a laser-cut topographic model. Its sea cliffs carry the bedded, jointed rock, caves and wave-cut notch of the earlier headland.
+The mountain is a heightfield. It's built from a slope that falls toward the sea, a summit at the back, and a rock wall at the left that holds both tunnel mouths. It also has a knoll inside each hairpin and three wooded humps on the face, each tall enough to hide a stretch of the leg above it. The road cuts a level bench into it: gravel on the drop side, a shoulder and a cut bank on the hill side. The heightfield is then sliced into 7-unit terraces, like a laser-cut topographic model. Its sea cliffs carry the bedded, jointed rock, caves and wave-cut notch of the earlier headland.
 
 - Terraces are drawn bottom to top. Each piece of road is drawn just after the first terrace above it, so the slope in front of it is already down and the bank behind it comes after.
 - Trees, signs, posts and the car stand in a separate layer. Each shows only above the terrain between it and the eye: across its screen width, the highest terrain in front is a line, and it is clipped to above that line. The build does this once for the static things; the page does it every frame for the car, from the drawn height. That's what takes the car out of view behind a knoll and brings it back.
@@ -53,3 +53,4 @@ The mountain is a heightfield. It's built from a slope that falls toward the sea
 - Without WebGL, the SVG still reads, with a flat water tint.
 - Under reduced motion the figure shows one still frame of the drift on the lowest hairpin, and it still responds to the knob.
 - At 390 px wide there's no sideways scroll.
+- `CR_OCCLUSION=1 node figures/cliff-road/build.mjs` prints how much of the fastest lap the mountain hides: wholly for 4% of it (the short tunnel and the humps) and partly for another 7.5%, before the trees.

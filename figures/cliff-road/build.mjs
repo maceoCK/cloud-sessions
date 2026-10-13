@@ -17,7 +17,7 @@ const t0 = Date.now();
 const W = 960;
 const H = 860;
 const AZIMUTH = 72;
-const ELEVATION = 30;
+const ELEVATION = 33;
 const u = M.U;
 
 // ---- world -----------------------------------------------------------------------------------------
@@ -64,9 +64,9 @@ const BUMPS = [
   { x: 175, y: -104, r: 17, h: 36 },
   { x: -140, y: -14, r: 17, h: 34 },
   { x: 175, y: 76, r: 17, h: 35 },
-  { x: -28, y: -104, r: 19, h: 30 },
-  { x: -64, y: 74, r: 19, h: 30 },
-  { x: 74, y: -14, r: 16, h: 24 },
+  { x: -28, y: -100, r: 19, h: 80 },
+  { x: -64, y: 76, r: 19, h: 80 },
+  { x: 74, y: -14, r: 19, h: 80 },
   { x: 4, y: 34, r: 18, h: 30 },
 ];
 const SLOPE = (y) => 253 - 0.433 * (y + 150) + (y < -172 ? 0.9 * (-172 - y) : 0);
@@ -143,9 +143,11 @@ const ground = (x, y) => {
   const c = benchOf(i, side) * u;
   const a = Math.abs(d);
   if (a <= c) return zr;
-  // the drop side falls away at once; the hill side is a cut bank
-  const target = drop ? Math.min(m, zr - 8) : m;
-  return zr + (target - zr) * smooth(c, c + (drop ? 10 : 9), a);
+  // the drop side falls away at once, then the mountain takes over again (a hump in front can rise beyond
+  // the drop and hide the road); the hill side is a cut bank
+  if (!drop) return zr + (m - zr) * smooth(c, c + 9, a);
+  const edge = zr + (Math.min(m, zr - 8) - zr) * smooth(c, c + 10, a);
+  return edge + (m - edge) * smooth(c + 12, c + 26, a) * (m > zr ? 1 : 0) + (m <= zr ? 0 : 0);
 };
 const STACKS = [
   { x: 300, y: 64, r: 15, top: 132, seed: 3 },
@@ -602,6 +604,23 @@ const put = (name, at3, svg, high = 4, half = 14) => items.push({ name, key: dep
   }
 }
 const POSTS = [];
+// a clump of trees on each hump on the face: its crown, and two on the shoulders
+for (const [q, b] of BUMPS.slice(3, 6).entries()) {
+  const spots = [];
+  for (let dx = -16; dx <= 16; dx += 2) for (let dy = -16; dy <= 16; dy += 2) spots.push([b.x + dx, b.y + dy, heightAt(b.x + dx, b.y + dy)]);
+  spots.sort((p1, p2) => p2[2] - p1[2]);
+  const chosen = [];
+  for (const sp of spots) {
+    if (chosen.length >= 3) break;
+    if (chosen.some((c) => Math.hypot(c[0] - sp[0], c[1] - sp[1]) < 11)) continue;
+    if (chosen.length && sp[2] < chosen[0][2] - 22) continue;
+    chosen.push(sp);
+  }
+  chosen.forEach(([x, y, z], j) => {
+    const tree = SC.cypress({ P, x, y, z, height: 20 + 6 * j, seed: 760 + q * 7 + j, lean: 0.35 });
+    put(`humptree${q}-${j}`, tree.at, `<g>${tree.svg}</g>`, 4, 20);
+  });
+}
 // a tree on the crown of each hairpin's knoll, like the wooded humps a pass winds round
 for (const [q, b] of BUMPS.slice(0, 3).entries()) {
   let best = [b.x, b.y, heightAt(b.x, b.y)];
@@ -815,7 +834,7 @@ const pinZ = (pin) => {
   for (let i = 0; i < road.n; i++) if (road.hairpin[i] === pin) list.push(i);
   return Math.round((road.z[list[Math.round(list.length / 2)]] - Z.sea) / u);
 };
-const caption = `A mountain pass on a plinth, at night: ${Math.round(visible)} m of road with no guard rail winds down a sea cliff from the summit tunnel to the one at its foot, falling ${Math.round(fall)} m at ${(road.grade * 100).toFixed(0)}% through three ${PIN_R} m hairpins. Two of them sit on the cliff edge, ${pinZ(0)} m and ${pinZ(2)} m above the sea. Damp asphalt under sea mist grips at μ ${M.MU}, so a hairpin holds on grip up to √(μgR) = ${kmh(vGrip)} km/h. Downhill the car runs up to ${Math.round(LAP.top)} km/h on the legs, brakes hard, and turns in faster than grip allows. The rear tyres then slide at μ ${M.MU_SLIDE}, the path widens to v²/(μg), and the car drifts out toward the drop with its nose held into the bend, up to ${Math.round(LAP.peakDrift)}°. Near the edge the driver lifts, which tightens the line. At the top of the control the model's line clears the edge by ${LAP.least.toFixed(1)} m; at the bottom the car corners on grip, with ${Math.round(CALM.peakDrift)}° of tyre slip at most. The knolls inside the hairpins, the spurs on the face and the trees hide the car as it passes behind them, and on the third leg it runs through a rock rib in a short tunnel. The tyre marks are the rear wheels' path on that fastest lap. The swell has an ${M.SWELL.period} s period; in 6 m of water its crests are ${Math.round(swell6.lambda)} m apart and travel ${swell6.c.toFixed(1)} m/s. Refraction wraps them round the mountain, so each one breaks under the hairpins first and runs along the front cliff in about ${sweep.toFixed(0)} s, throwing spray up the rock at up to ${M.SPRAY.rise} m/s, ${sprayTop.toFixed(1)} m high. Detail A follows the car at 3:1: the arrow is its path, the dashed line is where its nose points, and the red angle between them is the drift. The red dimension runs from the corner nearest the drop to the edge.`;
+const caption = `A mountain pass on a plinth, at night: ${Math.round(visible)} m of road with no guard rail winds down a sea cliff from the summit tunnel to the one at its foot, falling ${Math.round(fall)} m at ${(road.grade * 100).toFixed(0)}% through three ${PIN_R} m hairpins. Two of them sit on the cliff edge, ${pinZ(0)} m and ${pinZ(2)} m above the sea. Damp asphalt under sea mist grips at μ ${M.MU}, so a hairpin holds on grip up to √(μgR) = ${kmh(vGrip)} km/h. Downhill the car runs up to ${Math.round(LAP.top)} km/h on the legs, brakes hard, and turns in faster than grip allows. The rear tyres then slide at μ ${M.MU_SLIDE}, the path widens to v²/(μg), and the car drifts out toward the drop with its nose held into the bend, up to ${Math.round(LAP.peakDrift)}°. Near the edge the driver lifts, which tightens the line. At the top of the control the model's line clears the edge by ${LAP.least.toFixed(1)} m; at the bottom the car corners on grip, with ${Math.round(CALM.peakDrift)}° of tyre slip at most. The knolls inside the hairpins, three wooded humps on the face and the trees hide the car as it passes behind them, and on the third leg it runs through a rock rib in a short tunnel. The tyre marks are the rear wheels' path on that fastest lap. The swell has an ${M.SWELL.period} s period; in 6 m of water its crests are ${Math.round(swell6.lambda)} m apart and travel ${swell6.c.toFixed(1)} m/s. Refraction wraps them round the mountain, so each one breaks under the hairpins first and runs along the front cliff in about ${sweep.toFixed(0)} s, throwing spray up the rock at up to ${M.SPRAY.rise} m/s, ${sprayTop.toFixed(1)} m high. Detail A follows the car at 3:1: the arrow is its path, the dashed line is where its nose points, and the red angle between them is the drift. The red dimension runs from the corner nearest the drop to the edge.`;
 const body = `<div class="cr">${k.plateHtml({
   fig: "Fig 5A",
   title: "Cliff road at night",
@@ -858,3 +877,21 @@ if (theme === "dark") {
   writeFileSync(join(HERE, "cliff-road-artifact.html"), artifact);
 }
 console.log("wrote", name, `${(page.length / 1024).toFixed(0)} KB`, `scale ${P.scale.toFixed(3)}`, `limit ${LIMIT.toFixed(3)}`, `${((Date.now() - t0) / 1000).toFixed(1)} s`);
+// a check, not part of the figure: how much of the fastest lap the mountain hides (trees not counted)
+if (process.env.CR_OCCLUSION) {
+  let hidden = 0;
+  let part = 0;
+  let total = 0;
+  for (const [x, y, , , i] of LAP.trace) {
+    if (i <= road.first || i >= road.last) continue;
+    total++;
+    const z = road.z[i];
+    const cols = hiddenBelow(x, y, z, 12);
+    if (!cols) continue;
+    const base = at([x, y, z + 3])[1];
+    const covered = cols.filter(([, top]) => top < base).length / cols.length;
+    if (covered > 0.8) hidden++;
+    else if (covered > 0.2) part++;
+  }
+  console.log(`elevation ${ELEVATION}: hidden ${((hidden / total) * 100).toFixed(1)}% of the lap, partly ${((part / total) * 100).toFixed(1)}%`);
+}
