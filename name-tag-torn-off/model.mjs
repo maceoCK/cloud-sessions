@@ -628,27 +628,55 @@ export const PEEL = (() => {
     const along = Math.atan2(W2[1], W2[0]);
     const stops = [];
     for (let d = D_MIN + 22; d < D_END - 6; d += 10 + R() * 8) stops.push(d);
+    // Rows of bare spots along each stop: small ragged holes, some running together.
     const holes = [];
+    const ragged = (cx, cy, r, n, stretch, turn) => {
+      const pts = [];
+      const ph = R() * 6;
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2;
+        const rr = r * (0.62 + 0.25 * Math.sin(a * 2 + ph) + 0.35 * R());
+        const x = Math.cos(a) * rr * stretch[0], y = Math.sin(a) * rr * stretch[1];
+        pts.push([cx + x * Math.cos(turn) - y * Math.sin(turn), cy + x * Math.sin(turn) + y * Math.cos(turn)]);
+      }
+      return pts;
+    };
     for (const d of stops) {
-      for (let w = W_MIN; w < W_MAX; w += 3.5 + R() * 6) {
-        if (R() < 0.35) continue;
-        const [u, v] = toUV([d + (R() - 0.5) * 1.6, w]);
-        if (!inFlap([u, v])) continue;
-        holes.push(blob(u, v, 1.2 + R() * 3.4, 9, 0.35, [1, 0.42], along));
+      let w = W_MIN + R() * 4;
+      while (w < W_MAX) {
+        const run = R() < 0.2 ? 0 : 1;
+        const r = 0.7 + R() ** 1.5 * 2.2;
+        const [u, v] = toUV([d + (R() - 0.5) * 1.2, w]);
+        if (run && inFlap([u, v])) holes.push(ragged(u, v, r, 11, [1.35, 0.7], along + (R() - 0.5) * 0.5));
+        w += r * 1.8 + R() * 3.5;
       }
     }
-    for (let i = 0; i < 22; i++) {
-      const [u, v] = toUV([mix(D_MIN + 30, D_END - 4, Math.sqrt(R())), mix(W_MIN, W_MAX, R())]);
-      if (!inFlap([u, v])) continue;
-      holes.push(blob(u, v, 1.5 + R() * 4.5, 12, 0.45, [1.4, 0.8], R() * Math.PI));
+    // Pinholes all over, and a few larger clean patches toward the end of the peel.
+    for (let i = 0; i < 70; i++) {
+      const p = [(R() - 0.5) * TAG.w, (R() - 0.5) * TAG.h];
+      if (inFlap(p)) holes.push(ragged(p[0], p[1], 0.35 + R() * 0.55, 7, [1, 1], R() * 3));
+    }
+    for (let i = 0; i < 9; i++) {
+      const [u, v] = toUV([mix(D_MIN + 50, D_END - 6, Math.sqrt(R())), mix(W_MIN, W_MAX, R())]);
+      if (inFlap([u, v])) holes.push(ragged(u, v, 2 + R() * 3, 16, [1.5, 0.8], R() * Math.PI));
     }
     const corner = toUV(FLAP_DW.reduce((best, q) => (q[0] < best[0] ? q : best)));
+    // Paper the adhesive kept: ragged, fibrous islands, most near the corner that was picked.
     const islands = [];
-    for (let i = 0; i < 16; i++) {
-      const near = i < 9;
-      const [u, v] = near ? [corner[0] + 6 + R() * 26, corner[1] + 5 + R() * 20] : toUV([mix(D_MIN, D_END, R()), mix(W_MIN, W_MAX, R())]);
+    for (let i = 0; i < 13; i++) {
+      const near = i < 8;
+      const [u, v] = near ? [corner[0] + 7 + R() * 24, corner[1] + 6 + R() * 18] : toUV([mix(D_MIN + 20, D_END, R()), mix(W_MIN, W_MAX, R())]);
       if (!inFlap([u, v])) continue;
-      islands.push(blob(u, v, near ? 1.6 + R() * 3.4 : 0.8 + R() * 1.6, 10, 0.55, [1.3, 0.8], R() * Math.PI));
+      const r = near ? 1.4 + R() * 3.2 : 0.7 + R() * 1.4;
+      const n = 22;
+      const pts = [];
+      const ph = R() * 6;
+      for (let k = 0; k < n; k++) {
+        const a = (k / n) * Math.PI * 2;
+        const rr = r * (0.7 + 0.25 * Math.sin(a * 3 + ph) + (k % 2 ? 0.35 * R() : -0.1 * R()));
+        pts.push([u + Math.cos(a) * rr * 1.3, v + Math.sin(a) * rr * 0.85]);
+      }
+      islands.push(pts);
     }
     const scratches = [];
     for (let i = 0; i < 7; i++) {
@@ -788,14 +816,15 @@ export const PEEL = (() => {
     }
     const die = edgeRuns(scr, kinds, (k) => k === "die").map((r) => pathOf(r));
     const tear = edgeRuns(scr, kinds, (k) => k === "tear").map((r) => pathOf(r));
-    const lower = edgeRuns(below, seen, (k) => k).map((r) => pathOf(r));
+    const lower = edgeRuns(below, kinds.map((k, i) => seen[i] && k === "die"), (k) => k).map((r) => pathOf(r));
+    const lowerTear = edgeRuns(below, kinds.map((k, i) => seen[i] && k === "tear"), (k) => k).map((r) => pathOf(r));
     return {
       fill: pathOf(scr, true),
-      under: pathOf(hull2([...scr, ...below]), true),
+      under: pathOf(scr, true) + pathOf(below, true),
       sides: sides.map((list) => list.join("")),
       band: bandOf(dot(nrm, C.L)),
       edge: [...die, ...lower].join(""),
-      tear: tear.join(""),
+      tear: [...tear, ...lowerTear].join(""),
     };
   }
 

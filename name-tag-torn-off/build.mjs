@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import * as k from "./kit/iso-kit.mjs";
 import * as G from "./kit/lathe.mjs";
 import { PEEL } from "./model.mjs";
+import { clayTexture, driftTexture, fuzzTexture, sandTexture } from "./textures.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const argv = process.argv.slice(2);
@@ -128,7 +129,18 @@ function mottleTile() {
   }
   return tile("nt-mottle", w, h, LABEL, `<g class="nt-tx-thick">${thick}</g><g class="nt-tx-thin">${thin}</g>`);
 }
-const DEFS = `<defs>${brickTile("nt-brick-front", FRONT)}${brickTile("nt-brick-top", ROOF)}${brickTile("nt-brick-end", END)}${sandTile("nt-sand-front", FRONT)}${sandTile("nt-sand-top", ROOF)}${sandTile("nt-sand-end", END)}${fuzzTile()}${mottleTile()}</defs>`;
+// Raster grain, each image defined once and tiled by patterns in every plane that uses it.
+const IMAGES = [
+  ["nt-img-fuzz", fuzzTexture(), 92],
+  ["nt-img-drift", driftTexture(), 120],
+  ["nt-img-clay", clayTexture(), 150],
+  ["nt-img-sand", sandTexture(160, 41, true), 70],
+  ["nt-img-sandlight", sandTexture(160, 43, false), 70],
+];
+const SIZE = Object.fromEntries(IMAGES.map(([id, , size]) => [id, size]));
+const imageDefs = IMAGES.map(([id, href, size]) => `<image id="${id}" href="${href}" width="${size}" height="${size}" preserveAspectRatio="none"/>`).join("");
+const rasterTile = (id, img, transform, cls) => tile(id, SIZE[img], SIZE[img], transform, `<use href="#${img}" class="${cls}"/>`);
+const DEFS = `<defs>${imageDefs}${brickTile("nt-brick-front", FRONT)}${brickTile("nt-brick-top", ROOF)}${brickTile("nt-brick-end", END)}${sandTile("nt-sand-front", FRONT)}${sandTile("nt-sand-top", ROOF)}${sandTile("nt-sand-end", END)}${rasterTile("nt-clay-front", "nt-img-clay", FRONT, "nt-rx-clay")}${rasterTile("nt-grain-front", "nt-img-sand", FRONT, "nt-rx-sand")}${rasterTile("nt-grainlight-front", "nt-img-sandlight", FRONT, "nt-rx-sandlight")}${rasterTile("nt-fuzz-img", "nt-img-fuzz", LABEL, "nt-rx-fuzz")}${rasterTile("nt-drift-img", "nt-img-drift", LABEL, "nt-rx-drift")}</defs>`;
 
 // ---- The wall --------------------------------------------------------------------------------------
 const ALONG_Y = G.frameOf([0, 0, 0], [0, 1, 0], [1, 0, 0], [0, 0, 1]); // prisms out of the wall
@@ -138,6 +150,7 @@ function texturedBox(paths, attrs, tex, extra = "") {
   const parts = [`<path class="iso-fill" d="${paths.fill}"/>`];
   paths.shades.forEach((d, shade) => d && parts.push(`<path class="iso-shade" data-shade="${shade}" d="${d}"/>`));
   if (paths.top) parts.push(`<path class="iso-top" d="${paths.top}"/>`);
+  if (paths.shades[2] && tex === "nt-brick") parts.push(`<path class="nt-tex" d="${paths.shades[2]}" fill="url(#nt-clay-front)"/>`);
   if (paths.shades[2]) parts.push(`<path class="nt-tex" d="${paths.shades[2]}" fill="url(#${tex}-front)"/>`);
   if (paths.top) parts.push(`<path class="nt-tex" d="${paths.top}" fill="url(#${tex}-top)"/>`);
   if (paths.shades[0]) parts.push(`<path class="nt-tex" d="${paths.shades[0]}" fill="url(#${tex}-end)"/>`);
@@ -167,7 +180,8 @@ function wall() {
   // The mortar plane, raked 2 mm behind the brick faces, then every brick standing proud of it.
   const x0 = VIEW.x - VIEW.rx - 40, x1 = VIEW.x + VIEW.rx + 40, z0 = VIEW.z - VIEW.rz - 40, z1 = VIEW.z + VIEW.rz + 40;
   const back = [[x0, z0], [x1, z0], [x1, z1], [x0, z1]].map(([x, z]) => at([x, -RAKE, z]));
-  out.push(`<path class="nt-mortar" d="${pathOf(back, true)}"/><path class="nt-tex" d="${pathOf(back, true)}" fill="url(#nt-sand-front)"/>`);
+  const plane = pathOf(back, true);
+  out.push(`<path class="nt-mortar" d="${plane}"/><path class="nt-tex" d="${plane}" fill="url(#nt-grain-front)"/><path class="nt-tex" d="${plane}" fill="url(#nt-grainlight-front)"/><path class="nt-tex" d="${plane}" fill="url(#nt-sand-front)"/>`);
   const inView = (x, z) => ((x - VIEW.x) / (VIEW.rx + 30)) ** 2 + ((z - VIEW.z) / (VIEW.rz + 30)) ** 2 < 1.25;
   const bricks = [];
   for (let c = Math.floor(z0 / COURSE); c * COURSE < z1; c++) {
@@ -257,8 +271,8 @@ function residue() {
   out.push(`<clipPath id="nt-where"><path clip-rule="evenodd" d="${region}${cuts}"/></clipPath>`);
   out.push(`<g clip-path="url(#nt-where)">`);
   out.push(`<path class="nt-film" d="${region}"/>`);
-  out.push(`<path class="nt-tex" d="${region}" fill="url(#nt-mottle)"/>`);
-  out.push(`<path class="nt-tex" d="${region}" fill="url(#nt-fuzz)"/>`);
+  out.push(`<path class="nt-tex" d="${region}" fill="url(#nt-drift-img)"/>`);
+  out.push(`<path class="nt-tex" d="${region}" fill="url(#nt-fuzz-img)"/>`);
   out.push(`<g class="nt-islands">${RESIDUE.islands.map((s) => `<path d="${onPlate(s)}"/>`).join("")}</g>`);
   out.push(`<g class="nt-specks">${RESIDUE.specks.map(([u, v, r]) => {
     const [x, y] = at(PEEL.onFace([u, v]));
@@ -278,7 +292,7 @@ function stuck() {
   const paint = PEEL.stuckPaint(P);
   const band = onPlate(STUCK_EDGE.band, PEEL.TAG_T);
   const fibres = STUCK_EDGE.fibres.map((f) => onPlate(f, PEEL.TAG_T * 0.5, false)).join("");
-  return `<g class="nt-stuck" data-band="${paint.band}"><path class="nt-under" d="${paint.under}"/>${paint.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${paint.fill}"/><path class="nt-delam" d="${band}"/><path class="nt-tex" d="${band}" fill="url(#nt-fuzz)"/><path class="nt-ink" d="${paint.ink}" style="stroke-width:${INK_W}px"/>${L(fibres, { tone: "lo", className: "nt-fibre" })}<path class="nt-tear" d="${paint.tear}"/><path class="nt-edge" d="${paint.edge}"/></g>`;
+  return `<g class="nt-stuck" data-band="${paint.band}"><path class="nt-under" d="${paint.under}"/>${paint.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${paint.fill}"/><path class="nt-delam" d="${band}"/><path class="nt-tex" d="${band}" fill="url(#nt-fuzz-img)"/><path class="nt-ink" d="${paint.ink}" style="stroke-width:${INK_W}px"/>${L(fibres, { tone: "lo", className: "nt-fibre" })}<path class="nt-tear" d="${paint.tear}"/><path class="nt-edge" d="${paint.edge}"/></g>`;
 }
 
 // ---- The label: a pool of paths the page rewrites every frame; the build fills it once --------------
@@ -324,7 +338,8 @@ if (sheetArg) {
 // `--artifact <file>` writes a theme-following page body for embedding (an Artifact).
 const ARTIFACT = argv.includes("--artifact") ? argv[argv.indexOf("--artifact") + 1] || "artifact.html" : null;
 const svg = k.figureSvg({ width: WIDTH, height: HEIGHT, className: "nt-svg", label: LABEL_TEXT, body: [ARTIFACT ? "" : `<style>${CSS}</style>`, STATIC(), tagLayer(POSE)] });
-const DATA = { P, POOL, inkWidth: INK_W };
+// `--hold=<s>` builds a page that rests at one pose, for close-ups.
+const DATA = { P, POOL, inkWidth: INK_W, hold: flag("hold") === undefined ? null : Number(flag("hold")) };
 const MODEL = readFileSync(join(HERE, "model.mjs"), "utf8").replace(/^export /gm, "");
 const LIVE = readFileSync(join(HERE, "live.js"), "utf8");
 const script = MODEL + `\nconst DATA = ${JSON.stringify(DATA)};\n` + LIVE;

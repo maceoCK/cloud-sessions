@@ -14,10 +14,11 @@
   --nt-hole: #e8e9e8; --nt-island: #fbfaf6; --nt-speck: #5f5e57;
   --nt-delam: #f0eee7; --nt-tear: #8c8a84;
   --nt-halo: #5c5b54;
+  --nt-clay-o: .32; --nt-sand-o: .7; --nt-sandlight-o: .8; --nt-fuzz-o: .95; --nt-drift-o: .55;
 }
 .iso[data-theme="dark"] {
-  --nt-brick-a: #2a211d; --nt-brick-b: #2e2420; --nt-brick-c: #271f1b; --nt-brick-d: #31251f; --nt-brick-e: #241e1b;
-  --nt-brick-top: #352a24; --nt-brick-end: #1d1714;
+  --nt-brick-a: #33251f; --nt-brick-b: #382822; --nt-brick-c: #2f231e; --nt-brick-d: #3c2a22; --nt-brick-e: #2c2420;
+  --nt-brick-top: #42332b; --nt-brick-end: #221a16;
   --nt-pit: #110c0a; --nt-fleck: #40352e; --nt-grit: #1a1310;
   --nt-mortar: #222120; --nt-mortar-top: #2b2a28; --nt-mortar-end: #181716;
   --nt-sand: #121110; --nt-sand-light: #33322f;
@@ -30,6 +31,7 @@
   --nt-hole: #1e1f1f; --nt-island: #45443f; --nt-speck: #0a0a0a;
   --nt-delam: #3a3936; --nt-tear: #8e8d88;
   --nt-halo: #000000;
+  --nt-clay-o: .7; --nt-sand-o: .9; --nt-sandlight-o: .18; --nt-fuzz-o: .32; --nt-drift-o: .8;
 }
 
 /* the wall */
@@ -50,6 +52,11 @@
 [data-part="mortar"] > .iso-top { fill: var(--nt-mortar-top); }
 [data-part="mortar"] > .iso-shade[data-shade="0"] { fill: var(--nt-mortar-end); }
 .nt-tex { stroke: none; }
+.nt-rx-clay { opacity: var(--nt-clay-o); }
+.nt-rx-sand { opacity: var(--nt-sand-o); }
+.nt-rx-sandlight { opacity: var(--nt-sandlight-o); }
+.nt-rx-fuzz { opacity: var(--nt-fuzz-o); }
+.nt-rx-drift { opacity: var(--nt-drift-o); }
 .nt-tx-pit { fill: var(--nt-pit); opacity: .55; }
 .nt-tx-fleck { fill: var(--nt-fleck); opacity: .9; }
 .nt-tx-grit { fill: var(--nt-grit); opacity: .5; }
@@ -72,9 +79,9 @@
 .nt-tx-thick { fill: var(--nt-thick); opacity: .7; }
 .nt-tx-thin { fill: var(--nt-thin); opacity: .55; }
 .nt-tx-fuzz { fill: var(--nt-fuzz); opacity: .85; }
-.nt-holes path { fill: none; stroke: var(--nt-thick); stroke-width: .4px; stroke-linejoin: round; }
+.nt-holes path { display: none; }
 .nt-scrapes path { fill: var(--nt-hole); stroke: none; }
-.nt-islands path { fill: var(--nt-island); stroke: var(--anatomy-lo); stroke-width: .4px; stroke-linejoin: round; }
+.nt-islands path { fill: var(--nt-island); stroke: var(--nt-tear); stroke-width: .3px; stroke-linejoin: round; opacity: .92; }
 .nt-specks circle { fill: var(--nt-speck); opacity: .55; }
 
 /* the label */

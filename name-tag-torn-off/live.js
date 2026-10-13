@@ -67,8 +67,9 @@ function tourAt(t) {
   if ((u = span("hold")) !== null) return { s: S_END, place: 0, alpha: 0, phase: "gone" };
   if ((u = span("place")) !== null) {
     // A fresh label comes down flat, fading in high up, and is pressed onto the residue.
+    // It is held out in front, fades in while still well off the plate, and is pressed on.
     const drop = 1 - easeOut(u);
-    return { s: 0, place: 70 * drop, alpha: ease(clamp(u / 0.4, 0, 1)), phase: "place" };
+    return { s: 0, place: 120 * drop, alpha: ease(clamp(u / 0.22, 0, 1)), phase: "place" };
   }
   return { s: 0, place: 0, alpha: 1, phase: "stuck" };
 }
@@ -281,9 +282,9 @@ stage.addEventListener("keydown", (event) => {
   steer(to);
 });
 
-if (still.matches) {
+if (still.matches || DATA.hold !== null) {
   touring = false;
-  state = { s: 0.55, place: 0, alpha: 1 };
+  state = { s: DATA.hold ?? 0.55, place: 0, alpha: 1 };
   target = { ...state };
 }
 still.addEventListener?.("change", () => {
