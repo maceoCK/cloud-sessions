@@ -206,9 +206,16 @@ function wall() {
   // The crop: the card's own paper closes over the brickwork in an ellipse on the wall.
   const fade = affine([VIEW.x, 0, VIEW.z], [VIEW.rx, 0, 0], [0, 0, -VIEW.rz]);
   out.push(`<radialGradient id="nt-crop" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="1" gradientTransform="${fade}"><stop offset=".62" class="nt-crop-0"/><stop offset=".8" class="nt-crop-1"/><stop offset=".93" class="nt-crop-2"/><stop offset="1" class="nt-crop-3"/></radialGradient>`);
-  const cover = [[x0 - 200, z0 - 200], [x1 + 200, z0 - 200], [x1 + 200, z1 + 200], [x0 - 200, z1 + 200]].map(([x, z]) => at([x, 0, z]));
-  out.push(`<path class="nt-crop" d="${pathOf(cover, true)}" fill="url(#nt-crop)"/>`);
-  return `<g class="nt-wall">${out.join("")}</g>`;
+  // The wall runs on past the crop: clip it just outside the crop's opaque rim, so none of it shows
+  // beside the card, then lay the crop over the rim's box, so the clip's soft edge never shows either.
+  const rim = Array.from({ length: 96 }, (_, i) => {
+    const a = (i / 96) * Math.PI * 2;
+    return at([VIEW.x + Math.cos(a) * VIEW.rx * 1.06, 0, VIEW.z + Math.sin(a) * VIEW.rz * 1.06]);
+  });
+  const xs = rim.map((p) => p[0]), ys = rim.map((p) => p[1]);
+  const [l, r, t, b] = [Math.min(...xs) - 2, Math.max(...xs) + 2, Math.min(...ys) - 2, Math.max(...ys) + 2];
+  const cover = pathOf([[l, t], [r, t], [r, b], [l, b]], true);
+  return `<g class="nt-wall"><clipPath id="nt-view"><path d="${pathOf(rim, true)}"/></clipPath><g clip-path="url(#nt-view)">${out.join("")}</g><path class="nt-crop" d="${cover}" fill="url(#nt-crop)"/></g>`;
 }
 
 
