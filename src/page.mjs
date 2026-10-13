@@ -161,7 +161,6 @@ a:hover{text-decoration-color:var(--ink)}
 /* contents */
 .contents{margin:clamp(56px,8vw,110px) 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--rule)}
 .contents li{border-bottom:1px solid var(--rule)}
-.contents li:not(:nth-child(4n)){border-right:1px solid var(--rule)}
 .contents a{display:flex;flex-direction:column;gap:10px;padding:18px 18px 20px 0;text-decoration:none;color:var(--anatomy-text);min-height:118px}
 .contents li:not(:nth-child(4n+1)) a{padding-left:18px}
 .contents .n{color:var(--ink);transition:color .2s}
@@ -171,8 +170,6 @@ a:hover{text-decoration-color:var(--ink)}
 .contents a:hover .t{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.2em}
 @media (max-width:899px){
   .contents{grid-template-columns:1fr 1fr}
-  .contents li:not(:nth-child(4n)){border-right:0}
-  .contents li:nth-child(odd){border-right:1px solid var(--rule)}
   .contents li:not(:nth-child(4n+1)) a{padding-left:0}
   .contents li:nth-child(even) a{padding-left:14px}
 }
@@ -205,7 +202,7 @@ a:hover{text-decoration-color:var(--ink)}
   .entry .numeral .ol{height:40px}
   .entry.wide .entry-text .line{margin-top:18px}
 }
-.iso-plate{border-radius:0}
+.iso-plate{border-radius:0;box-shadow:0 0 0 1px var(--rule)}
 @media (max-width:560px){.iso-plate{overflow:hidden}.iso-plate .iso-svg{width:118%;max-width:none;margin-left:-9%}}
 .ln{font-variant-numeric:lining-nums}
 .iso-stage{touch-action:pan-y;outline:none}
@@ -218,10 +215,10 @@ a:hover{text-decoration-color:var(--ink)}
 .fw{height:.7em;overflow:visible;fill:currentColor;vertical-align:baseline}
 .atlas{position:absolute;width:0;height:0;overflow:hidden}
 .contact{margin-top:clamp(100px,12vw,180px)}
-.contact .mail{display:block;margin-top:clamp(28px,4vw,56px);padding-bottom:min(4%,52px);color:var(--ink);text-decoration:none;width:min(100%,1180px)}
+.contact .mail{display:block;margin-top:clamp(24px,3vw,40px);padding-bottom:12px;color:var(--ink);text-decoration:none;width:min(100%,520px)}
 .contact .mail .ol{width:100%;height:auto;transition:fill .3s}
 .contact .mail:hover .ol{fill:var(--anatomy-muted)}
-.contact ul{display:flex;flex-wrap:wrap;gap:6px 22px;margin:34px 0 0;padding:0;list-style:none;font:13px/1.5 var(--mono)}
+.contact ul{display:flex;flex-wrap:wrap;gap:6px 22px;margin:22px 0 0;padding:0;list-style:none;font:13px/1.5 var(--mono)}
 
 /* colophon */
 .colophon{margin:clamp(56px,7vw,96px) 0 0;padding:28px 0 56px;border-top:1px solid var(--rule);display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(20px,3vw,48px);align-items:center;font-size:15px;line-height:1.55;color:var(--anatomy-muted)}
