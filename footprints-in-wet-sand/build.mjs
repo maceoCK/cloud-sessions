@@ -255,8 +255,7 @@ function plate() {
   out.push(Dots([at([RULER.x + 2.6, RULER.y + RULER.d / 2, 0.7]), at([RULER.x + RULER.w - 2.6, RULER.y + RULER.d / 2, 0.7])], { size: 0.45 }));
   out.push(S(k.slabOf(LABEL, 0, 0.9, P, 3), { tone: "mid" }));
   out.push(Ln(k.planOutline(k.insetPlan(LABEL, 1.6), 0.9, P), { tone: "faint" }));
-  out.push(k.faceTextSvg(k.topMatrix([LABEL.x + 6.2, LABEL.y + LABEL.d - 6], 0.9, P, "y"), "SWASH ZONE 1:12", { size: 3.4, tone: "lo" }));
-  out.push(Ln(k.onTop([[LABEL.x + 3, LABEL.y + 7], [LABEL.x + 3, LABEL.y + 24]], 0.9, P), { tone: "lo", free: true }));
+  out.push(k.faceTextSvg(k.topMatrix([LABEL.x + 6.2, LABEL.y + LABEL.d - 6], 0.9, P, "y"), "SWASH ZONE 1 IN 12", { size: 3.4, tone: "lo" }));
   out.push(Dots([at([LABEL.x + LABEL.w / 2, LABEL.y + 3, 0.9]), at([LABEL.x + LABEL.w / 2, LABEL.y + LABEL.d - 3, 0.9])], { size: 0.45 }));
   return out.join("");
 }
