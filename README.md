@@ -26,6 +26,7 @@ node scripts/build.mjs --only traba  # one figure's check pages: dist/fig/traba.
 node scripts/shoot.mjs --full        # full-page screenshot into shots/site (needs Playwright)
 node scripts/perf.mjs                # frame times idle, scrolling and at the busiest figures
 node scripts/og.mjs                  # re-render the share image public/og.jpg from the cover
+node scripts/still.mjs save|check    # full-page stills, motion off: prove a change moved nothing
 npm run outline                      # re-outline the Michelangelus display lines (see below)
 ```
 
