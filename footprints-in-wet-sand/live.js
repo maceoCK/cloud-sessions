@@ -364,17 +364,17 @@ void main(){
     float warp=6.2832*fbm2(p.xy/14.+seed);
     float ripple=up*smoothstep(0.,10.,dist)*mix(.5,1.,smoothstep(10.,120.,speed));
     vec2 r1=vec2(.34,.94);vec2 r2=vec2(-.5,.87);vec2 r3=vec2(.12,.99);
-    g+=ripple*(.032*cos(dot(p.xy,r1)*1.9-uClock*7.+warp)*r1+.026*cos(dot(p.xy,r2)*1.45-uClock*5.5+warp*1.3)*r2+.02*cos(dot(p.xy,r3)*2.6-uClock*9.+warp*.7)*r3);
+    g+=ripple*(.032*cos(dot(p.xy,r1)*1.9-sWave*7.+warp)*r1+.026*cos(dot(p.xy,r2)*1.45-sWave*5.5+warp*1.3)*r2+.02*cos(dot(p.xy,r3)*2.6-sWave*9.+warp*.7)*r3);
     float kr=6.2832/6.5;
     vec2 d1=vec2(.574,.819);vec2 d2=vec2(-.574,.819);
-    float om=uClock*2.4;
+    float om=sWave*2.4;
     float thinB=(1.-up)*smoothstep(1.,14.,dist)*exp(-max(hw-.1,0.)/.2);
     g+=.024*thinB*(cos(kr*dot(p.xy,d1)+om)*d1+cos(kr*dot(p.xy,d2)+om)*d2);
     vec3 nw=normalize(vec3(-g.x,-RISE-g.y,1.));
     float puff=0.;
     if(gHasA>.5)puff=max(puff,gRa*exp(-max(gSuA+1.,0.)/3.5));
     if(gHasB>.5)puff=max(puff,gRb*exp(-max(gSuB+1.,0.)/3.5));
-    puff*=.55+.45*fbm2(p.xy/3.+vec2(0.,uClock*.8));
+    puff*=.55+.45*fbm2(p.xy/3.+vec2(0.,sWave*.8));
     vec3 seen=mix(col*(.84-.12*turb),lin(uWater),uGain.w*turb);
     seen=mix(seen,lin(uDry)*.82,.55*clamp(puff,0.,1.));
     seen+=fresnel(dot(nw,V))*envOf(reflect(-V,nw))*uGain.x*.32;
@@ -541,7 +541,7 @@ function uniforms() {
   });
   const wave = state.wave ? [state.clock - state.wave.at, state.wave.u0, state.wave.seed, 1] : [0, 0, 0, 0];
   const prev = state.prev ? [state.clock - state.prev.at, state.prev.u0, state.prev.seed, 1] : [0, 0, 0, 0];
-  return { uPrint: print, uAge: age, uWave: wave, uPrev: prev, uClock: still.matches ? 0.8 : state.clock };
+  return { uPrint: print, uAge: age, uWave: wave, uPrev: prev, uClock: still.matches ? 0.8 : state.clock % 1800 };
 }
 
 function phaseOf() {

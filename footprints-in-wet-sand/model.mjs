@@ -110,14 +110,6 @@ export function footAt(x, y, walk, side, jitter = 0.5) {
   return { x: x - Math.sin(walk) * off, y: y + Math.cos(walk) * off, heading, side, scale: 0.94 + 0.12 * jitter };
 }
 
-export function toLocal(print, x, y) {
-  const dx = x - print.x;
-  const dy = y - print.y;
-  const c = Math.cos(print.heading);
-  const s = Math.sin(print.heading);
-  return [dx * c + dy * s, (-dx * s + dy * c) * print.side];
-}
-
 export function toWorld(print, u, v) {
   const c = Math.cos(print.heading);
   const s = Math.sin(print.heading);
@@ -139,11 +131,6 @@ export function regionsOf() {
 export function pressOf(u, age) {
   const [lag, rise] = FOOT.roll;
   return ramp(lag * u, lag * u + rise, age);
-}
-
-export function paleOf(age) {
-  const { rise, fall } = FOOT.pale;
-  return ramp(rise[0], rise[1], age) * (1 - ramp(fall[0], fall[1], age));
 }
 
 export const metres = (cm) => (cm / 100).toFixed(2);
