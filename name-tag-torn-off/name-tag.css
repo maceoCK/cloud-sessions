@@ -52,6 +52,7 @@
 .nt-bloom { fill: var(--nt-bloom); stroke: none; opacity: var(--nt-bloom-o); filter: blur(5px); }
 .nt-bloomgrain { stroke: none; opacity: .9; filter: blur(.6px); }
 .nt-dust { stroke: none; opacity: .8; }
+.nt-crack { fill: none; stroke: var(--nt-plughole); stroke-width: .6px; opacity: .55; stroke-linejoin: round; stroke-linecap: round; }
 .nt-jointshade { fill: var(--nt-halo); opacity: .16; filter: blur(1.2px); stroke: none; }
 .nt-run-0 { stop-color: var(--nt-grime); }
 .nt-plug { fill: var(--nt-plug); stroke: var(--anatomy-lo); stroke-width: .4px; }

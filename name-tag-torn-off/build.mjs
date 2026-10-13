@@ -203,6 +203,27 @@ function wall() {
     out.push(`<path class="nt-bloom" d="${d}"/><path class="nt-bloomgrain" d="${d}" fill="url(#nt-grainlight-front)"/>`);
   }
   out.push(weathering());
+  // Hairline cracks in the mortar: one along a bed joint under the plate, one stepping up a head
+  // joint and along the bed joint above it, as walls crack.
+  {
+    const Rc = PEEL.rng(3131);
+    const crack = (route) => {
+      const pts = [];
+      for (let i = 1; i < route.length; i++) {
+        const [x0, z0] = route[i - 1], [x1, z1] = route[i];
+        const n = Math.max(2, Math.round(Math.hypot(x1 - x0, z1 - z0) / 5));
+        for (let k = i === 1 ? 0 : 1; k <= n; k++) {
+          const t = k / n, across = (Rc() - 0.5) * 4.5;
+          const horiz = Math.abs(z1 - z0) < Math.abs(x1 - x0);
+          pts.push(at([x0 + (x1 - x0) * t + (horiz ? 0 : across), -RAKE, z0 + (z1 - z0) * t + (horiz ? across : 0)]));
+        }
+      }
+      return pathOf(pts);
+    };
+    const bed = (c) => c * COURSE + BRICK.h + JOINT / 2;
+    const d = crack([[-236, bed(0) + 2], [-196, bed(0) - 1], [-150, bed(0) + 1]]) + crack([[100, 356], [100, bed(2)], [168, bed(2) - 1], [226, bed(2) + 2]]);
+    out.push(`<path class="nt-crack" d="${d}"/>`);
+  }
   // The crop: the card's own paper closes over the brickwork in an ellipse on the wall.
   const fade = affine([VIEW.x, 0, VIEW.z], [VIEW.rx, 0, 0], [0, 0, -VIEW.rz]);
   out.push(`<radialGradient id="nt-crop" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="1" gradientTransform="${fade}"><stop offset=".62" class="nt-crop-0"/><stop offset=".8" class="nt-crop-1"/><stop offset=".93" class="nt-crop-2"/><stop offset="1" class="nt-crop-3"/></radialGradient>`);
