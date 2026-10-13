@@ -220,6 +220,8 @@ a:hover{text-decoration-color:var(--ink)}
   .entry .links a::after,.contact ul a::after{content:" (" attr(href) ")";font-size:.85em;color:var(--anatomy-muted)}
 }
 
+::view-transition-old(root),::view-transition-new(root){animation-duration:.45s;animation-timing-function:ease}
+
 /* display text set as Michelangelus words (see flow()) */
 .fl{font-family:"Geist Mono",monospace;letter-spacing:0}
 .fw{height:.7em;overflow:visible;fill:currentColor;vertical-align:baseline}
@@ -303,10 +305,17 @@ export function sitePage({ figures, script, fragment = false }) {
   const system = matchMedia("(prefers-color-scheme: dark)");
   const effective = () => root.getAttribute("data-theme") || (system.matches ? "dark" : "light");
   const show = () => buttons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.set === effective())));
-  buttons.forEach((b) => b.addEventListener("click", () => {
-    root.setAttribute("data-theme", b.dataset.set);
-    try { localStorage.setItem("theme", b.dataset.set); } catch (error) {}
+  const still = matchMedia("(prefers-reduced-motion: reduce)");
+  const apply = (theme) => {
+    root.setAttribute("data-theme", theme);
+    try { localStorage.setItem("theme", theme); } catch (error) {}
     show();
+  };
+  // paper to carbon as a short crossfade, where the browser can and the reader allows
+  buttons.forEach((b) => b.addEventListener("click", () => {
+    if (b.dataset.set === effective()) return;
+    if (document.startViewTransition && !still.matches) document.startViewTransition(() => apply(b.dataset.set));
+    else apply(b.dataset.set);
   }));
   system.addEventListener?.("change", show);
   show();
