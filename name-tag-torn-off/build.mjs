@@ -317,7 +317,43 @@ function plate() {
     for (let k = 0; k <= 6; k++) pts.push(at([x + Math.cos(a) * len * (k / 6 - 0.5), Y_FACE, z + Math.sin(a) * len * (k / 6 - 0.5) + Math.sin(k) * 0.3]));
     out.push(k.fadeLineSvg(pts, { fade: [len * 0.3, len * 0.35], tone: "lo", className: "nt-scratch" }));
   }
+  out.push(fingerprints());
   return `<g class="nt-plate">${out.join("")}</g>`;
+}
+
+// Whoever picked at the corner left greasy prints on the steel beside it: a soft smear of oil and,
+// in it, the broken ridges of a fingertip. In the label's coordinates, on the plate's face.
+function fingerprints() {
+  const Rf = PEEL.rng(4242);
+  const prints = [
+    { c: [-99, -38], r: [8.5, 11.5], turn: 0.35 },
+    { c: [-62, -71], r: [7, 9.5], turn: -1.2 },
+    { c: [-106, -63], r: [5.5, 7.5], turn: 0.9, part: true },
+  ];
+  const out = [];
+  for (const { c, r, turn, part } of prints) {
+    const ring = (k, dx = 0, from = 0, to = Math.PI * 2, wob = 0) => {
+      const pts = [];
+      const ph = Rf() * 6;
+      for (let i = 0; i <= 40; i++) {
+        const a = from + ((to - from) * i) / 40;
+        const q = 1 + wob * Math.sin(a * 5 + ph);
+        const x = Math.cos(a) * r[0] * k * q + dx, y = Math.sin(a) * r[1] * k * q;
+        pts.push([c[0] + x * Math.cos(turn) - y * Math.sin(turn), c[1] + x * Math.sin(turn) + y * Math.cos(turn)]);
+      }
+      return pts;
+    };
+    out.push(`<path class="nt-smear" d="${onPlate(ring(1.15))}"/>`);
+    const ridges = [];
+    for (let k = 0.22; k <= 1.02; k += 0.105 + Rf() * 0.02) {
+      // a loop print: the ridges' centres drift to one side, and a partial print loses an arc
+      const from = part ? 0.6 + Rf() * 0.4 : Rf() * 0.5, to = from + (part ? 3.6 : Math.PI * 2 - 0.3 - Rf() * 0.6);
+      const d = onPlate(ring(k, (1 - k) * r[0] * 0.35, from, to, 0.025), 0, false);
+      ridges.push(`<path d="${d}" style="stroke-dasharray:${(1.2 + Rf() * 1.6).toFixed(1)} ${(0.4 + Rf() * 0.8).toFixed(1)} ${(0.6 + Rf() * 2.4).toFixed(1)} ${(0.5 + Rf() * 0.7).toFixed(1)};stroke-dashoffset:${(Rf() * 4).toFixed(1)}"/>`);
+    }
+    out.push(`<g class="nt-ridges">${ridges.join("")}</g>`);
+  }
+  return `<g class="nt-prints">${out.join("")}</g>`;
 }
 
 // ---- Residue and the piece that stayed ---------------------------------------------------------------
