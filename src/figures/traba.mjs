@@ -10,7 +10,7 @@ const WIDTH = 600;
 const HEIGHT = 380;
 const AZIMUTH = 38;
 
-const PLATE = { x: -46, y: -112, w: 98, d: 160, r: 6 };
+const PLATE = { x: -46, y: -150, w: 98, d: 198, r: 6 };
 const PLATE_H = 8;
 const FOOT_H = 4;
 
@@ -175,6 +175,42 @@ function rack() {
   return { back: back.join(""), front: front.join("") };
 }
 
+// A hard hat resting on the open corner of the plate: brim, dome, and a raised
+// crown ridge with two side ribs drawn as meridians over the visible face.
+const HAT = { o: [6, -126, 0], brim: 16.2, lip: 1.4, R: 12.4, H: 14.2 };
+const domeR = (s) => HAT.R * Math.sqrt(Math.max(0, 1 - ((s - HAT.lip) / HAT.H) ** 2));
+function hardHat() {
+  const F = G.frameOf(HAT.o, [0, 0, 1], [1, 0, 0], [0, 1, 0]);
+  const dome = [];
+  for (let i = 0; i <= 12; i++) {
+    const s = HAT.lip + HAT.H * Math.sin((i / 12) * (Math.PI / 2));
+    dome.push(i === 12 ? [s, 0] : [s, domeR(s), 1]);
+  }
+  const brim = [[0, HAT.brim], [0.7, HAT.brim], [1.1, HAT.brim - 0.8, 1], [HAT.lip, HAT.R + 1.4]];
+  const out = [`<path class="iso-halo" d="${k.haloOf({ x: -10, y: -142, w: 32, d: 32, r: 16 }, 0, 1, P)}" style="filter:blur(5px)"/>`];
+  // a meridian over the dome, kept only where it faces the viewer
+  const V = G.viewOf(P);
+  const meridian = (t) => {
+    const runs = [[]];
+    for (let i = 0; i <= 40; i++) {
+      const s = HAT.lip + HAT.H * (i / 40);
+      const r = domeR(s);
+      const slope = -(HAT.R ** 2 / HAT.H ** 2) * (s - HAT.lip) / Math.max(r, 0.01);
+      const n = [Math.cos(t), Math.sin(t), -slope];
+      const facing = (n[0] * V[0] + n[1] * V[1] + n[2] * V[2]) / Math.hypot(...n);
+      if (facing > 0.06) runs[runs.length - 1].push(at(G.pointOf(F, s, r, t)));
+      else if (runs[runs.length - 1].length) runs.push([]);
+    }
+    return runs.filter((run) => run.length > 1).map((run) => k.pathOf(run)).join("");
+  };
+  const A = Math.atan2(V[1], V[0]);
+  const ridge = [meridian(A + 0.9 - 0.05), meridian(A + 0.9 + 0.05)].join("");
+  const ribs = [meridian(A + 0.9 - 0.75), meridian(A + 0.9 + 0.75)].join("");
+  out.push(S(G.solidOf(brim, F, P), { tone: "mid" }));
+  out.push(S(G.solidOf([[HAT.lip, HAT.R], ...dome.slice(1)], F, P), { tone: "mid", inner: L(ridge, { tone: "lo" }) + L(ribs, { tone: "faint" }) }));
+  return out.join("");
+}
+
 // A card, built at the origin: its plane is x-z, its face looks along +y.
 function cardSvg(i) {
   const out = [];
@@ -234,6 +270,7 @@ export default {
     const svg = [
       `<defs>${clip}</defs>`,
       plate(),
+      hardHat(),
       r.back,
       `<g data-layer="rack">${cards.join("")}</g>`,
       r.front,
