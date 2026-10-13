@@ -3654,8 +3654,25 @@ FIGS.push(["h668", {"P":{"origin":[260.07535141896443,194.69720034034705],"scale
       }
       stage.style.cursor = "";
     };
+    // a tap takes the nearest disc within reach: they are small under a finger
+    const centres = D.discBoxes.map((poly) => [poly.reduce((s, p) => s + p[0], 0) / poly.length, poly.reduce((s, p) => s + p[1], 0) / poly.length]);
+    const tap = (event) => {
+      const p = pointAt(event);
+      let best = -1;
+      let near = 26;
+      centres.forEach(([x, y], i) => {
+        const d = Math.hypot(x - p[0], y - p[1]);
+        if (d < near) {
+          near = d;
+          best = i;
+        }
+      });
+      if (best < 0) return pick(event);
+      tour.hold();
+      load(best);
+    };
     stage.addEventListener("pointermove", pick);
-    stage.addEventListener("pointerdown", pick);
+    stage.addEventListener("pointerdown", (event) => (event.pointerType === "mouse" ? pick(event) : tap(event)));
     stage.addEventListener("keydown", (event) => {
       let i = loaded;
       if (event.key === "ArrowRight" || event.key === "ArrowUp") i = Math.min(D.groups.length - 1, i + 1);
