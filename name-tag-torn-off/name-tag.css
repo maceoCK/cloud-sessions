@@ -1,7 +1,7 @@
 /* Fig 4A tokens. Light first; the dark set follows so a dark plate on a light page still wins. */
 .iso {
-  --nt-brick-a: #e5cdbf; --nt-brick-b: #dcc1b1; --nt-brick-c: #e9d6ca; --nt-brick-d: #d6b8a7; --nt-brick-e: #e2d0c6;
-  --nt-brick-top: #f1e5dc; --nt-brick-end: #d2baab;
+  --nt-brick-a: #e0bfac; --nt-brick-b: #d6b09b; --nt-brick-c: #e6cbbb; --nt-brick-d: #cda18b; --nt-brick-e: #dfc3b4;
+  --nt-brick-top: #efdcd0; --nt-brick-end: #c9a693;
   --nt-pit: #9c8172; --nt-fleck: #f7eee8; --nt-grit: #b89e8f;
   --nt-mortar: #e4e2dc; --nt-mortar-top: #eeece7; --nt-mortar-end: #d3d0c9;
   --nt-sand: #aaa69c; --nt-sand-light: #f7f6f2;
@@ -34,7 +34,7 @@
   --nt-halo: #000000;
   --nt-sheen-hi: #9aa0a3; --nt-sheen-hi-o: .16; --nt-sheen-lo: #000000; --nt-sheen-lo-o: .3;
   --nt-flash: #000000; --nt-flash-o: .35; --nt-bloom: #6b6a64; --nt-bloom-o: .22;
-  --nt-grime: #000000; --nt-plug: #3a3a38; --nt-plughole: #0b0908; --nt-ooze: #57554f; --nt-smudge: #9aa1a4; --nt-smudge-o: .07;
+  --nt-grime: #000000; --nt-plug: #3a3a38; --nt-plughole: #0b0908; --nt-ooze: #57554f; --nt-smudge: #9aa1a4; --nt-smudge-o: .05;
   --nt-clay-o: .7; --nt-sand-o: .9; --nt-sandlight-o: .18; --nt-fuzz-o: .34; --nt-drift-o: .55; --nt-paper-o: .16;
 }
 
