@@ -11,310 +11,104 @@ const theme = process.argv.includes("--light") ? "light" : "dark";
 const strip = (file) => readFileSync(join(KIT, file), "utf8").replace(/^export /gm, "");
 
 const W = 880;
-const H = 540;
+const H = 560;
 const AZIMUTH = 70;
 const ELEVATION = 42;
+const PX_PER_CM = 2.9;
+const CENTRE = [M.STRIP.length / 2, 22];
 
 const L = M.STRIP.length;
-const D = M.STRIP.width;
-const Z0 = M.STRIP.sea;
-const Z1 = M.surfaceAt(D);
-const PLATE = { x: -18, y: -16, w: L + 36, d: D + 52, r: 6 };
-const PLATE_H = 7;
-const FOOT_H = 6;
-const RULER = { x: -6, y: D + 12, w: L + 12, d: 9, r: 1 };
-const LABEL = { x: L + 5.5, y: 112, w: 9.5, d: 58, r: 1.4 };
-const SCALE = { x: L, y: D - 30, w: 1.4, d: 4.6, r: 0.3 };
-const SCALE_TOP = 30;
+const SHORE = M.SWASH.from;
 
-const P = k.fitProjection([...k.boxCorners(PLATE, -PLATE_H - FOOT_H, 0), [0, 0, Z0], [L, 0, Z0], [L, D, Z1], [0, D, Z1]], W, H, { pad: 16, azimuth: AZIMUTH, elevation: ELEVATION });
+const P = (() => {
+  const unit = { origin: [0, 0], scale: PX_PER_CM / Math.sqrt(1.6), azimuth: AZIMUTH, elevation: ELEVATION };
+  const [cx, cy] = k.iso([CENTRE[0], CENTRE[1], M.surfaceAt(CENTRE[1])], unit);
+  return { ...unit, origin: [W / 2 - cx, H / 2 - cy] };
+})();
 const at = (point) => k.iso(point, P);
-const S = (paths, style) => k.solidSvg(paths, style);
+const onSand = (x, y) => at([x, y, M.surfaceAt(y)]);
+const sandPath = (points, closed = false) => k.pathOf(points.map(([x, y]) => onSand(x, y)), closed);
 const Ln = (d, style) => k.lineSvg(d, style);
-const Dots = (points, style) => k.dotsSvg(points, style);
-const byDepth = (points) => [...points].sort((a, b) => k.depthOf([a[0], a[1], 0], P) - k.depthOf([b[0], b[1], 0], P));
-const poly = (points, closed = false) => k.pathOf(points.map(at), closed);
-const { sinA, cosA } = k.cameraOf(P);
-const shadeOf = ([nx, ny]) => Math.min(3, Math.max(0, Math.floor(((nx * -sinA + ny * cosA + 1) / 2) * 4)));
 
-const MODERN = Array.from({ length: 12 }, (_, k) => ({ depth: 1.15 + 1.45 * k + 0.25 * Math.sin(k * 2.7), wave: 0.22 + 0.025 * k, band: k === 2 ? 0.75 : k === 6 ? 0.95 : k === 9 ? 0.6 : 0 }));
-const sheetAt = (layer, k, x, y) => M.surfaceAt(y) - layer.depth - layer.wave * (Math.sin(x / 23 + k * 1.7) * 0.6 + Math.sin(y / 17 + k * 2.3) * 0.4);
-const scourAt = (x, y) => 10.6 + 0.055 * y + 1.3 * Math.sin(x / 41 + 0.6) + 0.7 * Math.sin(x / 13 + 2.1) + 0.9 * Math.sin(y / 29 + 1.4);
-const OLD = Array.from({ length: 16 }, (_, k) => -14 + 2.1 * k);
-const oldAt = (c, k, x, y) => c + (1 / 8) * y + 0.02 * (x - L / 2) + 0.45 * Math.sin(x / 31 + k) + 0.3 * Math.sin(y / 21 + k * 1.3);
-const TABLE = (x, y) => M.surfaceAt(y) - 2 - 0.06 * y + 0.4 * Math.sin(x / 57);
-const FACES = [
-  { name: "front", count: Math.round(L / 2), at: (t) => [t * L, D] },
-  { name: "end", count: Math.round(D / 1.5), at: (t) => [L, t * D] },
-];
-
-function runsOf(face, height, inside) {
-  const runs = [];
-  let run = [];
-  const point = (t) => {
-    const [x, y] = face.at(t);
-    return [x, y, height(x, y)];
-  };
-  const edge = (t0, t1) => {
-    let a = t0;
-    let b = t1;
-    for (let i = 0; i < 24; i++) {
-      const m = (a + b) / 2;
-      if (inside(point(m)) === inside(point(a))) a = m;
-      else b = m;
-    }
-    return point((a + b) / 2);
-  };
-  let prev = null;
-  for (let i = 0; i <= face.count; i++) {
-    const t = i / face.count;
-    const p = point(t);
-    const ok = inside(p);
-    if (prev !== null && ok !== prev.ok) {
-      const cut = edge(prev.t, t);
-      if (ok) run = [cut];
-      else {
-        run.push(cut);
-        if (run.length > 1) runs.push(run);
-        run = [];
-      }
-    }
-    if (ok) run.push(p);
-    prev = { t, ok };
-  }
-  if (run.length > 1) runs.push(run);
-  return runs;
+function planeAt(sx, sy) {
+  const { sinA, cosA, sinE, cosE, k: scale } = k.cameraOf(P);
+  const a = (sx - P.origin[0]) / scale;
+  const b = (sy - P.origin[1]) / scale + M.STRIP.sea * cosE;
+  const m11 = sinA;
+  const m12 = -cosA;
+  const m21 = cosA * sinE;
+  const m22 = sinA * sinE - M.STRIP.rise * cosE;
+  const det = m11 * m22 - m12 * m21;
+  return [(a * m22 - m12 * b) / det, (m11 * b - m21 * a) / det];
 }
 
-function faces() {
-  const out = [];
-  const front = [[0, D, 0], [L, D, 0], [L, D, Z1], [0, D, Z1]];
-  const end = [[L, 0, 0], [L, D, 0], [L, D, Z1], [L, 0, Z0]];
-  const top = [[0, 0, Z0], [L, 0, Z0], [L, D, Z1], [0, D, Z1]];
-  const fill = poly([[0, 0, Z0], [L, 0, Z0], [L, 0, 0], [L, D, 0], [0, D, 0], [0, D, Z1]], true);
-  out.push(`<path class="iso-fill" d="${fill}"/>`);
-  out.push(`<path class="iso-shade" data-shade="${shadeOf([0, 1])}" d="${poly(front, true)}"/>`);
-  out.push(`<path class="iso-shade" data-shade="${shadeOf([1, 0])}" d="${poly(end, true)}"/>`);
-  out.push(`<path class="iso-top fp-wet" d="${poly(top, true)}"/>`);
-  return { svg: out.join(""), front, end, top };
-}
+const corners = [planeAt(0, 0), planeAt(W, 0), planeAt(W, H), planeAt(0, H)];
+const VIEW = {
+  x0: Math.min(...corners.map(([x]) => x)),
+  x1: Math.max(...corners.map(([x]) => x)),
+  y0: Math.min(...corners.map(([, y]) => y)),
+  y1: Math.max(...corners.map(([, y]) => y)),
+};
+const span = (from, to, count) => Array.from({ length: count + 1 }, (_, i) => from + ((to - from) * i) / count);
+const XS = span(VIEW.x0 - 20, VIEW.x1 + 20, 80);
 
-function saturated() {
-  const fills = [];
-  const lines = [];
-  for (const face of FACES) {
-    const top = [];
-    for (let i = 0; i <= face.count; i++) {
-      const [x, y] = face.at(i / face.count);
-      top.push([x, y, TABLE(x, y)]);
-    }
-    const [x0, y0] = face.at(0);
-    const [x1, y1] = face.at(1);
-    fills.push(poly([...top, [x1, y1, 0], [x0, y0, 0]], true));
-    lines.push(poly(top));
-  }
-  return `<g class="fp-wet-zone">${fills.map((d) => `<path d="${d}"/>`).join("")}</g>` + Ln(lines.join(""), { tone: "faint", className: "fp-table" });
-}
-
-function laminae() {
-  const modern = [];
-  const old = [];
-  const bands = [];
-  const scour = [];
-  for (const face of FACES) {
-    MODERN.forEach((layer, k) => {
-      const height = (x, y) => sheetAt(layer, k, x, y);
-      for (const run of runsOf(face, height, ([x, y, z]) => z > scourAt(x, y))) modern.push(poly(run));
-      if (layer.band) {
-        const lower = (x, y) => sheetAt(layer, k, x, y) - layer.band * (0.55 + 0.45 * Math.sin((x + y) / 9 + k));
-        for (const run of runsOf(face, lower, ([x, y, z]) => z > scourAt(x, y))) {
-          const upper = run.map(([x, y]) => [x, y, Math.max(height(x, y), lower(x, y))]);
-          bands.push(poly([...upper, ...run.reverse()], true));
-        }
-      }
-    });
-    OLD.forEach((c, k) => {
-      const height = (x, y) => oldAt(c, k, x, y);
-      for (const run of runsOf(face, height, ([x, y, z]) => z < scourAt(x, y) && z > 0)) old.push(poly(run));
-    });
-    const line = [];
-    for (let i = 0; i <= face.count; i++) {
-      const [x, y] = face.at(i / face.count);
-      line.push([x, y, scourAt(x, y)]);
-    }
-    scour.push(poly(line));
-  }
-  return (
-    `<g class="fp-bands">${bands.map((d) => `<path d="${d}"/>`).join("")}</g>` +
-    Ln(old.join(""), { tone: "faint", className: "fp-lamina fp-old" }) +
-    Ln(modern.join(""), { tone: "faint", className: "fp-lamina" }) +
-    Ln(scour.join(""), { tone: "lo", className: "fp-scour" })
-  );
-}
-
-function lag() {
-  const pebbles = [];
-  const shells = [];
-  for (const face of FACES) {
-    const span = face.name === "front" ? L : D;
-    const count = Math.round(span / 9);
-    for (let i = 0; i < count; i++) {
-      const t = (i + 0.2 + 0.6 * M.hashOf(i * 3.7 + span)) / count;
-      const [x, y] = face.at(t);
-      const r = 0.42 + 0.48 * M.hashOf(i * 5.3 + span * 0.1);
-      const z = scourAt(x, y) + r * 0.25;
-      const kind = M.hashOf(i * 9.1 + span * 0.3);
-      if (kind < 0.3 && face.name === "front") shells.push(shellOnFront(x, scourAt(x, y) + r * 0.28 + 0.05, 0.9 + r * 0.6, kind < 0.15 ? 1 : -1));
-      else {
-        const along = face.name === "front" ? [1, 0] : [0, 1];
-        const ring = Array.from({ length: 14 }, (_, j) => {
-          const a = (j / 14) * Math.PI * 2;
-          const w = r * (1.25 + 0.15 * Math.sin(a * 2 + i));
-          return [x + along[0] * w * Math.cos(a), y + along[1] * w * Math.cos(a), z + r * 0.78 * Math.sin(a)];
-        });
-        pebbles.push(poly(ring, true));
-      }
-    }
-  }
-  return `<g class="fp-pebbles">${pebbles.map((d) => `<path d="${d}"/>`).join("")}</g>` + shells.join("");
-}
-
-function shellPath(map, size, flip) {
-  const outline = [];
-  for (let i = 0; i <= 16; i++) {
-    const t = (i / 16) * Math.PI;
-    outline.push([-Math.cos(t) * 1.3 * size, Math.sin(t) * 0.75 * size * (1 - 0.25 * Math.cos(t) * flip)]);
-  }
-  const ribs = [0.45, 0.75].map((f) => {
-    const pts = [];
-    for (let i = 0; i <= 10; i++) {
-      const t = (i / 10) * Math.PI;
-      pts.push([-Math.cos(t) * 1.3 * size * f, Math.sin(t) * 0.75 * size * f * (1 - 0.25 * Math.cos(t) * flip)]);
-    }
-    return pts;
-  });
-  const fill = k.pathOf(outline.map(map), true);
-  const rib = ribs.map((pts) => k.pathOf(pts.map(map))).join("");
-  return `<g class="fp-shell"><path class="fp-shell-body" d="${fill}"/>${Ln(rib, { tone: "faint" })}${Ln(fill, { tone: "lo" })}</g>`;
-}
-const shellOnFront = (x, z, size, flip) => shellPath(([u, v]) => at([x + u, D, z + v]), size, flip);
-
-function donax() {
-  const x = 236;
-  const z = Z1 - 4.4;
-  const length = 2.7;
-  const lean = 0.22;
-  const at3 = (u, v) => [x + u * Math.cos(lean) - v * Math.sin(lean), D, z + u * Math.sin(lean) + v * Math.cos(lean)];
-  const outline = [];
-  for (let i = 0; i <= 28; i++) {
-    const t = (i / 28) * Math.PI * 2;
-    const u = Math.cos(t) * (length / 2);
-    const v = Math.sin(t) * 0.66 * (1 + 0.32 * Math.cos(t)) * (Math.sin(t) > 0 ? 1 : 0.86);
-    outline.push(at3(u, v));
-  }
-  const growth = [0.42, 0.72].map((f) =>
-    Array.from({ length: 13 }, (_, i) => {
-      const t = Math.PI * (0.08 + 0.84 * (i / 12));
-      const u = Math.cos(t) * (length / 2) * (0.35 + 0.65 * f);
-      const v = Math.sin(t) * 0.66 * (1 + 0.32 * Math.cos(t)) * f - 0.66 * 0.86 * (1 - f);
-      return at3(u, v);
-    }),
-  );
-  const tip = at3(length / 2 - 0.15, 0.32);
-  const siphon = [tip, [tip[0] + 0.5, D, tip[2] + 1.2], [tip[0] + 0.7, D, tip[2] + 2.6], [tip[0] + 0.75, D, Z1]];
-  return `<g class="fp-shell"><path class="fp-shell-body" d="${poly(outline, true)}"/>${Ln(growth.map((g) => poly(g)).join(""), { tone: "faint" })}${Ln(poly(outline, true), { tone: "lo" })}${Ln(poly(siphon), { tone: "faint", className: "fp-siphon" })}</g>`;
-}
-
-function plate() {
-  const out = [`<path class="iso-halo" d="${k.haloOf(PLATE, -PLATE_H - FOOT_H, PLATE_H, P)}"/>`];
-  const feet = byDepth([...k.corners(PLATE, 24), [PLATE.x + PLATE.w / 2, PLATE.y + 24], [PLATE.x + PLATE.w / 2, PLATE.y + PLATE.d - 24]]);
-  for (const [x, y] of feet) {
-    out.push(S(k.cylinder(x, y, 9, -PLATE_H - FOOT_H, 1.8, P, 28), { tone: "lo" }));
-    out.push(S(k.cylinder(x, y, 7, -PLATE_H - FOOT_H + 1.8, FOOT_H - 1.8, P, 28), { tone: "mid" }));
-  }
-  out.push(S(k.slabOf(PLATE, -PLATE_H, PLATE_H, P, 8, 1.4), { tone: "mid" }));
-  out.push(Ln(k.planOutline(k.insetPlan(PLATE, 5), 0, P), { tone: "lo" }));
-  const screws = k.corners(PLATE, 10);
-  out.push(Ln(screws.map(([x, y]) => k.ring(x, y, 2.4, 0, P, 16)).join(""), { tone: "lo" }));
-  out.push(Dots(screws.map(([x, y]) => at([x, y, 0])), { size: 0.55 }));
-  const side = k.sideTicks(PLATE.x + 28, PLATE.x + PLATE.w - 28, 10, 5, PLATE.y + PLATE.d, 0, [2, 3.4], P, "x");
-  out.push(Ln(side.minor, { tone: "faint" }), Ln(side.major, { tone: "lo" }));
-  out.push(S(k.slabOf(RULER, 0, 0.7, P, 3), { tone: "lo", crease: "none" }));
-  const ticks = k.topTicks(0, L, 10, 5, RULER.y + 0.5, 0.7, [2.6, 3.8], P);
-  out.push(Ln(ticks.minor, { tone: "lo" }), Ln(ticks.major, { tone: "mid" }));
-  const half = k.topTicks(5, L - 5, 10, 1, RULER.y + 0.5, 0.7, [1.6, 1.6], P);
-  out.push(Ln(half.minor + half.major, { tone: "faint" }));
-  out.push(Dots([at([RULER.x + 2.6, RULER.y + RULER.d / 2, 0.7]), at([RULER.x + RULER.w - 2.6, RULER.y + RULER.d / 2, 0.7])], { size: 0.45 }));
-  out.push(S(k.slabOf(LABEL, 0, 0.9, P, 3), { tone: "mid" }));
-  out.push(Ln(k.planOutline(k.insetPlan(LABEL, 1.6), 0.9, P), { tone: "faint" }));
-  out.push(k.faceTextSvg(k.topMatrix([LABEL.x + 6.2, LABEL.y + LABEL.d - 6], 0.9, P, "y"), "SWASH ZONE 1 IN 12", { size: 3.4, tone: "lo" }));
-  out.push(Dots([at([LABEL.x + LABEL.w / 2, LABEL.y + 3, 0.9]), at([LABEL.x + LABEL.w / 2, LABEL.y + LABEL.d - 3, 0.9])], { size: 0.45 }));
-  return out.join("");
-}
-
-function block() {
-  const f = faces();
-  const crease = poly([[0, D, Z1], [L, D, Z1]]) + poly([[L, 0, Z0], [L, D, Z1]]);
-  const corner = poly([[L, D, 0], [L, D, Z1]]);
-  const outline = poly([[0, D, Z1], [0, D, 0], [L, D, 0], [L, 0, 0], [L, 0, Z0]]);
-  const inner = saturated() + laminae() + lag() + donax();
-  return `<g class="iso-solid fp-cut">${f.svg}<g class="fp-section">${inner}</g>${Ln(corner, { tone: "lo" })}<path class="iso-line iso-edge" data-tone="hi" d="${outline}"/></g><path class="iso-line fp-crease-under" data-tone="lo" d="${crease}"/>`;
-}
-
-function scale() {
-  const out = [];
-  out.push(S(k.slabOf(SCALE, 0, SCALE_TOP, P, 1, 0), { tone: "mid", crease: "lo" }));
-  const face = SCALE.x + SCALE.w;
-  const edge = SCALE.y + SCALE.d;
-  const minor = [];
-  const major = [];
-  for (let z = 1; z < SCALE_TOP - 0.5; z += 1) {
-    const long = z % 5 === 0;
-    (long ? major : minor).push(poly([[face, edge, z], [face, edge - (long ? 2.6 : 1.4), z]]));
-  }
-  out.push(Ln(minor.join(""), { tone: "lo" }), Ln(major.join(""), { tone: "mid" }));
-  return out.join("");
+function ground() {
+  const dryFrom = 200;
+  const sea = sandPath([...XS.map((x) => [x, SHORE]), [VIEW.x1 + 20, VIEW.y0 - 20], [VIEW.x0 - 20, VIEW.y0 - 20]], true);
+  const dry = sandPath([...XS.map((x) => [x, dryFrom]), [VIEW.x1 + 20, VIEW.y1 + 20], [VIEW.x0 - 20, VIEW.y1 + 20]], true);
+  return `<rect class="fp-ground" x="0" y="0" width="${W}" height="${H}"/><path class="fp-dry-ground" d="${dry}"/><path class="fp-sea" d="${sea}"/>`;
 }
 
 function fallback() {
-  return `<g class="fp-fallback" aria-hidden="true"><g data-part="prints"></g><g data-part="lines" class="fp-swash-line"></g><path data-part="sheet" class="fp-sheet" d=""/><path data-part="lace" class="fp-lace" d=""/></g>`;
+  return `<g class="fp-fallback" aria-hidden="true">${ground()}<g data-part="prints"></g><g data-part="lines" class="fp-swash-line"></g><path data-part="sheet" class="fp-sheet" d=""/><path data-part="lace" class="fp-lace" d=""/></g>`;
 }
 
-const topEdges = poly([[L, 0, Z0], [0, 0, Z0], [0, D, Z1]]);
-const topCreases = poly([[0, D, Z1], [L, D, Z1], [L, 0, Z0]]);
+const BAR = (() => {
+  const [x, y] = planeAt(W * 0.09, H * 0.82);
+  return { x: Math.round(x), y: Math.round(y), length: 50 };
+})();
 
-const back = [plate(), block(), scale(), fallback()];
-const front = [Ln(topCreases, { tone: "lo" }), `<path class="iso-line iso-edge" data-tone="hi" d="${topEdges}"/>`];
+function scaleBar() {
+  const { x, y, length } = BAR;
+  const bar = sandPath([[x, y], [x + length, y]]);
+  const minor = [];
+  const major = [];
+  for (let d = 0; d <= length; d += 10) {
+    const long = d === 0 || d === length;
+    (long ? major : minor).push(sandPath([[x + d, y], [x + d, y - (long ? 3.4 : 2)]]));
+  }
+  return `<g class="fp-scale">${Ln(bar, { tone: "mid" })}${Ln(minor.join(""), { tone: "mid" })}${Ln(major.join(""), { tone: "hi" })}</g>`;
+}
 
-const QUAD = [[0, 0, Z0], [L, 0, Z0], [L, D, Z1], [0, D, Z1]].map(at);
+const back = [fallback()];
+const front = [scaleBar()];
 
 const DATA = {
   W,
   H,
   P,
   camera: glCamera(P),
-  quad: QUAD,
+  view: VIEW,
   strip: M.STRIP,
 };
-
-const LABEL_TEXT =
-  `A block of beach cut from the swash zone and set on a plinth: a strip of smooth, dark, wet sand ${M.metres(L)} m long and ${M.metres(D)} m across, rising 1 in 12 from the sea edge at the back. Its cut faces show the swash laminae, ${MODERN.filter((layer) => layer.band).length} dark heavy-mineral bands, an older storm scour with a shell and pebble lag, a buried wedge clam and the water table. Footprints press into the sand one step at a time, each ringed for a moment by pale, drained sand; then a thin sheet of swash slides up from the sea edge with a foam front, covers the prints, smooths them away and drains back, leaving the sand glossy and smooth again.`;
-
-const backSvg = k.figureSvg({ width: W, height: H, label: LABEL_TEXT, body: back, className: "fp-back" });
-const frontSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="iso-svg fp-layer fp-front" viewBox="0 0 ${W} ${H}" aria-hidden="true">${front.join("")}</svg>`;
-const stage = `<div class="fp-stage" tabindex="0" role="group" aria-roledescription="beach strip" aria-label="Footprints in wet sand. Tap or click the sand to press a footprint there; press the right arrow key to take the next step, and Space or Enter to send a wave up the beach."><span class="fp-said" aria-live="polite"></span>${backSvg}<canvas class="fp-layer fp-gl" aria-hidden="true"></canvas>${frontSvg}</div>`;
 
 const wave = M.waveOf(0, 0);
 const tops = [];
 for (let index = 0; index < 200; index++) {
   const each = M.waveOf(0, index);
-  for (let x = 0; x <= L; x += 3) tops.push(M.topOf(each, x));
+  for (let x = 0; x <= L; x += 3) tops.push(M.topOf(each, x) - SHORE);
 }
 const meanTop = tops.reduce((sum, top) => sum + top, 0) / tops.length;
 let deepest = 0;
-for (let s = 0.5; s < 5; s += 0.02) for (let y = 0; y < D; y += 2) deepest = Math.max(deepest, M.depthAt(wave, L / 2, y, s));
-const entry = M.speedAt(wave, L / 2, M.timesAt(wave, L / 2, 0)[0]);
-const caption = `A strip of the swash zone, ${M.metres(L)} m along the shore and ${M.metres(D)} m up it, cut from a beach that rises 1 in 12. Someone walks across at ${((M.GAIT.step / 100) / M.GAIT.gap).toFixed(2)} m/s, ${M.metres(M.GAIT.step)} m a step, and each bare heel sinks ${(M.GAIT.depth * 10).toFixed(0)} mm. While the foot is down, the sand around it turns pale: shearing makes the packed grains dilate, and the water drains down into the new pore space (Reynolds' dilatancy). When the foot lifts, the water comes back and pools in the heel and the ball. Then a bore collapses ${M.metres(-M.SWASH.from)} m seaward of the strip. Its swash crosses the sea edge at ${(entry / 100).toFixed(1)} m/s and slows at g·sin β = ${(M.DOWNHILL / 100).toFixed(2)} m/s², so it turns ${M.turnOf(wave, L / 2).toFixed(1)} s after the collapse, about ${M.metres(meanTop)} m up the strip (${M.metres(Math.min(...tops))} to ${M.metres(Math.max(...tops))} m along its lobes, from wave to wave), and drains back the same way (Shen and Meyer's ballistic swash). The sheet is never more than ${(deepest * 10).toFixed(0)} mm deep, yet it smooths each print away within a second or two of covering it. The film it leaves sinks into the sand, and the sheen fades.`;
+for (let s = 0.3; s < 5; s += 0.02) for (let y = M.GAIT.line - 20; y < M.GAIT.line + 20; y += 2) deepest = Math.max(deepest, M.depthAt(wave, L / 2, y, s));
+
+const LABEL_TEXT = `Looking down on a beach that rises 1 in 12: the sea at the back, a strip of smooth, dark, wet sand where the swash runs, and drier sand toward you. Footprints press into the wet strip one step at a time, each ringed for a moment by pale, drained sand. A bore runs in through the shallows and collapses at the water's edge; its thin sheet of swash slides up the beach with a foam edge, covers the prints, smooths them away and draws back, leaving the sand glossy and smooth again.`;
+
+const caption = `A stretch of beach that rises 1 in 12, seen from above: the sea at the back, the strip of dark sand the swash keeps wet, and drier sand toward you. Someone walks along the strip at ${((M.GAIT.step / 100) / M.GAIT.gap).toFixed(2)} m/s, ${M.metres(M.GAIT.step)} m a step, and each bare heel sinks ${(M.GAIT.depth * 10).toFixed(0)} mm. While the foot is down, the sand around it turns pale: shearing makes the packed grains dilate, and the water drains down into the new pore space (Reynolds' dilatancy). When the foot lifts, the water comes back and pools in the heel and the ball. Then a bore runs in through the shallows and collapses at the water's edge. Its swash leaves at ${(wave.u0 / 100).toFixed(1)} m/s and slows at g·sin β = ${(M.DOWNHILL / 100).toFixed(2)} m/s², so it turns ${M.turnOf(wave, L / 2).toFixed(1)} s later, about ${M.metres(meanTop)} m up the beach (${M.metres(Math.min(...tops))} to ${M.metres(Math.max(...tops))} m along its lobes, from wave to wave), and drains back the same way (Shen and Meyer's ballistic swash). Over the prints the sheet is never more than ${(deepest * 10).toFixed(0)} mm deep, yet it smooths each one away within a second or two of covering it. The film it leaves sinks into the sand, and the sheen fades.`;
+
+const backSvg = k.figureSvg({ width: W, height: H, label: LABEL_TEXT, body: back, className: "fp-back" });
+const frontSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="iso-svg fp-layer fp-front" viewBox="0 0 ${W} ${H}" aria-hidden="true">${front.join("")}</svg>`;
+const stage = `<div class="fp-stage" tabindex="0" role="group" aria-roledescription="beach" aria-label="Footprints in wet sand. Tap or click the sand to press a footprint there; press the right arrow key to take the next step, and Space or Enter to send a wave up the beach."><span class="fp-said" aria-live="polite"></span>${backSvg}<canvas class="fp-layer fp-gl" aria-hidden="true"></canvas>${frontSvg}</div>`;
 
 const body = `<div class="fp">${k.plateHtml({
   fig: "Fig 1",
@@ -322,10 +116,10 @@ const body = `<div class="fp">${k.plateHtml({
   hint: "Click the sand to step · Space sends a wave",
   readout: "smooth",
   keys: [
-    { mark: "lit", label: "Wet sand, where the prints press in and the swash runs" },
+    { mark: "lit", label: "Wet sand of the swash zone, rising 1 in 12" },
+    { mark: "flat", label: "Sea, a few centimetres deep at its edge" },
     { mark: "dotted", label: "Swash line: foam stranded where the wave turned" },
-    { mark: "raised", label: "Beach block, cut to show its laminae and water table" },
-    { mark: "flat", label: "Ruler, 5 cm ticks; depth scale on the end, 1 cm" },
+    { mark: "edge", label: `Scale bar, ${M.metres(BAR.length)} m in 10 cm steps` },
   ],
   caption,
   body: stage,
@@ -361,4 +155,4 @@ ${CSS}
 }
 const name = theme === "light" ? "footprints-in-wet-sand-light.html" : "footprints-in-wet-sand.html";
 writeFileSync(join(HERE, name), page);
-console.log("wrote", name, `${(page.length / 1024).toFixed(0)} KB`, `k ${(P.scale * Math.sqrt(1.6)).toFixed(3)}`);
+console.log("wrote", name, `${(page.length / 1024).toFixed(0)} KB`, "view", Object.values(VIEW).map((v) => v.toFixed(0)).join(" "), "bar", BAR.x, BAR.y);

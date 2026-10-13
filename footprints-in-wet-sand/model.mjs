@@ -30,7 +30,7 @@ export const FOOT = {
   pale: { rise: [0.06, 0.18], fall: [0.5, 1.7], reach: 3 },
 };
 
-export const SWASH = { from: -60, reach: 130, spread: 6, lobes: 0.035, smooth: 1.4, drain: [1.6, 3.2] };
+export const SWASH = { from: -60, bore: 1.3, boreSpeed: 0.6, reach: 130, spread: 6, lobes: 0.035, smooth: 1.4, drain: [1.6, 3.2] };
 export const LOOP = { first: 0.9, steps: 4, collapse: 5.4, period: 14.5 };
 
 export const ramp = (a, b, x) => {

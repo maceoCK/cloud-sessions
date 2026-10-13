@@ -30,12 +30,11 @@ uniform vec4 uPrint[MAXP];
 uniform vec4 uAge[MAXP];
 uniform vec4 uWave;
 uniform vec4 uPrev;
-uniform vec3 uEdge[4];
-uniform vec3 uWet;uniform vec3 uDry;uniform vec3 uSkyLo;uniform vec3 uSkyHi;uniform vec3 uWater;uniform vec3 uFoam;uniform vec3 uGlint;
+uniform vec3 uWet;uniform vec3 uDry;uniform vec3 uSea;uniform vec3 uSkyLo;uniform vec3 uSkyHi;uniform vec3 uWater;uniform vec3 uFoam;uniform vec3 uGlint;
 uniform vec4 uGain;uniform float uPool;
 uniform float uClock;
 const float LEN=${f1(STRIP.length)};const float WID=${f1(STRIP.width)};const float SEA=${f1(STRIP.sea)};const float RISE=${STRIP.rise.toFixed(6)};
-const float FROM=${f1(SWASH.from)};const float DOWN=${DOWNHILL.toFixed(4)};const float GRAV=${f1(GRAVITY)};const float LOBE=${f1(SWASH.lobes)};const float SMOOTH=${f1(SWASH.smooth)};
+const float FROM=${f1(SWASH.from)};const float BORE=${f1(SWASH.bore)};const float BORE_U=${f1(SWASH.boreSpeed)};const float DOWN=${DOWNHILL.toFixed(4)};const float GRAV=${f1(GRAVITY)};const float LOBE=${f1(SWASH.lobes)};const float SMOOTH=${f1(SWASH.smooth)};
 const float DEPTH=${f1(GAIT.depth)};const float WALL=${f1(FOOT.wall)};
 const vec2 ROLL=${v2(FOOT.roll)};
 #define NS ${FOOT.sole.length}
@@ -60,7 +59,7 @@ vec2 localOf(vec2 p,vec4 P){vec2 d=p-P.xy;float c=cos(P.z);float s=sin(P.z);retu
 
 float lobe(float x,float seed){return .5*sin(x/37.+seed*6.1)+.3*sin(x/19.+seed*13.7)+.2*sin(x/11.5+seed*29.3);}
 float launch(vec4 w,float x){return w.y*(1.+LOBE*lobe(x,w.z));}
-float frontOf(vec4 w,float x){float s=w.x;if(s<=0.||w.w<.5)return -1e4;return FROM+launch(w,x)*s-.5*DOWN*s*s;}
+float frontOf(vec4 w,float x){float s=w.x;if(w.w<.5||s<-BORE)return -1e4;if(s<=0.)return FROM+BORE_U*launch(w,x)*s;return FROM+launch(w,x)*s-.5*DOWN*s*s;}
 float topOf(vec4 w,float x){float u=launch(w,x);return FROM+u*u/(2.*DOWN);}
 float turnOf(vec4 w,float x){return launch(w,x)/DOWN;}
 vec2 timesOf(vec4 w,float x,float y){float u=launch(w,x);float disc=u*u-2.*DOWN*(y-FROM);if(disc<=0.)return vec2(1e4,-1e4);float r=sqrt(disc);return vec2(u-r,u+r)/DOWN;}
@@ -152,6 +151,15 @@ float sparkleOf(vec2 p,float px){
   return smoothstep(.997,.9995,h)*flick*exp(-r*r/(size*size));
 }
 float fresnel(float c){return .02+.98*pow(1.-clamp(c,0.,1.),5.);}
+float shoreAt(float x){return FROM+1.8*sin(uClock*.75+x/31.)+1.1*sin(uClock*1.21-x/17.+2.);}
+float seaFoamOf(vec2 p,float pxw){
+  vec2 q=vec2(p.x/9.,p.y/2.6)+vec2(uClock*.05,uClock*.22);
+  q+=1.1*(vec2(noise2(q*.45+3.1),noise2(q*.45+7.7))-.5);
+  float r=1.-abs(2.*noise2(q)-1.);
+  float thin=.015+pxw/7.;
+  float lines=smoothstep(.94-thin*5.,.99,r);
+  return lines*smoothstep(.5,.78,fbm2(p.xy/31.+vec2(uClock*.02,uClock*.07)));
+}
 
 float erodeOf(float ex){return smoothstep(0.,SMOOTH,ex);}
 float exposureOf(vec4 w,vec2 t,float born){return w.w<.5?0.:max(0.,min(w.x,t.y)-max(t.x,born));}
@@ -212,35 +220,19 @@ vec2 drainOf(vec4 w,vec2 p){
 
 void main(){
   vec2 vb=viewOf(gl_FragCoord.xy);
-  float pxv=uView.x/uCanvas.x;
   float px=pixelOf();
   float pxw=px/uCam.z;
   float ew=.8*pxw;
-  float cover=1e4;
-  for(int i=0;i<4;i++)cover=min(cover,dot(uEdge[i].xy,vb)+uEdge[i].z);
   vec3 V=towardViewer();
   float c=V.z-RISE*V.y;
   vec3 p0=onFloor(vb,SEA);
   float t0=RISE*p0.y/c;
   vec3 hp=p0+t0*V;
-  vec3 pe=onWallX(vb,LEN);
-  float zsE=SEA+RISE*pe.y;
   float sWave=uWave.x;
-  float waveOn=uWave.w*step(0.,sWave);
-  float frontE=frontOf(uWave,LEN);
-  float band=0.;
-  vec3 bandCol=vec3(0.);
-  if(waveOn>.5&&sWave>0.&&pe.y>-1.&&pe.y<WID+1.&&pe.y<frontE+1.){
-    float hw=pow(max(frontE-pe.y,0.),2.)/(9.*GRAV*sWave*sWave);
-    float upE=1.-smoothstep(turnOf(uWave,LEN)-.2,turnOf(uWave,LEN)+.2,sWave);
-    float head=.35*exp(-max(frontE-pe.y,0.)/5.)*upE*smoothstep(0.,40.,launch(uWave,LEN)-DOWN*sWave);
-    float top=zsE+max(hw,.12)+head;
-    float sz=.7*px/uCam.w;
-    float inY=smoothstep(-sz,sz,pe.y)*smoothstep(-sz,sz,frontE-pe.y);
-    band=smoothstep(zsE-sz,zsE+sz,pe.z)*(1.-smoothstep(top-sz,top+sz,pe.z))*inY;
-    bandCol=mix(lin(uWater)*.8,lin(uFoam),clamp(smoothstep(.1,.35,head)*uGain.z,0.,1.));
-  }
-  if(cover<-1.5*pxv&&band<.001){gl_FragColor=vec4(0.);return;}
+  float waveOn=uWave.w;
+  float shore=shoreAt(hp.x);
+  float dryness=smoothstep(150.,265.,hp.y+14.*(fbm2(hp.xy/47.+vec2(5.3,1.7))-.5));
+  float wetness=1.-dryness;
 
   gHasA=0.;gHasB=0.;gEa=0.;gEb=0.;gRa=0.;gRb=0.;gSuA=1e3;gSuB=1e3;
   vec2 tw=timesOf(uWave,hp.x,hp.y);
@@ -283,7 +275,7 @@ void main(){
     p=p0+tb*V;
     hs=sandAt(p.xy);
     float lift=c*(tb-t0);
-    pool=smoothstep(.01,.06,lift-hs);
+    pool=smoothstep(.01,.06,lift-hs)*wetness;
   }
   vec3 L=lightDir();
   float e=.22;
@@ -313,6 +305,8 @@ void main(){
       floorWet=max(floorWet,smoothstep(LIFT-.1,LIFT+.7,gTa)*smoothstep(0.,-.9,gSuA)*k);}
     if(gHasB>.5){float k=1.-gEb;paleA=max(paleA,paleOf(gTb)*exp(-max(gSuB,0.)/PALE_R)*smoothstep(-1.2,0.,gSuB)*k);
       floorWet=max(floorWet,smoothstep(LIFT-.1,LIFT+.7,gTb)*smoothstep(0.,-.9,gSuB)*k);}
+    paleA*=wetness;
+    floorWet*=wetness;
   }else{
     n=normalize(vec3(-ux,-RISE-uy,1.));
   }
@@ -323,6 +317,9 @@ void main(){
     geomOf(uWave,p.xy,ew,dist,up,turnW,topW,jag);
     wcover=smoothstep(-ew,ew,dist);
   }
+  float seaD=max(shore-p.y,0.)*RISE;
+  float seaCov=smoothstep(-ew,ew,shore-p.y);
+  float water=max(wcover,seaCov);
   vec2 tn=timesOf(uWave,p.x,p.y);
   float reached=waveOn>.5?max(wcover,step(tn.x,sWave)*step(tn.x,tn.y)):0.;
   vec2 dNow=drainOf(uWave,p.xy);
@@ -346,7 +343,7 @@ void main(){
   float mott=fbm2(p.xy/29.+vec2(3.1,7.7))-.5;
   float grain=noise2(p.xy*2.3)-.5;
   vec3 alb=wet*(1.+.16*mott+.12*grain);
-  alb=mix(alb,dry,.09*smoothstep(70.,190.,p.y)*(1.-sheen));
+  alb=mix(alb,dry*(.94+.3*grain+.12*mott),.85*dryness);
   alb=mix(alb,dry,.72*paleA);
   alb*=1.-.32*floorWet;
   alb*=1.-.3*mark;
@@ -356,16 +353,18 @@ void main(){
   float amb=.55;
   float lit=(amb+(1.-amb)*ndl*shadow)/(amb+(1.-amb)*ndl0);
   vec3 col=alb*lit;
-  float film=.26+.34*sheen+.4*floorWet;
+  float glassy=exp(-max(p.y-shore,0.)/22.)*(1.-seaCov);
+  alb*=1.-.12*glassy;
+  float film=(.26+.34*max(sheen,.7*glassy)+.4*floorWet)*mix(1.,.12,dryness);
   film*=1.-.9*paleA;
   vec3 R=reflect(-V,n);
-  float dryTop=1.-.85*wcover;
+  float dryTop=1.-.85*water;
   float inPrint=mix(1.,uPool,floorWet);
   col+=fresnel(dot(n,V))*envOf(R)*film*uGain.x*dryTop*inPrint;
   vec3 H=normalize(L+V);
   float gl=pow(max(dot(n,H),0.),mix(40.,160.,clamp(film,0.,1.)));
   col+=lin(uGlint)*gl*film*uGain.y*shadow*dryTop*inPrint;
-  col+=lin(uSkyLo)*pow(max(dot(n,H),0.),9.)*.045*uGain.y*shadow*dryTop*(1.-.8*paleA);
+  col+=lin(uSkyLo)*pow(max(dot(n,H),0.),9.)*.045*uGain.y*shadow*dryTop*(1.-.8*paleA)*wetness;
 
   if(pool>.001){
     vec3 nw=normalize(vec3(-ux*.3,-RISE-uy*.3,1.));
@@ -373,18 +372,20 @@ void main(){
     vec3 pw=under+fresnel(dot(nw,V))*envOf(reflect(-V,nw))*uGain.x*.4*uPool;
     float g2=pow(max(dot(nw,H),0.),260.);
     pw+=lin(uGlint)*g2*uGain.y*.8*uPool;
-    col=mix(col,pw,pool*(1.-wcover));
+    col=mix(col,pw,pool*(1.-water));
   }
 
   float foamNow=waveOn>.5?foamOf(uWave,p.xy,px,ew):0.;
   float foamPrev=0.;
   if(uPrev.w>.5&&uPrev.x-turnOf(uPrev,LEN*.5)<14.)foamPrev=foamOf(uPrev,p.xy,px,ew);
   float foam=mix(foamPrev,foamNow,reached);
-  if(waveOn>.5){
+  foam=max(foam,seaCov*seaFoamOf(p.xy,pxw)*smoothstep(3.,30.,shore-p.y)*.32);
+  foam=max(foam,seaCov*(1.-wcover)*exp(-max(shore-p.y,0.)/1.3)*(.3+.7*smoothstep(.4,.85,noise2(vec2(p.x/1.3,(shore-p.y)/.8+uClock*.5))))*.4);
+  if(water>.001){
     float speed=max(launch(uWave,p.x)-DOWN*sWave,0.);
-    float hw=pow(max(dist,0.),2.)/(9.*GRAV*max(sWave*sWave,.01));
+    float hw=sWave>0.?pow(max(dist,0.),2.)/(9.*GRAV*sWave*sWave):0.;
     float deep=max(-hs,0.);
-    float turb=1.-exp(-(hw+deep*.5+.02)/.5);
+    float turb=1.-exp(-(hw+seaD+deep*.5+.02)/.5);
     vec2 seed=vec2(uWave.z*17.,uWave.z*5.);
     vec2 g=vec2(0.);
     float ripple=up*smoothstep(0.,10.,dist)*mix(.5,1.,smoothstep(10.,120.,speed))*smoothstep(.02,.25,hw);
@@ -401,54 +402,38 @@ void main(){
     g+=.009*thinB*(cos(kr*dot(p.xy,d1)+om+w2*.3)*d1+cos(kr*dot(p.xy,d2)+om+w3*.3)*d2);
     float streak=(1.-up)*smoothstep(1.,12.,dist)*(1.-smoothstep(.3,.6,pxw/2.2));
     g.x+=.03*streak*(noise2(vec2(p.x/2.2,p.y/18.+max(sWave-turnW,0.)*2.2)+seed)-.5);
+    float swell=smoothstep(0.,12.,shore-p.y);
+    vec2 s1=vec2(.2,.98);vec2 s2=vec2(-.42,.91);
+    vec2 lodS=1.-smoothstep(vec2(.16),vec2(.3),pxw*vec2(.55,1.3)/6.2832);
+    g+=swell*(.02*lodS.x*cos(dot(p.xy,s1)*.55-uClock*2.1+w1*.6)*s1+.011*lodS.y*cos(dot(p.xy,s2)*1.3-uClock*3.3+w3*.5)*s2);
     vec3 nw=normalize(vec3(-g.x,-RISE-g.y,1.));
     float puff=0.;
     if(gHasA>.5)puff=max(puff,gRa*exp(-max(gSuA+1.,0.)/3.5));
     if(gHasB>.5)puff=max(puff,gRb*exp(-max(gSuB+1.,0.)/3.5));
     puff*=.55+.45*fbm2(p.xy/3.+vec2(0.,sWave*.8));
     vec3 seen=mix(col*(.8-.1*turb)*(1.-.45*smoothstep(.1,1.2,deep)),lin(uWater),.35*uGain.w*turb);
+    seen=mix(seen,lin(uSea),1.-exp(-seaD/3.2));
     seen=mix(seen,mix(lin(uWet),lin(uDry),.35)*.9,.45*clamp(puff,0.,1.));
     seen+=fresnel(dot(nw,V))*envOf(reflect(-V,nw))*uGain.x*.9;
     float gw=pow(max(dot(nw,H),0.),320.);
-    seen+=lin(uGlint)*gw*uGain.y*1.2;
-    float lip=exp(-max(dist,0.)/.7)*(1.-up)*(.55+.45*noise2(vec2(p.x/1.7,sWave*3.)+seed));
+    seen+=lin(uGlint)*gw*uGain.y*1.2*(1.-.7*seaCov*(1.-wcover));
+    float lip=waveOn*exp(-max(dist,0.)/.7)*(1.-up)*(.55+.45*noise2(vec2(p.x/1.7,sWave*3.)+seed))*(1.-seaCov);
     seen+=lin(uFoam)*.3*lip*uGain.z;
-    col=mix(col,seen,wcover);
+    col=mix(col,seen,water);
   }
   col=mix(col,lin(uFoam),foam*uGain.z);
-  col+=mix(lin(uGlint),lin(uSkyLo),.4)*sparkleOf(p.xy,pxw)*drainGlint*uGain.y*1.2*(1.-paleA)*(1.-wcover)*(1.-foam);
-  col=mix(col,bandCol,band);
+  col+=mix(lin(uGlint),lin(uSkyLo),.4)*sparkleOf(p.xy,pxw)*drainGlint*uGain.y*1.2*(1.-paleA)*(1.-water)*(1.-foam);
   vec3 outc=pow(max(shoulder(col),0.),vec3(1./2.2));
-  float a=max(smoothstep(-.5*pxv,.5*pxv,cover),band);
   float nz=(hash12(gl_FragCoord.xy+fract(uClock*.61)*91.)+hash12(gl_FragCoord.yx*1.37+fract(uClock*.37)*57.)-1.)/255.;
   outc=clamp(outc+nz,0.,1.);
-  gl_FragColor=vec4(outc*a,a);
+  gl_FragColor=vec4(outc,1.);
 }`;
 
-const edges = (() => {
-  const q = D.quad;
-  const area = q.reduce((sum, p, i) => sum + p[0] * q[(i + 1) % 4][1] - q[(i + 1) % 4][0] * p[1], 0);
-  const out = [];
-  for (let i = 0; i < 4; i++) {
-    const a = q[i];
-    const b = q[(i + 1) % 4];
-    const dx = b[0] - a[0];
-    const dy = b[1] - a[1];
-    const len = Math.hypot(dx, dy);
-    let nx = -dy / len;
-    let ny = dx / len;
-    if (area < 0) {
-      nx = -nx;
-      ny = -ny;
-    }
-    out.push(nx, ny, -(nx * a[0] + ny * a[1]));
-  }
-  return out;
-})();
 
 const themeOf = () => ({
   uWet: tokenOf("--fp-wet"),
   uDry: tokenOf("--fp-dry"),
+  uSea: tokenOf("--fp-sea"),
   uSkyLo: tokenOf("--fp-sky-lo"),
   uSkyHi: tokenOf("--fp-sky-hi"),
   uWater: tokenOf("--fp-water"),
@@ -464,7 +449,7 @@ const layerAt = (maxRatio) =>
     view: [D.W, D.H],
     camera: D.camera,
     uniforms: ["uPrint", "uAge", "uWave", "uPrev", "uClock"],
-    fixed: { uEdge: edges, uSole: FOOT.sole.flat(), ...themeOf() },
+    fixed: { uSole: FOOT.sole.flat(), ...themeOf() },
     maxRatio,
   });
 const RATIOS = [2, 1.5, 1, 0.75];
@@ -497,7 +482,7 @@ let frozen = false;
 function planCycle(at) {
   const steps = tourSteps(state.cycle);
   const plan = steps.map((foot, index) => ({ at: at + foot.at, kind: "step", foot, step: index + 1 }));
-  plan.push({ at: at + LOOP.collapse, kind: "wave" });
+  plan.push({ at: at + LOOP.collapse - SWASH.bore, kind: "wave", collapse: at + LOOP.collapse });
   plan.push({ at: at + LOOP.period, kind: "cycle" });
   state.plan = plan;
   state.next = 0;
@@ -556,7 +541,7 @@ function advance(dt) {
     while (state.next < state.plan.length && state.plan[state.next].at <= state.clock) {
       const item = state.plan[state.next++];
       if (item.kind === "step") press(item.foot, item.at, item.step);
-      else if (item.kind === "wave") launchWave(item.at);
+      else if (item.kind === "wave") launchWave(item.collapse);
       else {
         state.cycle += 1;
         planCycle(item.at);
@@ -593,10 +578,10 @@ function phaseOf() {
     const front = frontAt(w, mid, s);
     const turn = turnOf(w, mid);
     const alive = state.prints.filter((print) => erosionAt(print) < 0.97).length;
-    if (front < 0 && s < turn) return { word: "wave breaking", text: `bore ${metres(-SWASH.from)} m out · swash coming` };
-    if (Math.abs(s - turn) < 0.3) return { word: "run-up", text: `run-up ${metres(topOf(w, mid))} m · ${turn.toFixed(1)} s` };
-    if (s < turn) return { word: "swash", text: `swash ${(speedAt(w, mid, s) / 100).toFixed(1)} m/s · ${metres(front)} m up` };
-    if (front > 0) return { word: "backwash", text: `backwash ${(-speedAt(w, mid, s) / 100).toFixed(1)} m/s · ${alive ? `${alive} ${alive === 1 ? "print" : "prints"} left` : "prints gone"}` };
+    if (s <= 0) return { word: "wave coming", text: `bore ${metres(-SWASH.boreSpeed * launchAt(w, mid) * s)} m out · ${((SWASH.boreSpeed * launchAt(w, mid)) / 100).toFixed(1)} m/s` };
+    if (Math.abs(s - turn) < 0.3) return { word: "run-up", text: `run-up ${metres(topOf(w, mid) - SWASH.from)} m · ${turn.toFixed(1)} s` };
+    if (s < turn) return { word: "swash", text: `swash ${(speedAt(w, mid, s) / 100).toFixed(1)} m/s · ${metres(front - SWASH.from)} m up` };
+    if (front > SWASH.from) return { word: "backwash", text: `backwash ${(-speedAt(w, mid, s) / 100).toFixed(1)} m/s · ${alive ? `${alive} ${alive === 1 ? "print" : "prints"} left` : "prints gone"}` };
     return { word: "drained", text: `smooth again · sheen draining` };
   }
   if (state.wave && waveAge() < 2 * turnOf(state.wave, mid) + 4 && !(state.prints.length && state.clock - state.lastStep < 1.4)) return { word: "drained", text: state.prints.length ? `${state.prints.length} ${state.prints.length === 1 ? "print" : "prints"} · sheen draining` : "smooth again · sheen draining" };
@@ -661,7 +646,8 @@ function drawFallback() {
     parts.push(`<g opacity="${keep.toFixed(3)}">${halo}${shown.map((ring) => `<path class="fp-print-rim" d="${ring.d}" opacity="${ring.on.toFixed(2)}"/>`).join("")}${shown.map((ring) => `<path class="fp-print-floor" d="${ring.d}" opacity="${ring.on.toFixed(2)}"/>`).join("")}${pools}</g>`);
   }
   printLayer.innerHTML = parts.join("");
-  const xs = Array.from({ length: 61 }, (_, i) => (i / 60) * STRIP.length);
+  const xs = Array.from({ length: 81 }, (_, i) => D.view.x0 - 20 + (i / 80) * (D.view.x1 - D.view.x0 + 40));
+  const far = D.view.y1 + 20;
   let sheet = "";
   let lace = "";
   let laceOpacity = 0;
@@ -671,16 +657,16 @@ function drawFallback() {
     const s = state.clock - wave.at;
     const turn = turnOf(wave, mid);
     const shown = ramp(turn, turn + 0.6, s) * Math.exp(-Math.max(s - turn, 0) / 9);
-    if (shown > 0.02) lines.push(`<path d="${pathOf(xs.map((x) => surfacePoint(x, Math.min(STRIP.width, topOf(wave, x)))))}" opacity="${shown.toFixed(2)}"/>`);
+    if (shown > 0.02) lines.push(`<path d="${pathOf(xs.map((x) => surfacePoint(x, Math.min(far, topOf(wave, x)))))}" opacity="${shown.toFixed(2)}"/>`);
   };
   if (state.wave) {
     const s = waveAge();
     const turn = turnOf(state.wave, mid);
     if (waveBusy()) {
-      const front = xs.map((x) => Math.min(STRIP.width, frontAt(state.wave, x, s)));
-      if (Math.max(...front) > 0) {
-        const edge = xs.map((x, i) => surfacePoint(x, Math.max(0, front[i])));
-        sheet = pathOf([...edge, surfacePoint(STRIP.length, 0), surfacePoint(0, 0)], true);
+      const front = xs.map((x) => Math.min(far, frontAt(state.wave, x, s)));
+      if (Math.max(...front) > SWASH.from) {
+        const edge = xs.map((x, i) => surfacePoint(x, Math.max(SWASH.from, front[i])));
+        sheet = pathOf([...edge, surfacePoint(xs[xs.length - 1], SWASH.from), surfacePoint(xs[0], SWASH.from)], true);
         laceOpacity = 1 - ramp(turn - 0.3, turn + 0.5, s);
         if (laceOpacity > 0.02) lace = pathOf(edge);
       }
@@ -731,7 +717,7 @@ function hold() {
     const at = state.clock + (state.prints.length && !waveBusy() ? 0.6 : 0);
     state.plan = [];
     state.next = 0;
-    if (state.prints.length && !waveBusy()) state.plan.push({ at, kind: "wave" });
+    if (state.prints.length && !waveBusy()) state.plan.push({ at, kind: "wave", collapse: at + SWASH.bore });
     const resume = at + (state.prints.length || waveBusy() ? 7.5 : 1.2);
     state.plan.push({ at: resume, kind: "cycle" });
     run();
@@ -756,9 +742,25 @@ function stepAt(x, y, step = 0) {
   press(foot, state.clock, step);
 }
 
+function walkable(y) {
+  const { sinA, cosA, sinE, cosE, k } = cameraOf(D.P);
+  const z = surfaceAt(y);
+  const margin = 36;
+  const sx = (x) => D.P.origin[0] + (x * sinA - y * cosA) * k;
+  const sy = (x) => D.P.origin[1] + ((x * cosA + y * sinA) * sinE - z * cosE) * k;
+  const bounds = (f, lo, hi) => {
+    const a = f(0);
+    const slope = f(1) - a;
+    return [(lo - a) / slope, (hi - a) / slope].sort((p, q) => p - q);
+  };
+  const [ax, bx] = bounds(sx, margin, D.W - margin);
+  const [ay, by] = bounds(sy, margin, D.H - margin);
+  return [Math.max(ax, ay), Math.min(bx, by)];
+}
+
 function clearLine() {
   const lines = [GAIT.line, GAIT.line - 26, GAIT.line + 26, GAIT.line + 48];
-  const near = state.prints.filter((print) => print.x < FOOT.length + GAIT.step);
+  const near = state.prints.filter((print) => print.x < walkable(print.y)[0] + FOOT.length + GAIT.step);
   const gap = (y) => Math.min(Infinity, ...near.map((print) => Math.abs(print.y - y)));
   return lines.reduce((best, y) => (gap(y) > gap(best) ? y : best));
 }
@@ -780,9 +782,9 @@ stage.addEventListener("pointercancel", () => {
 
 function tapAt(clientX, clientY) {
   const [x, y] = planeAt(clientX, clientY);
-  if (x < -4 || x > STRIP.length + 4 || y < -4 || y > STRIP.width + 4) return;
-  const cx = Math.min(STRIP.length - FOOT.length / 2 - 4, Math.max(FOOT.length / 2 + 4, x));
-  const cy = Math.min(STRIP.width - 12, Math.max(12, y));
+  if (y < SWASH.from + 14) return;
+  const cx = x;
+  const cy = y;
   hold();
   stepAt(cx, cy);
   run();
@@ -796,7 +798,7 @@ stage.addEventListener("keydown", (event) => {
       state.clock += 7;
       launchWave(state.clock - 6.5);
       sweep();
-    } else if (!waveBusy()) launchWave(state.clock);
+    } else if (!waveBusy()) launchWave(state.clock + SWASH.bore);
     run();
     return;
   }
@@ -805,12 +807,13 @@ stage.addEventListener("keydown", (event) => {
     hold();
     const lastPrint = state.prints[state.prints.length - 1];
     const lineOf = (print) => print.y - (print.side * GAIT.width) / 2;
-    let x = lastPrint ? lastPrint.x + GAIT.step + FOOT.length / 2 : FOOT.length / 2 + 12;
     let y = lastPrint ? lineOf(lastPrint) : GAIT.line;
+    const [from, to] = walkable(y);
+    let x = lastPrint ? lastPrint.x + GAIT.step + FOOT.length / 2 : from + FOOT.length / 2;
     let step = lastPrint && lastPrint.step ? lastPrint.step + 1 : 1;
-    if (x > STRIP.length - FOOT.length / 2 - 4) {
-      x = FOOT.length / 2 + 12;
+    if (x + FOOT.length / 2 > to) {
       y = clearLine();
+      x = walkable(y)[0] + FOOT.length / 2;
       step = 1;
     }
     stepAt(x, y, step);
