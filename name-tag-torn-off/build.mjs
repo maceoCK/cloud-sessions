@@ -318,6 +318,15 @@ function plate() {
   const g0 = at([PLATE.x, Y_FACE, PLATE.z + PLATE.h]), g1 = at([PLATE.x + PLATE.w, Y_FACE, PLATE.z]);
   const sheen = `<linearGradient id="nt-sheen" gradientUnits="userSpaceOnUse" x1="${fx(g0[0])}" y1="${fx(g0[1])}" x2="${fx(g1[0])}" y2="${fx(g1[1])}"><stop offset="0" class="nt-sheen-dark"/><stop offset=".3" class="nt-sheen-none"/><stop offset=".44" class="nt-sheen-light"/><stop offset=".56" class="nt-sheen-none"/><stop offset=".78" class="nt-sheen-soft"/><stop offset="1" class="nt-sheen-dark"/></linearGradient><path class="nt-sheen" d="${slab.shades[2]}" fill="url(#nt-sheen)"/>`;
   out.push(S(slab, { tone: "mid", className: "nt-steel", inner: sheen + grainSvg + chamfer }));
+  // Tea staining: outdoors, stainless browns faintly round its screws, where water sits, and the
+  // lower screws weep a short streak down the face.
+  for (const [x, z] of SCREWS) {
+    out.push(`<path class="nt-tea" d="${faceRing(x, z, 9.5, Y_FACE)}"/>`);
+    if (z < PLATE.z + PLATE.h / 2) {
+      const streak = [[x - 2.2, z - 4], [x + 2.2, z - 4], [x + 1.4, z - 15], [x + 0.6, PLATE.z + 2.5], [x - 0.6, PLATE.z + 2.5], [x - 1.4, z - 15]];
+      out.push(`<path class="nt-tea nt-tea-run" d="${pathOf(streak.map(([a, b]) => at([a, Y_FACE, b])), true)}"/>`);
+    }
+  }
   for (const [x, z] of SCREWS) {
     out.push(L(faceRing(x, z, 6.4, Y_FACE), { tone: "lo" }));
     out.push(`<path class="nt-screw" d="${faceRing(x, z, 5.3, Y_FACE)}"/>`);
