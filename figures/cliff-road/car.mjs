@@ -181,3 +181,39 @@ export function carSvg(pose, P, G, k, { lamps = true, brake = 0, cut = null, kee
   if (keep(-10.7)) faceOver.push(`<path class="cr-tail cr-wrap${brake > 0.5 ? " cr-brake" : ""}" d="${k.pathOf([scr(-10.7, side * H, 3.4), scr(-9.9, side * H, 3.4), scr(-9.9, side * H, 3.9), scr(-10.7, side * H, 3.9)], true)}"/>`);
   return halo + `<g class="cr-car-body">${ordered.join("")}${faceOver.join("")}</g>`;
 }
+
+// ---- the windsock: a striped truncated cone on a swivel, streaming downwind --------------------------
+// `wind` is metres per second, `heading` the direction it blows toward. A sock is full at 7.7 m/s (15 kn).
+export function windOf(t) {
+  const speed = 10.5 + 2.4 * Math.sin(t * 0.71) + 1.4 * Math.sin(t * 1.93 + 1.1) + 0.7 * Math.sin(t * 4.3 + 0.4);
+  const heading = Math.PI + 0.16 + 0.1 * Math.sin(t * 1.27) + 0.05 * Math.sin(t * 3.1);
+  return { speed, heading };
+}
+
+export function sockSvg(at, wind, P, G, k) {
+  const [x, y, z] = at;
+  const top = z + 30;
+  const fill = Math.min(1, wind.speed / 7.7);
+  const droop = (1 - fill) * 1.05 + 0.04 * Math.sin(wind.speed * 3.1);
+  const dir = [Math.cos(wind.heading) * Math.cos(droop), Math.sin(wind.heading) * Math.cos(droop), -Math.sin(droop)];
+  const V = G.viewOf(P);
+  const parts = [];
+  parts.push(k.solidSvg(G.disc(0, 1.2, 1.6, G.frameOf([x, y, z], [0, 0, 1], [1, 0, 0], [0, 1, 0]), P), { tone: "lo" }));
+  parts.push(k.solidSvg(G.disc(1.2, 31, 0.45, G.frameOf([x, y, z], [0, 0, 1], [1, 0, 0], [0, 1, 0]), P), { tone: "mid", crease: "none" }));
+  const mouth = [x + dir[0] * 0.8, y + dir[1] * 0.8, top + dir[2] * 0.8];
+  const F = G.frameAlong(mouth, dir);
+  const length = 18;
+  const bands = [];
+  for (let i = 0; i < 5; i++) {
+    const s0 = (i / 5) * length;
+    const s1 = ((i + 1) / 5) * length;
+    const r = (s) => 2.3 - (1.3 * s) / length;
+    const paths = G.lathe([[s0, 0], [s0, r(s0)], [s1, r(s1)], [s1, 0]], F, P, { steps: 24, rims: i === 0 ? "first" : i === 4 ? "last" : "none" });
+    bands.push({ key: G.dot3(G.add3(mouth, G.mul3(dir, (s0 + s1) / 2)), V), svg: k.solidSvg(paths, { tone: "hi", crease: "lo", className: i % 2 ? "cr-sock" : "cr-sock cr-sock-band" }) });
+  }
+  // the ring that holds the mouth open, and the swivel arm to the pole
+  parts.push(k.lineSvg(k.pathOf([k.iso([x, y, top], P), k.iso(mouth, P)]), { tone: "mid" }));
+  bands.sort((a, b) => a.key - b.key);
+  parts.push(...bands.map((b) => b.svg));
+  return parts.join("");
+}

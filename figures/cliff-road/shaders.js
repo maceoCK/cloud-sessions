@@ -32,6 +32,7 @@ void train(vec2 p,float t,vec2 dir,float lambda,float amp,float ph,inout float h
 // the swell: phase from the distance to the coast (refraction wraps the crests round the headland)
 // plus a slant, so each crest reaches the tip first and runs back along both cliffs
 float swellPhase(vec2 p,float d){return uSwell.x*uTime-uSwell.y*(d+uSwell.w*(uSwell.z-p.x));}
+float crest;
 void surface(vec2 p,out float h,out vec2 g,out float foam,out float d){
   d=dWater(p);
   float t=uTime;
@@ -66,6 +67,8 @@ void surface(vec2 p,out float h,out vec2 g,out float foam,out float d){
   float trails=noise2(p*.06+streak*.3+vec2(.02*t,-.03*t));
   foam+=.22*smoothstep(.7,.86,trails)*smoothstep(48.,10.,d)*smoothstep(.5,.9,noise2(p*.21+vec2(t*.05,0.)));
   foam=clamp(foam,0.,1.);
+  // the swell's crest line, catching the moon as it steepens over the shelf
+  crest=exp(-pow(min(psi,1.-psi)*6.,2.))*smoothstep(90.,20.,d)*(.4+.6*an);
 }
 vec3 skyOf(vec3 r){
   float up=smoothstep(-.15,.9,r.z);
@@ -96,6 +99,7 @@ vec4 waterAt(vec2 p,float hgt,vec2 g,float foam,float d){
     vec3 body=mix(vec3(.018,.04,.05),vec3(.006,.012,.018),deep);
     vec3 col=mix(body,skyOf(r),f)+vec3(.85,.9,1.)*spark;
     col+=vec3(.05,.07,.08)*smoothstep(.5,2.6,hgt)*(1.-deep*.5);
+    col+=vec3(.07,.09,.11)*crest;
     col=mix(col,vec3(.55,.6,.65),foam);
     col=tonemap(col,1.25);
     float a=mix(.62,.95,deep);
@@ -106,6 +110,7 @@ vec4 waterAt(vec2 p,float hgt,vec2 g,float foam,float d){
   vec3 deepC=vec3(.64,.725,.77);
   vec3 seen=mix(shallow,deepC,deep);
   seen*=1.-.045*smoothstep(-2.,-.2,-hgt*.6);
+  seen=mix(seen,vec3(.9,.94,.95),crest*.35);
   seen=mix(seen,vec3(.95,.97,.98),f*.55);
   seen=mix(seen,vec3(1.),min(1.,spark*.6));
   float cover=mix(.5,.86,deep);
@@ -197,7 +202,7 @@ void main(){
   vec4 col;
   if(uPale<.5){
     vec3 c=vec3(1.,.9,.74)*e+vec3(1.,.1,.05)*t+vec3(1.,.95,.82)*stud;
-    c=tonemap(c,.9)*.92;
+    c=tonemap(c,.62)*.82;
     col=vec4(c,max(c.r,max(c.g,c.b)));
   }else{
     float a=.62*(1.-exp(-1.1*e));
@@ -403,9 +408,15 @@ function gpuOf(D, stage, pale) {
   const smkB = new Float32Array(96);
   const spr = new Float32Array(192);
   const sprB = new Float32Array(192);
-  const WIND = [-6, 1.2];
+  const windNow = (t) => {
+    const w = CARS.windOf(t);
+    // droplets and smoke ride at about 40% of the wind
+    return [Math.cos(w.heading) * w.speed * M.U * 0.4, Math.sin(w.heading) * w.speed * M.U * 0.4];
+  };
+  let WIND = windNow(0);
 
   function step(dt, clock, car, calm) {
+    WIND = windNow(clock);
     // tyre smoke from the rear wheels while the tail is out
     const slip = Math.abs(car.beta);
     smokeAt -= dt;

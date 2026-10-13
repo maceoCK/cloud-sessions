@@ -9,7 +9,7 @@ import { kitScript, glScript } from "../../anatomy/scripts/inline-kit.mjs";
 import * as M from "./model.mjs";
 import * as T from "./terrain.mjs";
 import * as SC from "./scene.mjs";
-import { carSvg } from "./car.mjs";
+import { carSvg, sockSvg, windOf } from "./car.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const theme = process.argv.includes("--light") ? "light" : "dark";
@@ -53,7 +53,16 @@ const STACKS = [
 ];
 const stackSdf = (x, y, z) => {
   let d = Infinity;
-  for (const s of STACKS) if (z <= s.top) d = Math.min(d, Math.hypot(x - s.x, y - s.y) - s.r * (1 + 0.55 * (T.fbmZ(x / 6, y / 6, z, s.seed, 18) - 0.5)) * (1 - 0.18 * (z / s.top) ** 2));
+  for (const s of STACKS) {
+    if (z > s.top) continue;
+    // a stack leans away from the swell and is cut into by it: offset centre, rough outline, waist at the notch
+    const lean = (z / s.top) ** 1.5 * 4;
+    const cx = s.x - lean;
+    const cy = s.y + lean * 0.4;
+    const rough = 1 + 0.95 * (T.fbmZ(x / 5, y / 5, z, s.seed, 14) - 0.5) + 0.35 * (T.fbm(x / 2.5, y / 2.5, s.seed + 9, 2) - 0.5);
+    const waist = z > 40 && z < 62 ? 0.82 : 1;
+    d = Math.min(d, Math.hypot(x - cx, y - cy) - s.r * rough * waist * (1 - 0.22 * (z / s.top) ** 2));
+  }
   return d;
 };
 const STEP = 2;
@@ -414,6 +423,9 @@ for (const [i, [x, y, r]] of [[20, -40, 4.2], [96, 10, 3.4], [128, -42, 3.8], [-
   const bi = SC.bin({ P, x: -110, y: 14, z: Z.road });
   put("bin", bi.at, bi.svg);
 }
+// a windsock inside the hairpin: crosswind warning for the exposed headland
+const SOCK = [146, -2, Z.road];
+put("sock", SOCK, sockSvg(SOCK, windOf(0), P, G, k));
 // a few loose rocks on the plateau
 for (const [i, [x, y, r]] of [[-114, -50, 2.6], [150, -6, 3.6], [28, -46, 2.2], [104, 30, 2.8], [-60, -40, 3.0]].entries()) put(`rock${i}`, [x, y, Z.road], SC.boulder({ P, x, y, z: Z.road, r, seed: 200 + i }));
 items.sort((a, b) => a.key - b.key);
@@ -505,6 +517,7 @@ const DATA = {
   paceMin: 0.85,
   portal: PORTALS[0].plane,
   x0: X0,
+  sock: SOCK,
   road: Z.road,
   sea: Z.sea,
   box: BOX,
@@ -529,7 +542,10 @@ const swell6 = M.swellOf(6);
 const sweep = (SWELL_SLANT_FOR_CAPTION * (236 - M.PORTAL_X)) / u / swell6.c;
 const sprayTop = M.SPRAY.rise ** 2 / (2 * M.GRAV);
 const roadAbove = (Z.road - Z.sea) / u;
-const caption = `A headland on a plinth, at night: ${Math.round(road.length - (road.first + road.n - 1 - road.last) * road.ds)} m of road with no guard rail runs ${roadAbove} m above the sea between two tunnel portals. Damp asphalt under sea mist grips at μ ${M.MU}, so the ${TIP_R} m hairpin holds on grip up to √(μgR) = ${kmh(vGrip)} km/h and the ${COVE_R} m cove bend up to ${kmh(Math.sqrt(M.MU * M.GRAV * COVE_R))} km/h. The driver brakes hard from up to ${Math.round(LAP.top)} km/h on the far leg, and turns in faster than grip allows. The rear tyres then slide at μ ${M.MU_SLIDE}, the path widens to v²/(μg), and the car drifts out toward the drop with its nose held into the bend, up to ${Math.round(LAP.peakDrift)}°. Near the edge the driver lifts, which tightens the line. At the top of the control the model's line clears the edge by ${LAP.least.toFixed(1)} m; at the bottom the car corners on grip, with ${Math.round(CALM.peakDrift)}° of tyre slip at most. The tyre marks are the rear wheels' path on that fastest lap. The swell has an ${M.SWELL.period} s period; in 6 m of water its crests are ${Math.round(swell6.lambda)} m apart and travel ${swell6.c.toFixed(1)} m/s. Refraction wraps them round the headland, so each one breaks on the tip first and runs back along both cliffs in about ${sweep.toFixed(0)} s, throwing spray up the rock at up to ${M.SPRAY.rise} m/s, ${sprayTop.toFixed(1)} m high.`;
+const gusts = Array.from({ length: 2000 }, (_, i) => windOf(i * 0.05).speed);
+const windLo = Math.min(...gusts);
+const windHi = Math.max(...gusts);
+const caption = `A headland on a plinth, at night: ${Math.round(road.length - (road.first + road.n - 1 - road.last) * road.ds)} m of road with no guard rail runs ${roadAbove} m above the sea between two tunnel portals. Damp asphalt under sea mist grips at μ ${M.MU}, so the ${TIP_R} m hairpin holds on grip up to √(μgR) = ${kmh(vGrip)} km/h and the ${COVE_R} m cove bend up to ${kmh(Math.sqrt(M.MU * M.GRAV * COVE_R))} km/h. The driver brakes hard from up to ${Math.round(LAP.top)} km/h on the far leg, and turns in faster than grip allows. The rear tyres then slide at μ ${M.MU_SLIDE}, the path widens to v²/(μg), and the car drifts out toward the drop with its nose held into the bend, up to ${Math.round(LAP.peakDrift)}°. Near the edge the driver lifts, which tightens the line. At the top of the control the model's line clears the edge by ${LAP.least.toFixed(1)} m; at the bottom the car corners on grip, with ${Math.round(CALM.peakDrift)}° of tyre slip at most. The tyre marks are the rear wheels' path on that fastest lap. The swell has an ${M.SWELL.period} s period; in 6 m of water its crests are ${Math.round(swell6.lambda)} m apart and travel ${swell6.c.toFixed(1)} m/s. Refraction wraps them round the headland, so each one breaks on the tip first and runs back along both cliffs in about ${sweep.toFixed(0)} s, throwing spray up the rock at up to ${M.SPRAY.rise} m/s, ${sprayTop.toFixed(1)} m high. An onshore wind gusting ${windLo.toFixed(0)} to ${windHi.toFixed(0)} m/s holds the windsock in the hairpin straight out, since a sock fills at 7.7 m/s (15 knots), and carries the spray and the tyre smoke inland.`;
 const body = `<div class="cr">${k.plateHtml({
   fig: "Fig 5A",
   title: "Cliff road at night",
@@ -561,4 +577,10 @@ const CSS = readFileSync(join(HERE, "cliff.css"), "utf8");
 const page = k.pageHtml({ title: "Cliff road at night", theme, body: `<style>${CSS}</style>${body}`, script: SCRIPT, width: 1000 });
 const name = theme === "light" ? "cliff-road-light.html" : "cliff-road.html";
 writeFileSync(join(HERE, name), page);
+// the published artifact: page content only (the host adds the document shell), committed to the night look
+if (theme === "dark") {
+  const SITE_CSS = `:root{color-scheme:dark}*{box-sizing:border-box}body{background:#090c0f;color:#a3a3a3;font:14px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}.iso-page{width:min(1000px,100% - 32px);margin:40px auto 72px}.iso{background:#090c0f;--anatomy-page:#090c0f}`;
+  const artifact = `<title>Cliff Road at Night</title><style>${k.ISO_CSS}${SITE_CSS}${CSS}</style><div class="iso" data-theme="dark"><main class="iso-page">${body}</main></div><script type="module">${SCRIPT.replace(/<\/(script)/gi, "<\\/$1")}</script>`;
+  writeFileSync(join(HERE, "cliff-road-artifact.html"), artifact);
+}
 console.log("wrote", name, `${(page.length / 1024).toFixed(0)} KB`, `scale ${P.scale.toFixed(3)}`, `limit ${LIMIT.toFixed(3)}`, `${((Date.now() - t0) / 1000).toFixed(1)} s`);

@@ -250,17 +250,17 @@
 .iso:not([data-theme="light"]) .cr {
   --anatomy-card: #0d1013;
   --anatomy-paper: #0d1013;
-  --anatomy-face: #151a1f;
-  --anatomy-top: #161b20;
-  --anatomy-shade-0: #0a0d10;
-  --anatomy-shade-1: #0d1115;
-  --anatomy-shade-2: #10151a;
-  --anatomy-shade-3: #13191f;
+  --anatomy-face: #171d23;
+  --anatomy-top: #1d242c;
+  --anatomy-shade-0: #0b0f13;
+  --anatomy-shade-1: #10161c;
+  --anatomy-shade-2: #161d25;
+  --anatomy-shade-3: #1c252e;
   --anatomy-lit-top: #2a3036;
   --anatomy-lit-shade: #1e2429;
   --anatomy-hi: #cfd6dd;
-  --anatomy-mid: #5f6872;
-  --anatomy-lo: #39414a;
+  --anatomy-mid: #66707b;
+  --anatomy-lo: #3c4550;
   --anatomy-faint: #242b33;
   --anatomy-dot: #dfe6ee;
   --cr-asphalt: #08090b;
@@ -300,4 +300,19 @@
     width: 112%;
     margin: -4% -6% -2%;
   }
+}
+
+.cr-sock-band > .iso-fill,
+.cr-sock-band > .iso-shade,
+.cr-sock-band > .iso-top {
+  fill: var(--cr-sock);
+}
+
+.cr {
+  --cr-sock: #b8442f;
+}
+
+.iso[data-theme="light"] .cr,
+.cr[data-theme="light"] {
+  --cr-sock: #e0573c;
 }

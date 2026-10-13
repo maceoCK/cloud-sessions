@@ -8,7 +8,7 @@ const itemsNode = front.querySelector(".cr-items");
 const carNode = itemsNode.querySelector('[data-item="car"]');
 const slots = [...front.querySelectorAll(".cr-inside")];
 const still = matchMedia("(prefers-reduced-motion: reduce)");
-const pale = !!root.closest('[data-theme="light"]');
+const pale = root.closest("[data-theme]")?.getAttribute("data-theme") === "light";
 const K = { iso, pathOf, solidSvg, lineSvg, dotsSvg };
 const clampTo = (value, low, high) => Math.min(high, Math.max(low, value));
 
@@ -33,6 +33,15 @@ const gpu = gpuOf(D, stage, pale);
 if (gpu) stage.setAttribute("data-gl", "");
 
 const items = [...itemsNode.children].filter((node) => node !== carNode).map((node) => ({ node, key: +node.dataset.k }));
+const sockNode = itemsNode.querySelector('[data-item="sock"]');
+let sockDrawn = -1;
+function drawSock(t) {
+  // redraw at 20 Hz: the sock's flutter is slow and its paths are not cheap
+  const slot = Math.floor(t * 20);
+  if (!sockNode || slot === sockDrawn) return;
+  sockDrawn = slot;
+  sockNode.innerHTML = CARS.sockSvg(D.sock, CARS.windOf(t), D.P, G, K);
+}
 const V = G.viewOf(D.P);
 const depthAt = (x, y, z) => x * V[0] + y * V[1] + z * V[2];
 
@@ -139,6 +148,7 @@ function tick(now) {
     state.target = TOUR[state.tourLap];
   }
   placeCar();
+  drawSock(state.clock);
   if (gpu) {
     gpu.step(dt, state.clock, car, false);
     gpu.draw(smooth(0, 1, (state.clock - 0.15) / 0.9), state.clock, car, state.clock);
