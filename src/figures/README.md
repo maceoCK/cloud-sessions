@@ -14,6 +14,7 @@ export default {
   fig: "Fig 2",                 // card corner, top left
   title: "Sixteen drawers",     // card corner, top right (shown uppercase)
   hint: "Hover a drawer to try it",   // card corner, bottom left (shown uppercase)
+  touch: "Tap a drawer to try it",    // optional: the hint on touch screens (default: hover/click become tap)
   width: 600, height: 380,      // the svg viewBox
   label: "…",                   // the svg's aria-label: what the object is and what it shows
   stage: { role: "slider" | "group", label: "…controls in words…", attrs: { "aria-valuetext": "…" } },

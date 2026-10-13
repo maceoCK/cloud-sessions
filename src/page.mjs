@@ -278,6 +278,8 @@ a:hover{text-decoration-color:var(--pink)}
 }
 
 /* contact */
+.hint-touch{display:none}
+@media (hover:none) and (pointer:coarse){.hint-fine{display:none}.hint-touch{display:inline}}
 .contact{margin-top:clamp(100px,12vw,180px)}
 .contact .say{margin:clamp(24px,3vw,44px) 0 0;font:italic 400 clamp(26px,3vw,42px)/1.1 var(--serif);color:var(--ink)}
 .contact .mail{display:block;margin-top:18px;padding-bottom:min(4%,52px);color:var(--ink);text-decoration:none;width:min(100%,1180px)}
