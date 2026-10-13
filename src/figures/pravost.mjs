@@ -142,7 +142,9 @@ function pan(side) {
   });
   // far struts behind the pan's bowl, near ones in front
   const F = G.frameOf([0, y, rim - 4], UP, [1, 0, 0], [0, 1, 0]);
-  const bowl = S(G.solidOf([[0, 6], [0.8, 6], [1.4, 9, 1], [2.6, 14, 1], [3.6, 18, 1], [4.2, PAN_R], [5, PAN_R]], F, P), { tone: "hi" });
+  // the dish's top: a rolled lip, a shallow well and the hanger's boss
+  const dish = L(G.circleOf(F, 5, PAN_R - 1.6, P, 96), { tone: "lo" }) + L([G.circleOf(F, 5, PAN_R - 5, P, 96), G.circleOf(F, 5, 2.4, P, 32)].join(""), { tone: "faint" });
+  const bowl = S(G.solidOf([[0, 6], [0.8, 6], [1.4, 9, 1], [2.6, 14, 1], [3.6, 18, 1], [4.2, PAN_R], [5, PAN_R]], F, P), { tone: "hi", inner: dish });
   const depthOf = (p) => k.depthOf(p, P);
   const strutSvg = (s) => tubePieces(s, 0.45, P, { maxLength: 80 }).map((p) => tubeSvg(p, { tone: "mid" })).join("");
   const far = struts.filter((s) => depthOf(s[1]) < depthOf([0, y, rim]));
