@@ -1862,9 +1862,10 @@ function phaseOf() {
     if (front < 0 && s < turn) return { word: "wave breaking", text: `bore ${metres(-SWASH.from)} m out · swash coming` };
     if (Math.abs(s - turn) < 0.3) return { word: "run-up", text: `run-up ${metres(topOf(w, mid))} m · ${turn.toFixed(1)} s` };
     if (s < turn) return { word: "swash", text: `swash ${(speedAt(w, mid, s) / 100).toFixed(1)} m/s · ${metres(front)} m up` };
-    if (front > 0) return { word: "backwash", text: `backwash ${(-speedAt(w, mid, s) / 100).toFixed(1)} m/s · ${alive} ${alive === 1 ? "print" : "prints"} left` };
+    if (front > 0) return { word: "backwash", text: `backwash ${(-speedAt(w, mid, s) / 100).toFixed(1)} m/s · ${alive ? `${alive} ${alive === 1 ? "print" : "prints"} left` : "prints gone"}` };
     return { word: "drained", text: `smooth again · sheen draining` };
   }
+  if (state.wave && waveAge() < 2 * turnOf(state.wave, mid) + 4 && !(state.prints.length && state.clock - state.lastStep < 1.4)) return { word: "drained", text: state.prints.length ? `${state.prints.length} ${state.prints.length === 1 ? "print" : "prints"} · sheen draining` : "smooth again · sheen draining" };
   const recent = state.clock - state.lastStep;
   if (state.prints.length && recent < 1.4) {
     const n = state.prints.length;
