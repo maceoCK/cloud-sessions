@@ -13,7 +13,7 @@ export const PERSON = {
 export const META = {
   title: "Maceo Cardinale Kwik",
   description:
-    "Maceo Cardinale Kwik is an engineer and founder in New York City. He founded Datost, an applied research lab backed by Y Combinator and OpenAI, building ED1TH: glasses that put a quiet, capable computer in the corner of your eye. Previously Traba and SimonComputing. B.S. in Computer Science from Virginia Tech in two years, 4.0.",
+    "Maceo Cardinale Kwik, engineer and founder in New York City. Founder of Datost, an applied research lab backed by Y Combinator and OpenAI, building ED1TH: glasses that put a quiet, capable computer in the corner of your eye. Previously Traba and SimonComputing. B.S. in Computer Science from Virginia Tech in two years, 4.0.",
 };
 
 // The cover, after the Michelangelus announcement poster: a wordmark, one
