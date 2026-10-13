@@ -51,7 +51,7 @@ export const ENTRIES = {
     kicker: "Founder",
     name: "Datost",
     line: "Sixteen drawers, every one of them locked.",
-    body: ["An applied research lab, backed by Y Combinator and OpenAI. Most of what we make lives in sixteen private repositories, so the cabinet stays shut."],
+    body: ["An applied research lab, backed by Y Combinator and OpenAI. Sixteen of its repositories are private, so the cabinet stays shut."],
     links: [["datost.com", "https://datost.com"]],
   },
   traba: {

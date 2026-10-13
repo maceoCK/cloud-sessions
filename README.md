@@ -16,7 +16,7 @@ whose numbers show in the card's corner.
 | V | pravost | A beam balance: money on one pan, a sealed intention on the other, latched when they match |
 | VI | h668-z37 | A dividing head with a 37-hole index plate and a rack of the eight multiplier subgroups |
 | VII | conway | A Life pin table (B3/S23, bounded) that you win by leaving nothing alive |
-| VIII | Virginia Tech | A lead-screw stage that runs two years from State College to Blacksburg; the gauge reads 4.0 |
+| VIII | Virginia Tech | A lead-screw stage that runs two years from Penn State to Virginia Tech; the gauge reads 4.0 |
 
 ## Commands
 

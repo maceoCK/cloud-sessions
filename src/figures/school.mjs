@@ -1,5 +1,5 @@
 // Fig. VIII · school. A precision linear stage on a lead screw that runs two
-// years end to end, from State College to Blacksburg. A handwheel turns the
+// years end to end, from Penn State to Virginia Tech. A handwheel turns the
 // screw; the carriage rides a ruler graduated in months, 0 to 24, and the
 // gauge on the carriage reads the cumulative GPA: 4.0.
 import * as k from "../../kit/iso-kit.mjs";
@@ -11,7 +11,7 @@ const AZIMUTH = 30;
 
 const MONTHS = 24;
 const PER_MONTH = 7.6; // world units of travel per month
-const Y0 = (MONTHS * PER_MONTH) / 2; // month 0 sits at +Y0 (State College)
+const Y0 = (MONTHS * PER_MONTH) / 2; // month 0 sits at +Y0 (Penn State)
 const PITCH = 15.2; // travel per turn of the screw: two months
 const BED = { x: -32, y: -Y0 - 40, w: 64, d: 2 * Y0 + 92, r: 6 };
 const BED_H = 10;
@@ -70,7 +70,7 @@ function rail(x) {
   return out.join("");
 }
 
-// End stops, with a label plate on each: State College (+y), Blacksburg (-y).
+// End stops, with a label plate on each: Penn State (+y), Virginia Tech (-y).
 function endStop(month, side) {
   const y = yOf(month) + side * (CAR.d / 2 + 8);
   const out = [S(k.slabOf({ x: -RAIL_X - 6, y: y - 3, w: 2 * RAIL_X + 12, d: 6, r: 1.2 }, 0, 14, P, 3, 0.5), { tone: "mid" })];
@@ -151,7 +151,7 @@ function carriage() {
   return out.join("");
 }
 
-// The handwheel at the State College end, as drawn before the page script
+// The handwheel at the Penn State end, as drawn before the page script
 // takes over (the live code rebuilds the same wheel as it turns).
 function wheelSvg(angle) {
   const W = G.frameOf([0, WHEEL_Y, SCREW_Z], [0, 1, 0], [1, 0, 0], [0, 0, 1]);
@@ -184,12 +184,12 @@ export default {
   height: HEIGHT,
   label:
     "A precision linear stage: a bed with two rails, a lead screw between two bearing blocks, a handwheel at one end and end stops at both. A carriage rides the screw past a ruler graduated in months from 0 to 24. A dial gauge on the carriage, graduated 0.0 to 4.0, reads 4.0.",
-  stage: { role: "slider", label: "Two-year stage. Arrow keys move the carriage three months, Shift six, Home and End go to the ends.", attrs: { "aria-valuemin": 0, "aria-valuemax": 24, "aria-valuenow": 0, "aria-valuetext": "Month 0, State College" } },
+  stage: { role: "slider", label: "Two-year stage. Arrow keys move the carriage three months, Shift six, Home and End go to the ends.", attrs: { "aria-valuemin": 0, "aria-valuemax": 24, "aria-valuenow": 0, "aria-valuetext": "Month 0, Penn State" } },
   keys: [
     { mark: "lit", label: "The gauge needle, reading 4.0" },
     { mark: "raised", label: "The carriage, on a lead screw that runs 24 months end to end" },
   ],
-  caption: "A lead-screw stage that runs two years end to end, from State College to Blacksburg: a B.S. in Computer Science from Virginia Tech, begun at Penn State. The gauge on the carriage reads the cumulative GPA, 4.0.",
+  caption: "A lead-screw stage that runs two years end to end, from Penn State to a B.S. in Computer Science at Virginia Tech. The gauge on the carriage reads the cumulative GPA, 4.0.",
   build() {
     const svg = [
       bed(),
@@ -203,7 +203,7 @@ export default {
     ].join("");
     return {
       svg,
-      readout: "month 00 · State College · 4.0",
+      readout: "month 00 · Penn State · 4.0",
       data: { P, MONTHS, PER_MONTH, PITCH, unitY: k.axisVector(P, [0, -1, 0]), WHEEL_Y, SCREW_Z, WHEEL_R },
     };
   },
@@ -252,12 +252,12 @@ export default {
       }
       const m = Math.round(month);
       const mm = String(m).padStart(2, "0");
-      const text = m === 0 ? "month 00 · State College · 4.0" : m === D.MONTHS ? "month 24 · Blacksburg · B.S. CS · 4.0" : "month " + mm + " · 4.0";
+      const text = m === 0 ? "month 00 · Penn State · 4.0" : m === D.MONTHS ? "month 24 · Virginia Tech · B.S. CS · 4.0" : "month " + mm + " · 4.0";
       rt.say(readout, text);
       if (Math.abs(month - target) < 0.01 && Math.round(target) !== said) {
         said = Math.round(target);
         stage.setAttribute("aria-valuenow", String(said));
-        stage.setAttribute("aria-valuetext", "Month " + said + (said === 0 ? ", State College" : said === D.MONTHS ? ", Blacksburg" : ""));
+        stage.setAttribute("aria-valuetext", "Month " + said + (said === 0 ? ", Penn State" : said === D.MONTHS ? ", Virginia Tech" : ""));
       }
     }
     const TOUR = [[0, 1.2], [24, 6.2], [24, 2.2], [0, 3.4]];
