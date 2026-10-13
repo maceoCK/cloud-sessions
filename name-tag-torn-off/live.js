@@ -66,7 +66,7 @@ const easeOut = (x) => 1 - (1 - x) ** 3;
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 // The torn-off curl fades as it falls, so it never drops out past the card. By hand too: the same
 // fade, found from how far it has fallen.
-const fadeAt = (u) => 1 - ease(clamp((u - 0.35) / 0.65, 0, 1));
+const fadeAt = (u) => 1 - ease(clamp((u - 0.3) / 0.6, 0, 1));
 const alphaOf = (s) => (s <= 1 ? 1 : fadeAt(inverse(ease, (s - 1) / OFF)));
 function tourAt(t) {
   t = ((t % CYCLE) + CYCLE) % CYCLE;

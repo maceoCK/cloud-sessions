@@ -24,7 +24,7 @@ const HEIGHT = 470;
 const AZIMUTH = Number(process.env.NT_AZ ?? 58);
 const ELEVATION = Number(process.env.NT_EL ?? 26);
 // The wall is a crop: an ellipse of brickwork round the plate that fades into the card.
-const VIEW = { x: 0, z: PLATE.z + PLATE.h / 2 - 6, rx: 290, rz: 215 };
+const VIEW = { x: 0, z: PLATE.z + PLATE.h / 2 - 6, rx: 255, rz: 190 };
 
 const P = k.fitProjection(
   [
