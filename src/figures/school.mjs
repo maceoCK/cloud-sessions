@@ -74,11 +74,14 @@ function rail(x) {
 function endStop(month, side) {
   const y = yOf(month) + side * (CAR.d / 2 + 8);
   const out = [S(k.slabOf({ x: -RAIL_X - 6, y: y - 3, w: 2 * RAIL_X + 12, d: 6, r: 1.2 }, 0, 14, P, 3, 0.5), { tone: "mid" })];
-  const plate = { x: RAIL_X - 4, y: y - 2.4, w: 10, d: 4.8, r: 0.8 };
   out.push(S(k.slabOf({ x: -RAIL_X + 2, y: y - 2.4, w: 2 * RAIL_X - 4, d: 4.8, r: 0.8 }, 14, 0.6, P, 2), { tone: "hi", crease: "lo" }));
-  out.push(L([k.lineOnTop([-RAIL_X + 5, y - 0.8], [RAIL_X - 9, y - 0.8], 14.6, P), k.lineOnTop([-RAIL_X + 5, y + 0.8], [RAIL_X - 15, y + 0.8], 14.6, P)].join(""), { tone: "lo", free: true }));
+  // the plate's engraving runs along x, read from the near side
+  const o = at([0, y + 0.85, 14.6]);
+  const ex = at([1, y + 0.85, 14.6]).map((v, i) => v - o[i]);
+  const ey = at([0, y + 1.85, 14.6]).map((v, i) => v - o[i]);
+  const m = [...ex, ...ey, ...o].map((v) => Math.round(v * 1000) / 1000).join(" ");
+  out.push(k.faceTextSvg(`matrix(${m})`, side > 0 ? "PENN STATE" : "VIRGINIA TECH", { size: 2.3, tone: "lo", anchor: "middle" }));
   out.push(D([at([-RAIL_X - 3, y, 14]), at([RAIL_X + 3, y, 14])], { size: 0.42 }));
-  void plate;
   return out.join("");
 }
 
