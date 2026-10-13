@@ -7,6 +7,7 @@ const said = stage.querySelector(".fp-said");
 const printLayer = stage.querySelector('[data-part="prints"]');
 const sheetPath = stage.querySelector('[data-part="sheet"]');
 const lacePath = stage.querySelector('[data-part="lace"]');
+const linePath = stage.querySelector('[data-part="line"]');
 const still = matchMedia("(prefers-reduced-motion: reduce)");
 const themeHost = root.closest("[data-theme]");
 const isPale = () => themeHost?.getAttribute("data-theme") !== "dark";
@@ -591,36 +592,57 @@ function surfacePoint(x, y) {
   return iso([x, y, surfaceAt(y)], D.P);
 }
 
+const POOLS = [[4, 0.2, 2.2, 1.5], [17, -1.2, 1.9, 2.3]];
+function ellipseAt(print, [cu, cv, ru, rv]) {
+  return pathOf(Array.from({ length: 18 }, (_, i) => {
+    const a = (i / 18) * Math.PI * 2;
+    return surfacePoint(...toWorld(print, cu + ru * Math.cos(a), cv + rv * Math.sin(a)));
+  }), true);
+}
+
 function drawFallback() {
   if (layer) return;
   const parts = [];
   const regions = regionsOf();
+  const { rise, fall } = FOOT.pale;
   for (const print of state.prints) {
     const age = still.matches ? 9 : state.clock - print.born;
     const keep = 1 - erosionAt(print);
     if (keep < 0.02) continue;
     const rings = regions.map((region) => ({ d: pathOf(region.ring.map(([u, v]) => surfacePoint(...toWorld(print, u, v))), true), on: pressOf(region.at, age) }));
     const shown = rings.filter((ring) => ring.on > 0.02);
-    parts.push(`<g opacity="${keep.toFixed(3)}">${shown.map((ring) => `<path class="fp-print-rim" d="${ring.d}" opacity="${ring.on.toFixed(2)}"/>`).join("")}${shown.map((ring) => `<path class="fp-print-floor" d="${ring.d}" opacity="${ring.on.toFixed(2)}"/>`).join("")}</g>`);
+    const pale = ramp(rise[0], rise[1], age) * (1 - ramp(fall[0], fall[1], age));
+    const seep = ramp(FOOT.seep[0], FOOT.seep[1], age) * (keep > 0.6 ? 1 : 0);
+    const halo = pale > 0.02 ? `<path class="fp-print-pale" d="${rings[0].d}" opacity="${pale.toFixed(2)}"/>` : "";
+    const pools = seep > 0.02 ? POOLS.map((pool) => `<path class="fp-print-pool" d="${ellipseAt(print, pool)}" opacity="${seep.toFixed(2)}"/>`).join("") : "";
+    parts.push(`<g opacity="${keep.toFixed(3)}">${halo}${shown.map((ring) => `<path class="fp-print-rim" d="${ring.d}" opacity="${ring.on.toFixed(2)}"/>`).join("")}${shown.map((ring) => `<path class="fp-print-floor" d="${ring.d}" opacity="${ring.on.toFixed(2)}"/>`).join("")}${pools}</g>`);
   }
   printLayer.innerHTML = parts.join("");
-  if (state.wave && waveBusy()) {
+  const xs = Array.from({ length: 61 }, (_, i) => (i / 60) * STRIP.length);
+  let sheet = "";
+  let lace = "";
+  let line = "";
+  let lineOpacity = 0;
+  if (state.wave) {
     const s = waveAge();
-    const xs = Array.from({ length: 61 }, (_, i) => (i / 60) * STRIP.length);
-    const front = xs.map((x) => Math.min(STRIP.width, frontAt(state.wave, x, s)));
-    if (Math.max(...front) > 0) {
-      const edge = xs.map((x, i) => surfacePoint(x, Math.max(0, front[i])));
-      sheetPath.setAttribute("d", pathOf([...edge, surfacePoint(STRIP.length, 0), surfacePoint(0, 0)], true));
-      const up = s < turnOf(state.wave, STRIP.length / 2);
-      lacePath.setAttribute("d", up ? pathOf(edge) : "");
-    } else {
-      sheetPath.setAttribute("d", "");
-      lacePath.setAttribute("d", "");
+    const turn = turnOf(state.wave, STRIP.length / 2);
+    if (waveBusy()) {
+      const front = xs.map((x) => Math.min(STRIP.width, frontAt(state.wave, x, s)));
+      if (Math.max(...front) > 0) {
+        const edge = xs.map((x, i) => surfacePoint(x, Math.max(0, front[i])));
+        sheet = pathOf([...edge, surfacePoint(STRIP.length, 0), surfacePoint(0, 0)], true);
+        if (s < turn) lace = pathOf(edge);
+      }
     }
-  } else {
-    sheetPath.setAttribute("d", "");
-    lacePath.setAttribute("d", "");
+    if (s > turn) {
+      line = pathOf(xs.map((x) => surfacePoint(x, Math.min(STRIP.width, topOf(state.wave, x)))));
+      lineOpacity = ramp(turn, turn + 0.6, s) * Math.exp(-Math.max(s - turn, 0) / 9);
+    }
   }
+  sheetPath.setAttribute("d", sheet);
+  lacePath.setAttribute("d", lace);
+  linePath.setAttribute("d", line);
+  linePath.setAttribute("opacity", lineOpacity.toFixed(2));
 }
 
 function draw() {

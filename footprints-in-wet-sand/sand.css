@@ -101,6 +101,25 @@
   vector-effect: non-scaling-stroke;
 }
 
+.fp-print-pale {
+  fill: none;
+  stroke: var(--fp-dry);
+  stroke-width: 7;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.fp-print-pool {
+  fill: var(--fp-sky-lo);
+}
+
+.fp-swash-line {
+  fill: none;
+  stroke: var(--fp-band);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
 .fp-print-rim {
   fill: none;
   stroke: var(--fp-dry);

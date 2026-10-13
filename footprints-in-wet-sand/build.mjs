@@ -288,7 +288,7 @@ function scale() {
 }
 
 function fallback() {
-  return `<g class="fp-fallback" aria-hidden="true"><g data-part="prints"></g><path data-part="sheet" class="fp-sheet" d=""/><path data-part="lace" class="fp-lace" d=""/></g>`;
+  return `<g class="fp-fallback" aria-hidden="true"><g data-part="prints"></g><path data-part="line" class="fp-swash-line" d=""/><path data-part="sheet" class="fp-sheet" d=""/><path data-part="lace" class="fp-lace" d=""/></g>`;
 }
 
 const topEdges = poly([[L, 0, Z0], [0, 0, Z0], [0, D, Z1]]);
