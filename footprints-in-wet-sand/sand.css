@@ -28,13 +28,13 @@
   --fp-water: #a5aaa5;
   --fp-foam: #ffffff;
   --fp-glint: #ffffff;
-  --fp-lamina: #bcb09e;
-  --fp-old: #c8bdad;
-  --fp-band: #7a6f61;
-  --fp-shell: #f7f4ee;
-  --fp-pebble: #cdc4b6;
-  --fp-soak: #4a4036;
-  --fp-soak-opacity: 0.12;
+  --fp-lamina: #84796a;
+  --fp-old: #918677;
+  --fp-band: #3a332b;
+  --fp-shell: #f4f0e8;
+  --fp-pebble: #b3a998;
+  --fp-soak: #3a3128;
+  --fp-soak-opacity: 0.2;
 }
 
 .fp-cut {
@@ -47,11 +47,13 @@
 
 .iso[data-theme="light"] .fp-cut,
 .fp[data-theme="light"] .fp-cut {
-  --anatomy-paper: #ebe5da;
-  --anatomy-shade-0: #d6cdbf;
-  --anatomy-shade-1: #ddd5c8;
-  --anatomy-shade-2: #e4ddd1;
-  --anatomy-shade-3: #ebe5da;
+  --anatomy-paper: #b8ae9e;
+  --anatomy-shade-0: #a99e8d;
+  --anatomy-shade-1: #b0a595;
+  --anatomy-shade-2: #b5ab9b;
+  --anatomy-shade-3: #b8ae9e;
+  --anatomy-lo: #6b6257;
+  --anatomy-faint: #908676;
 }
 
 .fp-cut > .iso-top.fp-wet {
@@ -113,7 +115,7 @@
   fill: var(--fp-sky-lo);
 }
 
-.fp-swash-line {
+.fp-swash-line > path {
   fill: none;
   stroke: var(--fp-band);
   stroke-width: 1;

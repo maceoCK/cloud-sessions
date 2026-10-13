@@ -30,8 +30,8 @@ export const FOOT = {
   pale: { rise: [0.06, 0.18], fall: [0.32, 1.3], reach: 1.8 },
 };
 
-export const SWASH = { from: -90, reach: 145, spread: 6, lobes: 0.035, erode: 0.4, flat: 0.03, drain: [2.2, 5.2] };
-export const LOOP = { first: 0.9, steps: 5, collapse: 6.6, period: 15 };
+export const SWASH = { from: -90, reach: 145, spread: 6, lobes: 0.035, erode: 0.6, flat: 0.1, drain: [1.6, 3.2] };
+export const LOOP = { first: 0.9, steps: 5, collapse: 6.6, period: 17 };
 
 export const ramp = (a, b, x) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));

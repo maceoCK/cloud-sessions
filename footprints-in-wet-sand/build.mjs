@@ -25,7 +25,6 @@ const FOOT_H = 6;
 const RULER = { x: -6, y: D + 12, w: L + 12, d: 9, r: 1 };
 const LABEL = { x: L + 5.5, y: 112, w: 9.5, d: 58, r: 1.4 };
 const SCALE = { x: L, y: D - 30, w: 1.4, d: 4.6, r: 0.3 };
-const SCALE_FOOT = { x: L, y: D - 32, w: 5.5, d: 8.6, r: 0.8 };
 const SCALE_TOP = 30;
 
 const P = k.fitProjection([...k.boxCorners(PLATE, -PLATE_H - FOOT_H, 0), [0, 0, Z0], [L, 0, Z0], [L, D, Z1], [0, D, Z1]], W, H, { pad: 30, azimuth: AZIMUTH, elevation: ELEVATION });
@@ -50,7 +49,7 @@ const sheetAt = (layer, k, x, y) => M.surfaceAt(y) - layer.depth - layer.wave * 
 const scourAt = (x, y) => 10.6 + 0.055 * y + 1.3 * Math.sin(x / 41 + 0.6) + 0.7 * Math.sin(x / 13 + 2.1) + 0.9 * Math.sin(y / 29 + 1.4);
 const OLD = Array.from({ length: 16 }, (_, k) => -14 + 2.1 * k);
 const oldAt = (c, k, x, y) => c + (1 / 8) * y + 0.02 * (x - L / 2) + 0.45 * Math.sin(x / 31 + k) + 0.3 * Math.sin(y / 21 + k * 1.3);
-const TABLE = (x, y) => 12.6 + 0.032 * y + 0.4 * Math.sin(x / 57);
+const TABLE = (x, y) => M.surfaceAt(y) - 2 - 0.06 * y + 0.4 * Math.sin(x / 57);
 const FACES = [
   { name: "front", count: Math.round(L / 2), at: (t) => [t * L, D] },
   { name: "end", count: Math.round(D / 1.5), at: (t) => [L, t * D] },
@@ -170,9 +169,9 @@ function lag() {
       const t = (i + 0.2 + 0.6 * M.hashOf(i * 3.7 + span)) / count;
       const [x, y] = face.at(t);
       const r = 0.42 + 0.48 * M.hashOf(i * 5.3 + span * 0.1);
-      const z = scourAt(x, y) + r * 0.78 + 0.05;
+      const z = scourAt(x, y) + r * 0.25;
       const kind = M.hashOf(i * 9.1 + span * 0.3);
-      if (kind < 0.3 && face.name === "front") shells.push(shellOnFront(x, z - r * 0.5, 0.9 + r * 0.6, kind < 0.15 ? 1 : -1));
+      if (kind < 0.3 && face.name === "front") shells.push(shellOnFront(x, scourAt(x, y) + r * 0.28 + 0.05, 0.9 + r * 0.6, kind < 0.15 ? 1 : -1));
       else {
         const along = face.name === "front" ? [1, 0] : [0, 1];
         const ring = Array.from({ length: 14 }, (_, j) => {
@@ -271,14 +270,12 @@ function block() {
 
 function scale() {
   const out = [];
-  out.push(S(k.slabOf(SCALE_FOOT, 0, 1.6, P, 2, 0.3), { tone: "mid" }));
-  out.push(Dots([at([SCALE_FOOT.x + 3.6, SCALE_FOOT.y + 1.6, 1.6]), at([SCALE_FOOT.x + 3.6, SCALE_FOOT.y + SCALE_FOOT.d - 1.6, 1.6])], { size: 0.4 }));
-  out.push(S(k.slabOf(SCALE, 1.6, SCALE_TOP - 1.6, P, 1, 0), { tone: "hi", crease: "lo" }));
+  out.push(S(k.slabOf(SCALE, 0, SCALE_TOP, P, 1, 0), { tone: "mid", crease: "lo" }));
   const face = SCALE.x + SCALE.w;
   const edge = SCALE.y + SCALE.d;
   const minor = [];
   const major = [];
-  for (let z = 2; z < SCALE_TOP - 0.5; z += 1) {
+  for (let z = 1; z < SCALE_TOP - 0.5; z += 1) {
     const long = z % 5 === 0;
     (long ? major : minor).push(poly([[face, edge, z], [face, edge - (long ? 2.6 : 1.4), z]]));
   }
@@ -287,7 +284,7 @@ function scale() {
 }
 
 function fallback() {
-  return `<g class="fp-fallback" aria-hidden="true"><g data-part="prints"></g><path data-part="line" class="fp-swash-line" d=""/><path data-part="sheet" class="fp-sheet" d=""/><path data-part="lace" class="fp-lace" d=""/></g>`;
+  return `<g class="fp-fallback" aria-hidden="true"><g data-part="prints"></g><g data-part="lines" class="fp-swash-line"></g><path data-part="sheet" class="fp-sheet" d=""/><path data-part="lace" class="fp-lace" d=""/></g>`;
 }
 
 const topEdges = poly([[L, 0, Z0], [0, 0, Z0], [0, D, Z1]]);
@@ -308,7 +305,7 @@ const DATA = {
 };
 
 const LABEL_TEXT =
-  "A block of beach cut from the swash zone and set on a plinth: a strip of smooth, dark, wet sand 3.6 m long and 1.8 m across, rising 1 in 12 from the sea edge at the back. Its cut faces show the swash laminae, two dark heavy-mineral bands, an older storm scour with a shell and pebble lag, a buried wedge clam and the water table. Footprints press into the sand one step at a time, each ringed for a moment by pale, drained sand; then a thin sheet of swash slides up from the sea edge with a foam front, covers the prints, smooths them away and drains back, leaving the sand glossy and smooth again.";
+  `A block of beach cut from the swash zone and set on a plinth: a strip of smooth, dark, wet sand ${M.metres(L)} m long and ${M.metres(D)} m across, rising 1 in 12 from the sea edge at the back. Its cut faces show the swash laminae, ${MODERN.filter((layer) => layer.band).length} dark heavy-mineral bands, an older storm scour with a shell and pebble lag, a buried wedge clam and the water table. Footprints press into the sand one step at a time, each ringed for a moment by pale, drained sand; then a thin sheet of swash slides up from the sea edge with a foam front, covers the prints, smooths them away and drains back, leaving the sand glossy and smooth again.`;
 
 const backSvg = k.figureSvg({ width: W, height: H, label: LABEL_TEXT, body: back, className: "fp-back" });
 const frontSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="iso-svg fp-layer fp-front" viewBox="0 0 ${W} ${H}" aria-hidden="true">${front.join("")}</svg>`;
@@ -334,7 +331,7 @@ const body = `<div class="fp">${k.plateHtml({
   keys: [
     { mark: "raised", label: "Beach block, cut to show its laminae and water table" },
     { mark: "edge", label: "Storm scour with a shell and pebble lag" },
-    { mark: "flat", label: "Ruler, 10 cm ticks; scale on the end, 1 cm" },
+    { mark: "flat", label: "Ruler, 5 cm ticks; depth scale on the end, 1 cm" },
   ],
   caption,
   body: stage,
