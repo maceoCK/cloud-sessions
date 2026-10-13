@@ -347,10 +347,40 @@ function roadPiece(a, b) {
     shades.set(shade, (shades.get(shade) || "") + d);
   }
   for (const [shade, d] of shades) out.push(`<path class="iso-fill" d="${d}"/><path class="iso-shade" data-shade="${shade}" d="${d}"/>`);
+  // the face is a cast retaining wall: its foot, and a panel joint every 2 m, where we see it
+  {
+    let foot = "";
+    let joints = "";
+    let run = [];
+    const flushRun = () => {
+      if (run.length > 1) {
+        foot += poly(run.map(([i, e]) => p3(i, e, -12)), false);
+        // the wall's two ends, so its foot meets something
+        for (const [i, e] of [run[0], run[run.length - 1]]) joints += poly([p3(i, e), p3(i, e, -12)], false);
+      }
+      run = [];
+    };
+    for (let j = 0; j + 1 < ids.length; j++) {
+      const i = ids[j];
+      const dd = road.drop[i];
+      const h = road.heading[i];
+      const see = -Math.sin(h) * dd * V[0] + Math.cos(h) * dd * V[1] > 0.02;
+      const e = dd * (M.HALF_ROAD + road.verge[i]);
+      if (see) {
+        if (!run.length) run.push([i, e]);
+        run.push([ids[j + 1], dd * (M.HALF_ROAD + road.verge[ids[j + 1]])]);
+        if (i % (10 * per) < 3 && run.length > 2) joints += poly([p3(i, e), p3(i, e, -12)], false);
+      } else flushRun();
+    }
+    flushRun();
+    if (foot) out.push(Ln(foot, { tone: "faint" }));
+    if (joints) out.push(Ln(joints, { tone: "faint" }));
+  }
   // the bench: gravel verge on the drop side, a strip of shoulder on the hill side
   const leftOf = (i) => benchOf(i, 1);
   const rightOf = (i) => -benchOf(i, -1);
-  const bench = strip(ids, leftOf, rightOf);
+  // two strips, either side of the asphalt, so a piece's verge never lies over the piece before it
+  const bench = strip(ids, leftOf, () => M.HALF_ROAD - 0.05) + strip(ids, () => -M.HALF_ROAD + 0.05, rightOf);
   out.push(`<path class="iso-fill" d="${bench}"/><path class="iso-top cr-bench" d="${bench}"/>`);
   out.push(`<path class="cr-asphalt" d="${strip(ids, () => -M.HALF_ROAD, () => M.HALF_ROAD)}"/>`);
   out.push(`<path class="cr-paint" d="${strip(ids, () => -M.HALF_ROAD + 0.2, () => -M.HALF_ROAD + 0.35)}${strip(ids, () => M.HALF_ROAD - 0.35, () => M.HALF_ROAD - 0.2)}"/>`);
