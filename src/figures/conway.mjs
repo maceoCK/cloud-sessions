@@ -31,6 +31,8 @@ const cellXY = (i) => {
 };
 
 const TRAY = { x: BOARD.x + 26, y: BOARD.y + BOARD.d + 10, w: 62, d: 14, r: 3 };
+const SPARES = 6;
+const spareX = (i) => TRAY.x + 7 + i * 9.6;
 const PLINTH = { x: BOARD.x - 4, y: BOARD.y - 4, w: BOARD.w + 8, d: BOARD.d + 8, r: 5 };
 
 const P = k.fitProjection([...k.boxCorners({ ...PLINTH, d: PLINTH.d + 30 }, -6, ZT + 10)], WIDTH, HEIGHT, { pad: 30, azimuth: AZIMUTH, elevation: ELEVATION });
@@ -53,7 +55,7 @@ function faceSkew(fx, [x, y]) {
 }
 
 function plinth() {
-  const out = [`<path class="iso-halo" d="${k.haloOf({ ...PLINTH, d: PLINTH.d + 26 }, -6, 8, P)}"/>`];
+  const out = [`<path class="iso-halo" d="${k.haloOf(PLINTH, -6, 8, P)}"/>`, `<path class="iso-halo" d="${k.haloOf(TRAY, 0, 3, P)}"/>`];
   for (const [x, y] of k.corners(PLINTH, 10).sort((a, b) => k.depthOf([...a, 0], P) - k.depthOf([...b, 0], P))) {
     out.push(S(k.cylinder(x, y, 5, -6, 2, P, 24), { tone: "lo" }));
     out.push(S(k.cylinder(x, y, 3.8, -4, 4, P, 24), { tone: "mid" }));
@@ -100,12 +102,34 @@ function tray() {
   const out = [];
   out.push(S(k.slabOf(TRAY, 0, 6, P, 3, 0.5), { tone: "mid" }));
   out.push(L(k.planOutline(k.insetPlan(TRAY, 2), 6, P, 3), { tone: "lo" }));
-  // spare pegs standing in the tray
-  for (let i = 0; i < 6; i++) {
-    const x = TRAY.x + 7 + i * 9.6;
-    out.push(S(k.cylinder(x, TRAY.y + TRAY.d / 2, PEG.r, 6, PEG.h + 2, P, 22), { tone: "hi", crease: "lo" }));
-  }
+  // spare pegs standing in the tray, one taken for every peg placed
+  const wells = [];
+  for (let i = 0; i < SPARES; i++) wells.push(k.pathOf(Array.from({ length: 14 }, (_, j) => at([spareX(i) + Math.cos((j / 14) * 6.2832) * (PEG.r + 0.5), TRAY.y + TRAY.d / 2 + Math.sin((j / 14) * 6.2832) * (PEG.r + 0.5), 6])), true));
+  out.push(`<path class="lt-well" d="${wells.join("")}"/>`);
+  for (let i = 0; i < SPARES; i++) out.push(`<g data-spare="${i}">${S(k.cylinder(spareX(i), TRAY.y + TRAY.d / 2, PEG.r, 6, PEG.h + 2, P, 22), { tone: "hi", crease: "lo" })}</g>`);
   return out.join("");
+}
+
+// The step crank on the near face: one turn every twelve generations. The
+// hub is fixed; the arm and handle are redrawn live (see crankArm in live).
+const CRANK = { y: -36, z: 5, arm: 8.4 };
+function crankFrame(angle) {
+  const fx = PLINTH.x + PLINTH.w;
+  const F = G.frameOf([fx, CRANK.y, CRANK.z], [1, 0, 0], [0, -1, 0], [0, 0, 1]);
+  const out = [];
+  const c = Math.cos(angle);
+  const n = Math.sin(angle);
+  const arm = G.stadium(2.6, 1.7, CRANK.arm, 20).map(([u, v]) => [u * c - v * n, u * n + v * c]);
+  out.push(S(G.prismOf(F, arm, 1.4, 2.6, P), { tone: "mid" }));
+  const tip = [fx + 2.6, CRANK.y - CRANK.arm * c, CRANK.z + CRANK.arm * n];
+  const H = G.frameOf(tip, [1, 0, 0], [0, -1, 0], [0, 0, 1]);
+  out.push(S(G.solidOf([[0, 1.2], [3.6, 1.2], [4.1, 1.9, 1], [6.6, 1.9, 1], [7.3, 0]], H, P), { tone: "hi" }));
+  out.push(D([at([fx + 2.6, CRANK.y, CRANK.z])], { size: 0.5 }));
+  return out.join("");
+}
+function crankHub() {
+  const F = G.frameOf([PLINTH.x + PLINTH.w, CRANK.y, CRANK.z], [1, 0, 0], [0, -1, 0], [0, 0, 1]);
+  return S(G.disc(0, 1.4, 4.6, F, P, { steps: 32 }), { tone: "mid" });
 }
 
 export default {
@@ -129,11 +153,13 @@ export default {
 #fig-conway .lt-count{font:600 4.4px/1 var(--anatomy-mono);fill:var(--lt-digit);text-anchor:middle;letter-spacing:.06em}
 #fig-conway .lt-well{fill:var(--anatomy-shade-1);stroke:var(--anatomy-lo);stroke-width:.4}
 #fig-conway .lt-cursor{fill:none;stroke:var(--anatomy-lit);stroke-width:.9}
+#fig-conway [data-spare]{transition:opacity .3s}
+#fig-conway [data-spare][data-gone]{opacity:0}
 `,
   build() {
     const order = Array.from({ length: CELLS }, (_, i) => i).sort((a, b) => k.depthOf([...cellXY(a), ZT], P) - k.depthOf([...cellXY(b), ZT], P));
     const pegs = order.map((i) => `<g data-peg="${i}"></g>`).join("");
-    const svg = [plinth(), tray(), board(), `<g data-part="cursor"></g>`, pegs].join("");
+    const svg = [plinth(), crankHub(), `<g data-part="crank">${crankFrame(0)}</g>`, tray(), board(), `<g data-part="cursor"></g>`, pegs].join("");
     // screen -> board: the board's top plane is an affine image of (x, y)
     const o = at([0, 0, ZT]);
     const ex = at([1, 0, ZT]);
@@ -144,7 +170,7 @@ export default {
     return {
       svg,
       readout: `gen 000 · ${aliveOf(seedBoard(SEED))} alive · 0 placed`,
-      data: { P, N, PITCH, SIDE, ZT, PEG, STEP, SCRIPT, CLEARED_AT, seed: [...seedBoard(SEED)], origin: o, inv },
+      data: { P, N, PITCH, SIDE, ZT, PEG, STEP, SCRIPT, CLEARED_AT, SPARES, seed: [...seedBoard(SEED)], origin: o, inv, crank: { ...CRANK, fx: PLINTH.x + PLINTH.w } },
     };
   },
   live(root, rt, D) {
@@ -153,6 +179,26 @@ export default {
     const readout = root.querySelector("[data-readout]");
     const genText = svg.querySelector('[data-part="gen"]');
     const cursorG = svg.querySelector('[data-part="cursor"]');
+    const crankG = svg.querySelector('[data-part="crank"]');
+    const spares = [...svg.querySelectorAll("[data-spare]")];
+    let crankShown = 0;
+    function crankArm(angle) {
+      // the same arm and handle as crankFrame in the build
+      const K = D.crank;
+      const F = G.frameOf([K.fx, K.y, K.z], [1, 0, 0], [0, -1, 0], [0, 0, 1]);
+      const c = Math.cos(angle);
+      const n = Math.sin(angle);
+      const arm = G.stadium(2.6, 1.7, K.arm, 20).map(([u, v]) => [u * c - v * n, u * n + v * c]);
+      const H = G.frameOf([K.fx + 2.6, K.y - K.arm * c, K.z + K.arm * n], [1, 0, 0], [0, -1, 0], [0, 0, 1]);
+      return solidSvg(G.prismOf(F, arm, 1.4, 2.6, D.P), { tone: "mid" }) + solidSvg(G.solidOf([[0, 1.2], [3.6, 1.2], [4.1, 1.9, 1], [6.6, 1.9, 1], [7.3, 0]], H, D.P), { tone: "hi" }) + dotsSvg([iso([K.fx + 2.6, K.y, K.z], D.P)], { size: 0.5 });
+    }
+    function drawCrank(turn) {
+      // turn counts generations: one turn per 12, drawn in 48 steps
+      const f = ((Math.round(turn * 4) % 48) + 48) % 48;
+      if (f === crankShown) return;
+      crankShown = f;
+      crankG.innerHTML = crankArm((f / 48) * Math.PI * 2);
+    }
     const N = D.N;
     const CELLS = N * N;
     const pegs = new Array(CELLS);
@@ -209,6 +255,7 @@ export default {
     function say() {
       const g = String(gen).padStart(3, "0");
       genText.textContent = g;
+      spares.forEach((el, i) => el.toggleAttribute("data-gone", i >= D.SPARES - placed));
       const n = alive();
       rt.say(readout, n === 0 ? "gen " + g + " · 0 alive · cleared with " + placed : "gen " + g + " · " + n + " alive · " + placed + " placed");
     }
@@ -256,6 +303,7 @@ export default {
         height[i] = next;
       }
       drawPegs();
+      drawCrank(gen + (running && alive() > 0 ? clock / D.STEP : 0));
       say();
       return moving || running || tour.running;
     });
