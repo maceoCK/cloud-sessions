@@ -3,6 +3,7 @@
 //
 //   node scripts/build.mjs                 everything
 //   node scripts/build.mjs --only ed1th    one figure's standalone pages (and skip the site)
+import { compactSvg } from "./compact.mjs";
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,7 +55,7 @@ export const touchHint = (hint) =>
 
 export function render(fig, label = fig.fig) {
   const built = fig.build();
-  const svg = k.figureSvg({ width: fig.width, height: fig.height, label: fig.label, body: built.svg });
+  const svg = k.figureSvg({ width: fig.width, height: fig.height, label: fig.label, body: compactSvg(built.svg) });
   const extra = Object.entries(fig.stage?.attrs ?? {})
     .map(([key, value]) => ` ${key}="${escape(value)}"`)
     .join("");
