@@ -55,7 +55,7 @@ only use its arguments, browser globals, and the inlined libraries:
 - `T`: every export of `kit/tube.mjs`;
 - `rt`: the shared runtime in `src/runtime.js`:
   - `rt.loop(stage, (dt, calm) => keepGoing)` → `{ kick() }`: one rAF loop that runs only while the stage is on screen;
-  - `rt.tour(stage, { delay, resume, onResume })` → `{ active, clock, advance(dt), hold() }`: the idle tour;
+  - `rt.tour(stage, { delay, resume, onResume })` → `{ active, running, clock, advance(dt), hold() }`: the idle tour (`running` is true while it waits to start or plays: keep the loop going on it);
   - `rt.follow(x, target, dt, tau, calm)`, `rt.spring({ at, rate }, target, dt, k, c, calm)` → settled;
   - `rt.clamp`, `rt.lerp`, `rt.smooth`, `rt.say(el, text)`, `rt.fractionOf(svg, event)` → `[fx, fy]`, `rt.calm()`.
 

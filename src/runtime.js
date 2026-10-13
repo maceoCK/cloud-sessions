@@ -78,6 +78,10 @@ const RT = (() => {
       get active() {
         return !held && !still.matches && since >= 0;
       },
+      // true while the tour is waiting to start or playing: keep the loop on
+      get running() {
+        return !held && !still.matches;
+      },
       advance(dt) {
         if (held || still.matches) return;
         since += dt;
