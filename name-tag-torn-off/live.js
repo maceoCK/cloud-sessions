@@ -188,6 +188,7 @@ function draw(force = false) {
       put(slot.memo, "empty", slot.g, "data-empty", null);
       put(slot.memo, "side", slot.g, "data-side", s.side);
       put(slot.memo, "band", slot.g, "data-band", String(s.band));
+      put(slot.memo, "mix", slot.g, "style", `--f:${s.mix}%`);
       put(slot.memo, "fill", slot.fill, "d", s.fill);
       put(slot.memo, "seam", slot.seam, "d", s.seam);
       put(slot.memo, "ghost", slot.ghost, "d", s.ghost);

@@ -115,6 +115,14 @@ export const PEEL = (() => {
     while (tone < BANDS.length && score >= BANDS[tone]) tone++;
     return tone;
   };
+  // The curl is curved, so it shades smoothly: each tone sits at the middle of its band and a
+  // strip mixes the two tones either side of its light score. Returns the lower tone and the mix.
+  const TONE_AT = [-0.1, 0.1, 0.31, 0.52, 0.72];
+  const toneOf = (score) => {
+    if (score <= TONE_AT[0]) return { band: 0, mix: 0 };
+    for (let i = 0; i < 4; i++) if (score < TONE_AT[i + 1]) return { band: i, mix: Math.round((100 * (score - TONE_AT[i])) / (TONE_AT[i + 1] - TONE_AT[i])) };
+    return { band: 4, mix: 0 };
+  };
 
   // ---- The label, and the line it tears along ------------------------------------------------------
   function roundedRing({ w, h, r }, steps = 10) {
@@ -523,7 +531,7 @@ export const PEEL = (() => {
       const side = facing >= 0 ? "face" : "back";
       out.strips.push({
         index: i, lo, hi, side,
-        band: bandOf(dot(side === "face" ? n : mul(n, -1), C.L)),
+        ...toneOf(dot(side === "face" ? n : mul(n, -1), C.L)),
         facing: Math.abs(facing),
         // Strips are near-straight lines along w; their order is their order across the curl.
         key: dot(sheet.at(mid, wMid), C.V),
@@ -1016,7 +1024,7 @@ export const PEEL = (() => {
     const order = new Map(strips.map((s, i) => [s.index, i]));
     const slots = strips.map((s) => ({
       fill: pathOf(s.scr, true),
-      side: s.side, band: s.band, edge: [], tear: [], seam: [], crease: [], ink: [], ghost: [], fuzz: [], fringe: [], spots: [], scars: [],
+      side: s.side, band: s.band, mix: s.mix, edge: [], tear: [], seam: [], crease: [], ink: [], ghost: [], fuzz: [], fringe: [], spots: [], scars: [],
       width: clamp(s.facing / dot(N, C.V), 0.3, 1.3),
     }));
     strips.forEach((s, at) => {
