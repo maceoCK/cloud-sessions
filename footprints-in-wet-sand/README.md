@@ -2,7 +2,7 @@
 
 An interactive isometric figure, built with the [Anatomy](https://github.com/wheresryan22/anatomy) skill: a block of beach cut from the swash zone, a strip of smooth, dark, wet sand 3.3 m long and 1.8 m across, rising 1 in 12 from the sea edge at the back.
 
-<p align="center"><img src="shots/dark-swash.webp" width="720" alt="Dark theme: a block of wet beach sand on a plinth. A thin sheet of swash with a lobed foam front has slid up from the sea edge and is covering two footprints."></p>
+<p align="center"><img src="shots/loop-dark.webp" width="640" alt="The 15-second loop in the dark theme: five footprints press into a strip of wet sand on a plinth, a thin swash with a foam front slides up from the sea edge, covers and smooths them, and drains back, leaving the sand glossy and smooth."></p>
 
 | | Light | Dark |
 |---|---|---|
