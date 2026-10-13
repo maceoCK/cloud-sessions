@@ -1,11 +1,11 @@
 # maceo.dev, drawn
 
-The personal site of Maceo Cardinale Kwik, rebuilt as a folio: a cover after
-the Michelangelus announcement poster, then eight working isometric figures,
-one for each part of the record. Every figure is a small machine whose
-mechanism is the point of that entry, drawn in code with the
-[Anatomy](https://github.com/wheresryan22/anatomy) kit and moved by a model
-whose numbers show in the card's corner.
+The personal site of Maceo Cardinale Kwik, rebuilt as a folio in ink on paper:
+a monogram cover (a hairline Michelangelus M over the name), then eight
+working isometric figures, one for each part of the work. Every figure is a
+small machine whose mechanism is the point of that entry, drawn in code with
+the [Anatomy](https://github.com/wheresryan22/anatomy) kit and moved by a
+model whose numbers show in the card's corner.
 
 | Fig. | Entry | The machine |
 | --- | --- | --- |
@@ -37,7 +37,7 @@ The build needs only Node 20.10 or later; it has no dependencies. Deploy
 
 - `src/content.mjs`: every word outside the figures. Facts come only from the
   previous maceo.dev; no em dashes in visible copy.
-- `src/page.mjs`: the page shell (cover, folio, record, contact, colophon) and
+- `src/page.mjs`: the page shell (cover, contents, figures, contact, colophon) and
   its CSS. Colors are tokens: light on `:root`, dark for
   `prefers-color-scheme: dark` unless the reader chose Paper, and dark for an
   explicit Carbon choice.
@@ -53,14 +53,14 @@ The build needs only Node 20.10 or later; it has no dependencies. Deploy
 
 ## Michelangelus
 
-Display lines (the cover, section heads, names, Roman numerals, the email)
-are set in Michelangelus, the typeface studiogusto drew from Michelangelo's
-letters for the Fabbrica di San Pietro, and so is the display text that has
-to wrap: the standfirst, each entry's line, the contents and the record's
-names. Its licence from Microsoft lets you install and use it but grants no
-right to distribute it ("This agreement does not grant you a license to
-distribute nor sublicense all or part of the software to any third party"),
-so this site never ships the font file, not even as a webfont.
+Display lines (the cover, section heads, names, Roman numerals, the email) are
+set in Michelangelus, the typeface studiogusto drew from Michelangelo's
+letters for the Fabbrica di San Pietro, and so is the display text that has to
+wrap: the standfirst, each entry's line and the contents. Its licence from
+Microsoft lets you install and use it but grants no right to distribute it
+("This agreement does not grant you a license to distribute nor sublicense all
+or part of the software to any third party"), so this site never ships the
+font file, not even as a webfont.
 
 `scripts/outline.py` shapes the text with HarfBuzz from a local copy and
 stores only outlines in `src/type/outlines.json`. A line becomes one outline.
