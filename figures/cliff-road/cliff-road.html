@@ -3832,7 +3832,8 @@ void main(){
     }
     float tw=dot(w-p0,v);
     float hid=tCar>-1e8?smoothstep(-1.,1.,tCar-tw):0.;
-    wall=(headOn(w,vec3(1.,0.,0.),la,d0)+headOn(w,vec3(1.,0.,0.),lb,d1))*onWall*(1.-hid)*step(uPortalX+1.,uCarA.x)*1700.;
+    // low beams: the wall takes most light near the road, little higher up
+    wall=(headOn(w,vec3(1.,0.,0.),la,d0)+headOn(w,vec3(1.,0.,0.),lb,d1))*onWall*(1.-hid)*step(uPortalX+1.,uCarA.x)*900.*exp(-max(0.,w.z-uRoad)/16.);
     if(wall>.002)wall*=seenFx(w+vec3(1.5,0.,0.));
     bore*=2600.;
   }
