@@ -27,6 +27,7 @@ const slots = [...svg.querySelectorAll(".nt-slot")].map((g) => ({
   ghost: g.querySelector(".nt-ghost"),
   fuzz: g.querySelector(".nt-backfuzz"),
   tear: g.querySelector(".nt-tear"),
+  crease: g.querySelector(".nt-crease"),
   ink: g.querySelector(".nt-ink"),
   edge: g.querySelector(".nt-edge"),
   memo: {},
@@ -110,7 +111,8 @@ function say(st) {
   else if (phase === "place") text = "new label · laying down";
   else if (phase === "lift") text = `corner lifting · θ ${Math.round((peelState.theta * 180) / Math.PI)}°`;
   else if (phase === "peel") text = `peel ${Math.round(peelState.peeled * 100)}% · ${PEEL.forceAt(peelState).toFixed(1)} N`;
-  else text = `torn · ${Math.round((1 - PEEL.SHARE_OFF) * 100)}% still stuck`;
+  else if (phase === "off") text = `torn · ${Math.round(PEEL.SHARE_OFF * 100)}% came away`;
+  else text = `${Math.round((1 - PEEL.SHARE_OFF) * 100)}% left stuck · residue`;
   if (readout.textContent !== text) readout.textContent = text;
   const pct = Math.round(Math.min(1, st.s) * 100);
   if (stage.getAttribute("aria-valuenow") !== String(pct)) stage.setAttribute("aria-valuenow", String(pct));
@@ -154,6 +156,7 @@ function draw() {
       put(slot.memo, "ghost", slot.ghost, "d", s.ghost);
       put(slot.memo, "fuzz", slot.fuzz, "d", s.fuzz);
       put(slot.memo, "tear", slot.tear, "d", s.tear);
+      put(slot.memo, "crease", slot.crease, "d", s.crease);
       put(slot.memo, "ink", slot.ink, "d", s.ink);
       put(slot.memo, "edge", slot.edge, "d", s.edge);
       put(slot.memo, "w", slot.ink, "style", `stroke-width:${(inkWidth * s.width).toFixed(2)}px`);

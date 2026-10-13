@@ -288,7 +288,10 @@ function plate() {
   }
   const grainSvg = `<g class="nt-grain">${grain.map((list, i) => `<g data-weight="${i}">${L(list.join(""), { tone: "faint" })}</g>`).join("")}</g>`;
   const chamfer = L(pathOf(roundedXZ({ x: PLATE.x + 1.8, z: PLATE.z + 1.8, w: PLATE.w - 3.6, h: PLATE.h - 3.6, r: PLATE.r - 1.8 }).map(([x, z]) => at([x, Y_FACE, z])), true), { tone: "faint" });
-  out.push(S(slab, { tone: "mid", className: "nt-steel", inner: grainSvg + chamfer }));
+  // Stainless sheen: a soft band of light across the brushed face, dark toward the far corners.
+  const g0 = at([PLATE.x, Y_FACE, PLATE.z + PLATE.h]), g1 = at([PLATE.x + PLATE.w, Y_FACE, PLATE.z]);
+  const sheen = `<linearGradient id="nt-sheen" gradientUnits="userSpaceOnUse" x1="${fx(g0[0])}" y1="${fx(g0[1])}" x2="${fx(g1[0])}" y2="${fx(g1[1])}"><stop offset="0" class="nt-sheen-dark"/><stop offset=".3" class="nt-sheen-none"/><stop offset=".44" class="nt-sheen-light"/><stop offset=".56" class="nt-sheen-none"/><stop offset=".78" class="nt-sheen-soft"/><stop offset="1" class="nt-sheen-dark"/></linearGradient><path class="nt-sheen" d="${slab.shades[2]}" fill="url(#nt-sheen)"/>`;
+  out.push(S(slab, { tone: "mid", className: "nt-steel", inner: sheen + grainSvg + chamfer }));
   for (const [x, z] of SCREWS) {
     out.push(L(faceRing(x, z, 6.4, Y_FACE), { tone: "lo" }));
     out.push(`<path class="nt-screw" d="${faceRing(x, z, 5.3, Y_FACE)}"/>`);
@@ -358,7 +361,7 @@ function tagLayer(s) {
   for (let i = 0; i < POOL; i++) {
     const x = paint.strips[i];
     slots.push(
-      `<g class="nt-slot" data-side="${x?.side ?? "face"}" data-band="${x?.band ?? 2}"${x ? "" : ' data-empty=""'}><path class="nt-strip" d="${x?.fill ?? ""}"/><path class="nt-seam" d="${x?.seam ?? ""}"/><path class="nt-ghost" d="${x?.ghost ?? ""}"/><path class="nt-backfuzz" d="${x?.fuzz ?? ""}"/><path class="nt-ink" d="${x?.ink ?? ""}" style="stroke-width:${(INK_W * (x?.width ?? 1)).toFixed(2)}px"/><path class="nt-tear" d="${x?.tear ?? ""}"/><path class="nt-edge" d="${x?.edge ?? ""}"/></g>`,
+      `<g class="nt-slot" data-side="${x?.side ?? "face"}" data-band="${x?.band ?? 2}"${x ? "" : ' data-empty=""'}><path class="nt-strip" d="${x?.fill ?? ""}"/><path class="nt-seam" d="${x?.seam ?? ""}"/><path class="nt-ghost" d="${x?.ghost ?? ""}"/><path class="nt-backfuzz" d="${x?.fuzz ?? ""}"/><path class="nt-ink" d="${x?.ink ?? ""}" style="stroke-width:${(INK_W * (x?.width ?? 1)).toFixed(2)}px"/><path class="nt-crease" d="${x?.crease ?? ""}"/><path class="nt-tear" d="${x?.tear ?? ""}"/><path class="nt-edge" d="${x?.edge ?? ""}"/></g>`,
     );
   }
   return `<g class="nt-tag" data-part="tag"><path class="nt-halo" data-part="halo" d="${paint.halo || "M0 0"}" style="opacity:${paint.haloOpacity.toFixed(2)};filter:blur(${paint.haloBlur.toFixed(1)}px)"/><g class="nt-flat" data-part="flat" data-band="${flat.band}"${paint.flat ? "" : ' style="display:none"'}><path class="nt-under" d="${flat.under}"/>${flat.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${flat.fill}"/><path class="nt-ink" d="${flat.ink}" style="stroke-width:${INK_W}px"/><path class="nt-edge" d="${flat.edge}"/></g><g class="nt-curl" data-part="curl">${slots.join("")}</g></g>`;
@@ -377,7 +380,7 @@ if (sheetArg) {
   const cells = poses
     .map((s) => {
       const tag = `p${String(s).replace(".", "_")}-`;
-      const body = (art + tagLayer(s)).replace(/id="nt-/g, `id="${tag}nt-`).replace(/url\(#nt-/g, `url(#${tag}nt-`);
+      const body = (art + tagLayer(s)).replace(/id="nt-/g, `id="${tag}nt-`).replace(/url\(#nt-/g, `url(#${tag}nt-`).replace(/href="#nt-/g, `href="#${tag}nt-`);
       return `<div class="cell"><div class="lab">s ${s}</div>${k.figureSvg({ width: WIDTH, height: HEIGHT, className: "nt-svg", label: "pose", body: [`<style>${CSS}</style>`, body] })}</div>`;
     })
     .join("");

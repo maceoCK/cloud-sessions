@@ -310,14 +310,15 @@ export const PEEL = (() => {
   // others along the front, so the sheet waves.
   const DS = 0.5;
   const RC_MIN = 6;
-  function profileOf({ theta, rb, k0, beta }, sigmaMax) {
+  function profileOf({ theta, rb, k0, beta, f = 0, creases = [] }, sigmaMax) {
     const n = Math.max(2, Math.ceil(sigmaMax / DS) + 2);
     const X = new Float64Array(n), Z = new Float64Array(n), PHI = new Float64Array(n);
     const bendEnd = theta * rb;
     let x = 0, z = 0, phi = 0;
     for (let i = 1; i < n; i++) {
       const s = (i - 0.5) * DS;
-      const k = s < bendEnd ? 1 / rb : Math.min(1 / RC_MIN, k0 * Math.exp(beta * Math.max(0, phi - theta)));
+      let k = s < bendEnd ? 1 / rb : Math.min(1 / RC_MIN, k0 * Math.exp(beta * Math.max(0, phi - theta)));
+      for (const c of creases) if (Math.abs(s - (f - c.d)) < c.w / 2) k += c.a / c.w;
       const mid = phi + (k * DS) / 2;
       x += -Math.cos(mid) * DS;
       z += Math.sin(mid) * DS;
@@ -350,6 +351,13 @@ export const PEEL = (() => {
     curlLift: 1 / 200, curlPeel: 1 / 27,
     betaLift: 0.03, betaPeel: 0.05,
   };
+  // Creases the paper took as it was handled: a sharp one across the corner that was picked with
+  // a fingernail, and a soft counter-wrinkle further in. Each is a line of the label (constant d),
+  // so it travels with the paper; its angle grows as the peel works it.
+  const CREASES = [
+    { d: D_MIN + 13, a: 34 * RAD, w: 1.4, early: true },
+    { d: D_MIN + 76, a: -13 * RAD, w: 3.2, early: false },
+  ];
   function frontAt(s) {
     s = clamp(s, 0, S_END);
     const lift = smooth(0, LIFT, s);
@@ -377,7 +385,8 @@ export const PEEL = (() => {
     const k0 = mix(0, TUNE.curlLift, lift) + mix(0, TUNE.curlPeel - TUNE.curlLift, grow);
     const beta = mix(TUNE.betaLift, TUNE.betaPeel, grow);
     const off = smooth(1, S_END, s);
-    return { s, f, theta, rb, k0, beta, off, free: s >= 1, peeled: peeledArea(f) / TAG_AREA, chord: chordAt(f) };
+    const creases = CREASES.filter((c) => c.d < f).map((c) => ({ d: c.d, w: c.w, a: c.a * (c.early ? lift : grow) }));
+    return { s, f, theta, rb, k0, beta, off, creases, free: s >= 1, peeled: peeledArea(f) / TAG_AREA, chord: chordAt(f) };
   }
 
   // Once torn free the flap falls: it drops and swings out from the wall, rolling on about its
@@ -443,7 +452,12 @@ export const PEEL = (() => {
       sigma += sigma < bend + 2 ? 0.7 : sigma < bend + 30 ? 1.3 : 2;
       cuts.push(Math.max(D_MIN, st.f - sigma));
     }
-    return cuts;
+    // a cut on each crease and either side of it, so the fold is drawn where it is
+    const extra = [];
+    for (const c of st.creases || []) for (const d of [c.d - c.w / 2, c.d, c.d + c.w / 2]) if (d > D_MIN && d < st.f - 0.05) extra.push(d);
+    if (!extra.length) return cuts;
+    const all = [...cuts, ...extra].sort((a, b) => b - a);
+    return all.filter((d, i) => i === 0 || all[i - 1] - d > 0.12 || extra.includes(d));
   }
 
   function frameOf(st, P, { place = 0 } = {}) {
@@ -884,7 +898,7 @@ export const PEEL = (() => {
     const order = new Map(strips.map((s, i) => [s.index, i]));
     const slots = strips.map((s) => ({
       fill: pathOf(s.scr, true),
-      side: s.side, band: s.band, edge: [], tear: [], seam: [], ink: [], ghost: [], fuzz: [],
+      side: s.side, band: s.band, edge: [], tear: [], seam: [], crease: [], ink: [], ghost: [], fuzz: [],
       width: clamp(s.facing / dot(N, C.V), 0.3, 1.3),
     }));
     strips.forEach((s, at) => {
@@ -897,12 +911,15 @@ export const PEEL = (() => {
         const onLo = Math.abs(a[0] - s.lo) < 1e-6 && Math.abs(b[0] - s.lo) < 1e-6;
         const onHi = Math.abs(a[0] - s.hi) < 1e-6 && Math.abs(b[0] - s.hi) < 1e-6;
         const other = onLo ? byIndex.get(s.index + 1) : onHi ? byIndex.get(s.index - 1) : null;
-        return other && other.side !== s.side ? "fold" : "cut";
+        if (other && other.side !== s.side) return "fold";
+        const line = onLo ? s.lo : onHi ? s.hi : null;
+        return line !== null && st.creases.some((c) => Math.abs(c.d - line) < 1e-6 && Math.abs(c.a) > 4 * RAD) ? "crease" : "cut";
       });
       for (const run of edgeRuns(s.scr, kinds, (k) => k === "die" || k === "fold")) slot.edge.push(pathOf(run));
       for (const run of edgeRuns(s.scr, kinds, (k) => k === "tear")) slot.tear.push(pathOf(run));
+      for (const run of edgeRuns(s.scr, kinds, (k) => k === "crease")) slot.crease.push(pathOf(run));
       // The joints with the neighbours get a hairline of the strip's own paper, so no seam shows.
-      for (const run of edgeRuns(s.scr, kinds, (k) => k === "cut")) slots[at].seam.push(pathOf(run));
+      for (const run of edgeRuns(s.scr, kinds, (k) => k === "cut" || k === "crease")) slots[at].seam.push(pathOf(run));
       const d = (ink.get(s.index) || []).map((r) => pathOf(r)).join("");
       if (s.side === "face") slot.ink.push(d);
       else slot.ghost.push(d);
@@ -924,7 +941,7 @@ export const PEEL = (() => {
       const near = Math.max(at, order.get(lo - 1) ?? -1, order.get(lo + 1) ?? -1);
       slots[near].fuzz.push(pathOf([project(C, frame.sheet.at(a[0], a[1])), project(C, frame.sheet.at(b[0], b[1]))]));
     }
-    out.strips = slots.map((slot) => ({ ...slot, edge: slot.edge.join(""), tear: slot.tear.join(""), seam: slot.seam.join(""), ink: slot.ink.join(""), ghost: slot.ghost.join(""), fuzz: slot.fuzz.join("") }));
+    out.strips = slots.map((slot) => ({ ...slot, edge: slot.edge.join(""), tear: slot.tear.join(""), seam: slot.seam.join(""), ink: slot.ink.join(""), ghost: slot.ghost.join(""), fuzz: slot.fuzz.join(""), crease: slot.crease.join("") }));
     return out;
   }
 
