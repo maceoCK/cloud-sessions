@@ -1,0 +1,2162 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Footprints in wet sand</title><style>
+.iso{
+  --anatomy-page:#0b0b0b;--anatomy-card:#131313;--anatomy-text:#a3a3a3;--anatomy-strong:#e6e6e6;--anatomy-muted:#6e6e6e;
+  --anatomy-paper:#131313;--anatomy-face:#1b1b1b;--anatomy-top:#1c1c1c;
+  --anatomy-shade-0:#0f0f0f;--anatomy-shade-1:#121212;--anatomy-shade-2:#151515;--anatomy-shade-3:#181818;
+  --anatomy-lit-top:#262626;--anatomy-lit-shade:#1d1d1d;
+  --anatomy-hi:#d4d4d4;--anatomy-mid:#6a6a6a;--anatomy-lo:#3e3e3e;--anatomy-faint:#2a2a2a;--anatomy-lit:#ffffff;
+  --anatomy-halo:#050505;--anatomy-halo-opacity:.9;--anatomy-dot:#e6e6e6;
+  --anatomy-red:#ff6b6b;--anatomy-green:#6be0a0;--anatomy-blue:#6b9bff;
+  --anatomy-weight:.6px;--anatomy-ease:cubic-bezier(.32,.72,0,1);
+  --anatomy-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --anatomy-lift:inset 0 1px 0 0 #ffffff0a,inset 0 0 0 1px #ffffff06,0 0 0 1px #00000026,0 1px 1px -.5px #00000014,0 3px 3px -1.5px #00000014,0 6px 6px -3px #00000014,0 12px 12px -6px #00000014;
+}
+.iso[data-theme="light"]{
+  --anatomy-page:#f2f2ef;--anatomy-card:#fbfbfa;--anatomy-text:#57575a;--anatomy-strong:#18181a;--anatomy-muted:#8c8c90;
+  --anatomy-paper:#fbfbfa;--anatomy-face:#ffffff;--anatomy-top:#ffffff;
+  --anatomy-shade-0:#dcdcd9;--anatomy-shade-1:#e5e5e2;--anatomy-shade-2:#ededea;--anatomy-shade-3:#f4f4f1;
+  --anatomy-lit-top:#ffffff;--anatomy-lit-shade:#eeeeeb;
+  --anatomy-hi:#26262a;--anatomy-mid:#8a8a8f;--anatomy-lo:#b4b4b8;--anatomy-faint:#d4d4d6;--anatomy-lit:#000000;
+  --anatomy-halo:#8a8a80;--anatomy-halo-opacity:.32;--anatomy-dot:#3a3a3e;
+  --anatomy-red:#e5484d;--anatomy-green:#30a46c;--anatomy-blue:#3e63dd;
+  --anatomy-lift:inset 0 1px 0 0 #ffffff,0 0 0 1px #0000000f,0 1px 1px -.5px #0000000a,0 3px 3px -1.5px #0000000a,0 6px 6px -3px #0000000a,0 12px 12px -6px #0000000a;
+}
+.iso-svg{display:block;width:100%;height:auto;overflow:visible}
+.iso-svg path,.iso-svg circle{vector-effect:non-scaling-stroke}
+.iso-fill{fill:var(--anatomy-paper);stroke:none}
+.iso-solid[data-lit]>.iso-fill{fill:var(--anatomy-face)}
+.iso-shade,.iso-top{stroke:none}
+.iso-shade[data-shade="0"]{fill:var(--anatomy-shade-0)}
+.iso-shade[data-shade="1"]{fill:var(--anatomy-shade-1)}
+.iso-shade[data-shade="2"]{fill:var(--anatomy-shade-2)}
+.iso-shade[data-shade="3"]{fill:var(--anatomy-shade-3)}
+.iso-top{fill:var(--anatomy-top)}
+.iso-solid[data-lit]>.iso-top{fill:var(--anatomy-lit-top)}
+.iso-solid[data-lit]>.iso-shade{fill:var(--anatomy-lit-shade)}
+.iso-solid[data-seamless]>.iso-shade,.iso-solid[data-seamless]>.iso-top{stroke-width:.4;stroke-linejoin:round}
+.iso-solid[data-seamless]>.iso-shade[data-shade="0"]{stroke:var(--anatomy-shade-0)}
+.iso-solid[data-seamless]>.iso-shade[data-shade="1"]{stroke:var(--anatomy-shade-1)}
+.iso-solid[data-seamless]>.iso-shade[data-shade="2"]{stroke:var(--anatomy-shade-2)}
+.iso-solid[data-seamless]>.iso-shade[data-shade="3"]{stroke:var(--anatomy-shade-3)}
+.iso-solid[data-seamless]>.iso-top{stroke:var(--anatomy-top)}
+.iso-solid[data-seamless][data-lit]>.iso-top{stroke:var(--anatomy-lit-top)}
+.iso-solid[data-seamless][data-lit]>.iso-shade{stroke:var(--anatomy-lit-shade)}
+.iso-solid[data-lit]>.iso-edge{stroke:var(--anatomy-lit)}
+.iso-halo{fill:var(--anatomy-halo);stroke:none;filter:blur(9px);opacity:var(--anatomy-halo-opacity);transform:translateY(3px)}
+.iso-line{fill:none;stroke:var(--anatomy-lo);stroke-width:var(--anatomy-weight);stroke-linecap:round;stroke-linejoin:round}
+.iso-line[data-tone="hi"]{stroke:var(--anatomy-hi)}
+.iso-line[data-tone="mid"]{stroke:var(--anatomy-mid)}
+.iso-line[data-tone="lo"]{stroke:var(--anatomy-lo)}
+.iso-line[data-tone="faint"]{stroke:var(--anatomy-faint)}
+.iso-line[data-tone="lit"]{stroke:var(--anatomy-lit)}
+.iso-line[data-tone="red"]{stroke:var(--anatomy-red)}
+.iso-line[data-tone="green"]{stroke:var(--anatomy-green)}
+.iso-line[data-tone="blue"]{stroke:var(--anatomy-blue)}
+.iso-line[data-dotted]{stroke-dasharray:.01 3.5;stroke-width:1}
+.iso-line[data-dashed]{stroke-dasharray:3 3}
+.iso-line[data-flow]{stroke-dasharray:2 6}
+.iso-wire-end{fill:var(--anatomy-paper);stroke:var(--anatomy-lo);stroke-width:var(--anatomy-weight)}
+.iso-wire[data-tone="hi"] .iso-wire-end{stroke:var(--anatomy-hi)}
+.iso-wire[data-tone="mid"] .iso-wire-end{stroke:var(--anatomy-mid)}
+.iso-wire[data-tone="faint"] .iso-wire-end{stroke:var(--anatomy-faint)}
+.iso-wire[data-tone="lit"] .iso-wire-end{stroke:var(--anatomy-lit)}
+.iso-dots circle{fill:var(--anatomy-dot);stroke:none;opacity:.32}
+.iso-dots[data-tone="hi"] circle{opacity:.85}
+.iso-dots[data-tone="mid"] circle{opacity:.45}
+.iso-dots[data-tone="lo"] circle{opacity:.22}
+.iso-dots[data-tone="faint"] circle{opacity:.12}
+.iso-face-text{fill:var(--anatomy-mid);font-family:var(--anatomy-mono);letter-spacing:.04em}
+.iso-face-text[data-tone="hi"]{fill:var(--anatomy-hi)}
+.iso-face-text[data-tone="lo"]{fill:var(--anatomy-lo)}
+.iso-face-text[data-tone="faint"]{fill:var(--anatomy-faint)}
+.tb-body{fill:var(--anatomy-shade-2);stroke:none}
+.tb-shine{fill:var(--anatomy-top);stroke:none}
+.tb-shade{fill:var(--anatomy-shade-0);stroke:none}
+.tb-ring{fill:none;stroke:var(--anatomy-lo);stroke-width:.45;stroke-linecap:butt;stroke-linejoin:round}
+.tb-ring[data-tone="mid"]{stroke:var(--anatomy-mid)}
+.tb-ring[data-tone="faint"]{stroke:var(--anatomy-faint)}
+.tb-ring[data-tone="hi"]{stroke:var(--anatomy-hi)}
+@keyframes iso-flow{to{stroke-dashoffset:-32}}
+@keyframes iso-pulse{0%,100%{opacity:.18}12%{opacity:1}40%{opacity:.18}}
+.iso-line[data-flow]{animation:iso-flow 1600ms linear infinite}
+.iso-dots circle[data-pulse]{animation:iso-pulse 1600ms steps(1,end) infinite;animation-delay:var(--pulse-at,0ms)}
+.iso-figure{margin:32px 0 36px}
+.iso-plate{position:relative;padding:52px 24px;border-radius:0;background:var(--anatomy-card);box-shadow:0 0 0 1px var(--anatomy-mid);--anatomy-paper:var(--anatomy-card)}
+.iso-plate-corners{position:absolute;inset:18px 20px;pointer-events:none}
+.iso-plate-corner{position:absolute;color:var(--anatomy-muted);font-family:var(--anatomy-mono);font-size:10.5px;line-height:1;letter-spacing:.04em;white-space:nowrap}
+.iso-plate-corner[data-corner="fig"]{top:0;left:0;color:var(--anatomy-text)}
+.iso-plate-corner[data-corner="title"]{top:0;right:0;text-transform:uppercase;letter-spacing:.1em}
+.iso-plate-corner[data-corner="hint"]{bottom:0;left:0;text-transform:uppercase;letter-spacing:.1em}
+.iso-plate-corner[data-corner="readout"]{right:0;bottom:0;color:var(--anatomy-text);font-variant-numeric:tabular-nums}
+.iso-plate .iso-svg{margin:0 auto}
+.iso-legend{display:grid;gap:8px;margin-top:12px;color:var(--anatomy-muted);font-size:13px;line-height:1.55}
+.iso-keys{display:flex;flex-wrap:wrap;gap:6px 18px}
+.iso-key{display:inline-flex;align-items:center;gap:7px}
+.iso-swatch{width:16px;height:10px;flex:none;overflow:visible}
+.iso-swatch path{fill:none;stroke:var(--anatomy-hi);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
+.iso-swatch[data-mark="raised"] path,.iso-swatch[data-mark="flat"] path{stroke:var(--anatomy-mid)}
+.iso-swatch[data-mark="lit"] path{stroke:var(--anatomy-lit)}
+.iso-swatch[data-mark="dim"] path{stroke:var(--anatomy-lo)}
+.iso-swatch[data-mark="dotted"] path{stroke-dasharray:.01 3;stroke-width:1.4}
+.iso-swatch[data-mark="dashed"] path{stroke-dasharray:3 2.5}
+.iso-swatch[data-mark="red"] path{stroke:var(--anatomy-red)}
+.iso-swatch[data-mark="green"] path{stroke:var(--anatomy-green)}
+.iso-swatch[data-mark="blue"] path{stroke:var(--anatomy-blue)}
+.iso-swatch-crease{stroke:var(--anatomy-lo)!important}
+@media (max-width:560px){.iso-plate{padding:48px 12px 70px}.iso-plate-corner[data-corner="hint"]{bottom:18px}}
+@media (prefers-reduced-motion:reduce){.iso-line[data-flow],.iso-dots circle[data-pulse]{animation:none}}
+
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body[data-theme="light"]{color-scheme:light}
+body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.iso-page{width:min(1000px,100% - 32px);margin:64px auto 96px}
+</style></head><body class="iso" data-theme="dark"><main class="iso-page"><style>.fp .iso-plate {
+  padding: 0;
+  overflow: hidden;
+}
+
+.fp {
+  --fp-wet: #2e2a25;
+  --fp-dry: #5e564b;
+  --fp-sky-lo: #8a9196;
+  --fp-sky-hi: #353b41;
+  --fp-water: #59605e;
+  --fp-sea: #263130;
+  --fp-foam: #eef1f0;
+  --fp-glint: #ffffff;
+  --fp-band: #0b0a09;
+  --fp-pill: rgba(19, 19, 19, 0.66);
+}
+
+.iso[data-theme="light"] .fp,
+.fp[data-theme="light"] {
+  --fp-wet: #6b6256;
+  --fp-dry: #bdb19d;
+  --fp-sky-lo: #f3f5f6;
+  --fp-sky-hi: #c4ccd1;
+  --fp-water: #a5aaa5;
+  --fp-sea: #7d8b89;
+  --fp-foam: #ffffff;
+  --fp-glint: #ffffff;
+  --fp-band: #3a332b;
+  --fp-pill: rgba(250, 250, 248, 0.72);
+}
+
+.fp .iso-plate-corners {
+  z-index: 2;
+}
+
+.fp .iso-plate-corner {
+  padding: 4px 7px;
+  margin: -4px -7px;
+  border-radius: 3px;
+  background: var(--fp-pill);
+}
+
+.fp-ground {
+  fill: var(--fp-wet);
+}
+
+.fp-dry-ground {
+  fill: var(--fp-dry);
+  opacity: 0.6;
+}
+
+.fp-sea {
+  fill: var(--fp-sea);
+}
+
+.fp-sheet {
+  fill: var(--fp-water);
+  opacity: 0.55;
+}
+
+.fp-lace {
+  fill: none;
+  stroke: var(--fp-foam);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.fp-print-pale {
+  fill: none;
+  stroke: var(--fp-dry);
+  stroke-width: 3.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.fp-print-pool {
+  fill: var(--fp-water);
+}
+
+.fp-swash-line > path {
+  fill: none;
+  stroke: var(--fp-band);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.fp-print-rim {
+  fill: none;
+  stroke: var(--fp-dry);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.fp-print-floor {
+  fill: #00000040;
+}
+
+.iso[data-theme="light"] .fp-print-floor,
+.fp[data-theme="light"] .fp-print-floor {
+  fill: #2a221a40;
+}
+
+.fp-stage {
+  position: relative;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: crosshair;
+}
+
+.fp-stage[data-gl] .fp-fallback {
+  display: none;
+}
+
+.fp-said {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.fp-stage:focus-visible {
+  outline: none;
+}
+
+.fp .iso-plate:has(.fp-stage:focus-visible) {
+  outline: 1px solid var(--anatomy-muted);
+  outline-offset: 4px;
+}
+
+.fp-stage > svg,
+.fp-stage > canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.fp-stage > .fp-layer {
+  position: absolute;
+  inset: 0;
+  height: 100% !important;
+  pointer-events: none;
+}
+
+@media (max-width: 560px) {
+  .fp .iso-plate {
+    padding: 0;
+  }
+
+  .fp-stage {
+    width: 120%;
+    margin-left: -10%;
+  }
+
+}
+</style><div class="fp"><figure class="iso-figure"><div class="iso-plate"><div class="iso-plate-corners" aria-hidden="true"><span class="iso-plate-corner" data-corner="fig">Fig 1</span><span class="iso-plate-corner" data-corner="title">Footprints in wet sand</span><span class="iso-plate-corner" data-corner="hint">Click the sand to step · Space sends a wave</span><span class="iso-plate-corner" data-corner="readout" data-readout>smooth</span></div><div class="fp-stage" tabindex="0" role="group" aria-roledescription="beach" aria-label="Footprints in wet sand. Tap or click the sand to press a footprint there; press the right arrow key to take the next step, and Space or Enter to send a wave up the beach."><span class="fp-said" aria-live="polite"></span><svg xmlns="http://www.w3.org/2000/svg" class="iso-svg fp-back" viewBox="0 0 880 560" role="img" aria-label="Looking down on a beach that rises 1 in 12: the sea at the back, a strip of smooth, dark, wet sand where the swash runs, and drier sand toward you. Footprints press into the wet strip one step at a time, each ringed for a moment by pale, drained sand. A bore runs in through the shallows and collapses at the water's edge; its thin sheet of swash slides up the beach with a foam edge, covers the prints, smooths them away and draws back, leaving the sand glossy and smooth again."><g class="fp-fallback" aria-hidden="true"><rect class="fp-ground" x="0" y="0" width="880" height="560"/><path class="fp-dry-ground" d="M-275 362.8L-260.5 366.3L-246 369.9L-231.5 373.4L-217 376.9L-202.5 380.5L-188 384L-173.5 387.5L-159 391.1L-144.5 394.6L-130 398.1L-115.5 401.6L-101 405.2L-86.5 408.7L-72 412.2L-57.5 415.8L-43 419.3L-28.5 422.8L-14.1 426.4L0.4 429.9L14.9 433.4L29.4 436.9L43.9 440.5L58.4 444L72.9 447.5L87.4 451.1L101.9 454.6L116.4 458.1L130.9 461.7L145.4 465.2L159.9 468.7L174.4 472.2L188.9 475.8L203.4 479.3L217.9 482.8L232.4 486.4L246.9 489.9L261.3 493.4L275.8 497L290.3 500.5L304.8 504L319.3 507.5L333.8 511.1L348.3 514.6L362.8 518.1L377.3 521.7L391.8 525.2L406.3 528.7L420.8 532.3L435.3 535.8L449.8 539.3L464.3 542.8L478.8 546.4L493.3 549.9L507.8 553.4L522.3 557L536.7 560.5L551.2 564L565.7 567.6L580.2 571.1L594.7 574.6L609.2 578.2L623.7 581.7L638.2 585.2L652.7 588.7L667.2 592.3L681.7 595.8L696.2 599.3L710.7 602.9L725.2 606.4L739.7 609.9L754.2 613.5L768.7 617L783.2 620.5L797.7 624L812.1 627.6L826.6 631.1L841.1 634.6L855.6 638.2L870.1 641.7L884.6 645.2L798.3 788.2L-361.2 505.8Z"/><path class="fp-sea" d="M-43.8 -20.4L-29.3 -16.8L-14.8 -13.3L-0.3 -9.8L14.2 -6.3L28.7 -2.7L43.2 0.8L57.7 4.3L72.2 7.9L86.7 11.4L101.2 14.9L115.7 18.5L130.2 22L144.7 25.5L159.2 29L173.7 32.6L188.2 36.1L202.7 39.6L217.2 43.2L231.6 46.7L246.1 50.2L260.6 53.8L275.1 57.3L289.6 60.8L304.1 64.3L318.6 67.9L333.1 71.4L347.6 74.9L362.1 78.5L376.6 82L391.1 85.5L405.6 89.1L420.1 92.6L434.6 96.1L449.1 99.6L463.6 103.2L478.1 106.7L492.6 110.2L507 113.8L521.5 117.3L536 120.8L550.5 124.4L565 127.9L579.5 131.4L594 134.9L608.5 138.5L623 142L637.5 145.5L652 149.1L666.5 152.6L681 156.1L695.5 159.7L710 163.2L724.5 166.7L739 170.3L753.5 173.8L768 177.3L782.4 180.8L796.9 184.4L811.4 187.9L825.9 191.4L840.4 195L854.9 198.5L869.4 202L883.9 205.6L898.4 209.1L912.9 212.6L927.4 216.1L941.9 219.7L956.4 223.2L970.9 226.7L985.4 230.3L999.9 233.8L1014.4 237.3L1028.9 240.9L1043.4 244.4L1057.9 247.9L1072.3 251.4L1086.8 255L1101.3 258.5L1115.8 262L1241.2 54.2L81.7 -228.2Z"/><g data-part="prints"></g><g data-part="lines" class="fp-swash-line"></g><path data-part="sheet" class="fp-sheet" d=""/><path data-part="lace" class="fp-lace" d=""/></g></svg><canvas class="fp-layer fp-gl" aria-hidden="true"></canvas><svg xmlns="http://www.w3.org/2000/svg" class="iso-svg fp-layer fp-front" viewBox="0 0 880 560" aria-hidden="true"><g class="fp-scale"><path class="iso-line" data-tone="mid" d="M176.3 415.2L298.4 445"/><path class="iso-line" data-tone="mid" d="M200.7 421.2L202.5 418.2M225.1 427.1L226.9 424.2M249.6 433.1L251.3 430.1M274 439L275.8 436.1"/><path class="iso-line" data-tone="hi" d="M176.3 415.2L179.3 410.2M298.4 445L301.4 440"/></g></svg></div></div><figcaption class="iso-legend"><span class="iso-keys"><span class="iso-key"><svg class="iso-swatch" data-mark="lit" viewBox="0 0 16 10" aria-hidden="true"><path d="M2 4.5 8 1.5 14 4.5 14 6 8 9 2 6Z"/><path class="iso-swatch-crease" d="M2 4.5 8 7.5 14 4.5"/></svg>Wet sand of the swash zone, rising 1 in 12</span><span class="iso-key"><svg class="iso-swatch" data-mark="flat" viewBox="0 0 16 10" aria-hidden="true"><path d="M2 6.5 8 3.5 14 6.5 8 9.5Z"/></svg>Sea, a few centimetres deep at its edge</span><span class="iso-key"><svg class="iso-swatch" data-mark="dotted" viewBox="0 0 16 10" aria-hidden="true"><path d="M1.5 5h13"/></svg>Swash line: foam stranded where the wave turned</span><span class="iso-key"><svg class="iso-swatch" data-mark="edge" viewBox="0 0 16 10" aria-hidden="true"><path d="M1.5 5h13"/></svg>Scale bar, 0.50 m in 10 cm steps</span></span><span class="iso-caption">A stretch of beach that rises 1 in 12, seen from above: the sea at the back, the strip of dark sand the swash keeps wet, and drier sand toward you. Someone walks along the strip at 0.73 m/s, 0.66 m a step, and each bare heel sinks 16 mm. While the foot is down, the sand around it turns pale: shearing makes the packed grains dilate, and the water drains down into the new pore space (Reynolds' dilatancy). When the foot lifts, the water comes back and pools in the heel and the ball. Then a bore runs in through the shallows, slowing from 1.1 to 0.9 m/s as it shoals, and collapses at the water's edge. Its swash leaves at 1.7 m/s and slows at g·sin β = 0.81 m/s², so it turns 2.1 s later, about 1.80 m up the beach (1.63 to 1.97 m along its lobes, from wave to wave), and drains back the same way (Shen and Meyer's ballistic swash). Over the prints the sheet is never more than 2 mm deep, yet it smooths each one away within a second or two of covering it. The film it leaves sinks into the sand, and the sheen fades.</span></figcaption></figure></div></main><script type="module">const AZIMUTH = 45;
+const ELEVATION = 30;
+const SHADES = 4;
+const RADIANS = Math.PI / 180;
+const UNIT = Math.sqrt(1.6);
+function cameraOf({ scale, azimuth = AZIMUTH, elevation = ELEVATION }) {
+    const a = azimuth * RADIANS;
+    const e = elevation * RADIANS;
+    return { sinA: Math.sin(a), cosA: Math.cos(a), sinE: Math.sin(e), cosE: Math.cos(e), k: scale * UNIT };
+}
+function iso([x, y, z], projection) {
+    const { origin } = projection;
+    const { sinA, cosA, sinE, cosE, k } = cameraOf(projection);
+    return [origin[0] + (x * sinA - y * cosA) * k, origin[1] + ((x * cosA + y * sinA) * sinE - z * cosE) * k];
+}
+function towardViewer(projection) {
+    const { sinA, cosA } = cameraOf(projection);
+    return [cosA, sinA];
+}
+function depthOf([x, y, z], projection) {
+    const { sinA, cosA, sinE, cosE } = cameraOf(projection);
+    return (x * cosA + y * sinA) * cosE + z * sinE;
+}
+const tenth = (value) => {
+    const text = (Math.round(value * 10) / 10).toFixed(1).replace(/\.0$/, "");
+    return text === "-0" ? "0" : text;
+};
+function pathOf(points, closed = false) {
+    if (!points.length)
+        return "";
+    return points.map(([x, y], at) => `${at ? "L" : "M"}${tenth(x)} ${tenth(y)}`).join("") + (closed ? "Z" : "");
+}
+const joinPaths = (paths) => paths.filter(Boolean).join("");
+function roundedPlan({ x, y, w, d, r }, steps = 8) {
+    const radius = Math.max(0, Math.min(r, w / 2, d / 2));
+    const corners = [
+        [x + w - radius, y + radius, -90],
+        [x + w - radius, y + d - radius, 0],
+        [x + radius, y + d - radius, 90],
+        [x + radius, y + radius, 180],
+    ];
+    const out = [];
+    for (const [cx, cy, start] of corners) {
+        const count = radius > 0 ? steps : 0;
+        for (let step = 0; step <= count; step++) {
+            const angle = (start + (count ? (90 * step) / count : 45)) * RADIANS;
+            out.push([cx + radius * Math.cos(angle), cy + radius * Math.sin(angle)]);
+        }
+    }
+    return out;
+}
+function signedArea(points) {
+    let area = 0;
+    for (let index = 0; index < points.length; index++) {
+        const [ax, ay] = points[index];
+        const [bx, by] = points[(index + 1) % points.length];
+        area += ax * by - bx * ay;
+    }
+    return area / 2;
+}
+const oriented = (points) => (signedArea(points) < 0 ? [...points].reverse() : points);
+function convexHull(points) {
+    const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    if (sorted.length < 3)
+        return sorted;
+    const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    const lower = [];
+    for (const point of sorted) {
+        while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], point) <= 0)
+            lower.pop();
+        lower.push(point);
+    }
+    const upper = [];
+    for (let index = sorted.length - 1; index >= 0; index--) {
+        const point = sorted[index];
+        while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], point) <= 0)
+            upper.pop();
+        upper.push(point);
+    }
+    return [...lower.slice(0, -1), ...upper.slice(0, -1)];
+}
+function runsOf(flags, want) {
+    const count = flags.length;
+    const runs = [];
+    const start = flags.findIndex((flag, index) => flag !== flags[(index + count - 1) % count]);
+    if (start < 0)
+        return flags[0] === want ? [Array.from({ length: count + 1 }, (_, index) => index % count)] : [];
+    let run = null;
+    for (let step = 0; step < count; step++) {
+        const index = (start + step) % count;
+        if (flags[index] === want) {
+            if (!run)
+                run = [index];
+            run.push((index + 1) % count);
+        }
+        else if (run) {
+            runs.push(run);
+            run = null;
+        }
+    }
+    if (run)
+        runs.push(run);
+    return runs;
+}
+function extrude(ring, z, height, projection, options = {}) {
+    const convex = options.convex ?? true;
+    const count = ring.length;
+    const counter = signedArea(ring) > 0;
+    const [vx, vy] = towardViewer(projection);
+    const { sinA, cosA } = cameraOf(projection);
+    const normals = ring.map(([ax, ay], index) => {
+        const [bx, by] = ring[(index + 1) % count];
+        const dx = bx - ax;
+        const dy = by - ay;
+        const length = Math.hypot(dx, dy) || 1;
+        return (counter ? [dy / length, -dx / length] : [-dy / length, dx / length]);
+    });
+    const facing = normals.map(([nx, ny]) => nx * vx + ny * vy > 1e-9);
+    const top = ring.map(([x, y]) => iso([x, y, z + height], projection));
+    const bottom = ring.map(([x, y]) => iso([x, y, z], projection));
+    const outline = [];
+    const crease = [];
+    for (const run of runsOf(facing, false))
+        outline.push(pathOf(run.map((index) => top[index])));
+    for (const run of runsOf(facing, true)) {
+        crease.push(pathOf(run.map((index) => top[index])));
+        if (height > 0)
+            outline.push(pathOf(run.map((index) => bottom[index])));
+    }
+    if (height > 0) {
+        for (let index = 0; index < count; index++) {
+            if (facing[(index + count - 1) % count] !== facing[index])
+                outline.push(pathOf([top[index], bottom[index]]));
+        }
+    }
+    let fill;
+    if (convex) {
+        fill = pathOf(convexHull([...top, ...bottom]), true);
+    }
+    else {
+        const parts = [pathOf(oriented(top), true), pathOf(oriented(bottom), true)];
+        for (let index = 0; index < count; index++) {
+            if (!facing[index])
+                continue;
+            const next = (index + 1) % count;
+            parts.push(pathOf(oriented([top[index], top[next], bottom[next], bottom[index]]), true));
+        }
+        fill = parts.join("");
+    }
+    const buckets = Array.from({ length: SHADES }, () => []);
+    if (height > 0) {
+        const [lx, ly] = [-sinA, cosA];
+        for (let index = 0; index < count; index++) {
+            if (!facing[index])
+                continue;
+            const [nx, ny] = normals[index];
+            const lit = (nx * lx + ny * ly + 1) / 2;
+            const shade = Math.min(SHADES - 1, Math.max(0, Math.floor(lit * SHADES)));
+            const next = (index + 1) % count;
+            buckets[shade].push(pathOf(oriented([top[index], top[next], bottom[next], bottom[index]]), true));
+        }
+    }
+    let bevel;
+    if (options.bevel && options.bevel > 0) {
+        const by = options.bevel;
+        const inset = ring.map(([x, y], index) => {
+            const [ax, ay] = normals[(index + count - 1) % count];
+            const [bx, by2] = normals[index];
+            const mx = ax + bx;
+            const my = ay + by2;
+            const length = Math.hypot(mx, my) || 1;
+            return [x - (mx / length) * by, y - (my / length) * by];
+        });
+        const insetTop = inset.map(([x, y]) => iso([x, y, z + height], projection));
+        bevel = runsOf(facing, true)
+            .map((run) => pathOf([top[run[0]], ...run.slice(1, -1).map((index) => insetTop[index]), top[run[run.length - 1]]]))
+            .join("");
+    }
+    return {
+        fill,
+        outline: outline.join(""),
+        crease: crease.join(""),
+        top: pathOf(oriented(top), true),
+        shades: buckets.map((paths) => paths.join("")),
+        bevel,
+    };
+}
+const ringOf = (plan, steps = 8) => roundedPlan(plan, steps);
+function slabOf(plan, z, height, projection, steps = 8, bevel = 0) {
+    return extrude(ringOf(plan, steps), z, height, projection, { convex: true, bevel });
+}
+function circleRing(cx, cy, radius, steps = 40) {
+    return Array.from({ length: steps }, (_, step) => {
+        const angle = (step / steps) * Math.PI * 2;
+        return [cx + radius * Math.cos(angle), cy + radius * Math.sin(angle)];
+    });
+}
+function cylinder(cx, cy, radius, z, height, projection, steps = 32, bevel = 0) {
+    return extrude(circleRing(cx, cy, radius, steps), z, height, projection, { convex: true, bevel });
+}
+const insetPlan = ({ x, y, w, d, r }, by) => ({ x: x + by, y: y + by, w: w - by * 2, d: d - by * 2, r: Math.max(0, r - by) });
+function onTop(points, z, projection, closed = false) {
+    return pathOf(points.map(([x, y]) => iso([x, y, z], projection)), closed);
+}
+const planOutline = (plan, z, projection, steps = 8) => onTop(ringOf(plan, steps), z, projection, true);
+const lineOnTop = (from, to, z, projection) => onTop([from, to], z, projection);
+const segment = (from, to, projection) => pathOf([iso(from, projection), iso(to, projection)]);
+const rise = (at, from, to, projection) => segment([at[0], at[1], from], [at[0], at[1], to], projection);
+const ring = (cx, cy, radius, z, projection, steps = 40) => onTop(circleRing(cx, cy, radius, steps), z, projection, true);
+const pointsAt = (points, projection) => points.map((point) => iso(point, projection));
+function dotGrid(x, y, columns, rows, gap, z, projection) {
+    const dots = [];
+    for (let row = 0; row < rows; row++) {
+        for (let column = 0; column < columns; column++)
+            dots.push(iso([x + column * gap, y + row * gap, z], projection));
+    }
+    return dots;
+}
+function corners({ x, y, w, d }, inset = 0) {
+    return [
+        [x + inset, y + inset],
+        [x + w - inset, y + inset],
+        [x + inset, y + d - inset],
+        [x + w - inset, y + d - inset],
+    ];
+}
+function boxCorners({ x, y, w, d }, z0, z1) {
+    const out = [];
+    for (const px of [x, x + w])
+        for (const py of [y, y + d])
+            for (const z of [z0, z1])
+                out.push([px, py, z]);
+    return out;
+}
+function knurl(cx, cy, radius, z0, z1, count, projection, inset = 0.4) {
+    const [vx, vy] = towardViewer(projection);
+    const lines = [];
+    for (let index = 0; index < count; index++) {
+        const angle = (index / count) * Math.PI * 2;
+        const nx = Math.cos(angle);
+        const ny = Math.sin(angle);
+        if (nx * vx + ny * vy < 0.15)
+            continue;
+        lines.push(segment([cx + radius * nx, cy + radius * ny, z0 + inset], [cx + radius * nx, cy + radius * ny, z1 - inset], projection));
+    }
+    return lines.join("");
+}
+function sideArc(cx, cy, radius, z, projection, steps = 24) {
+    const [vx, vy] = towardViewer(projection);
+    const facing = Math.atan2(vy, vx);
+    const points = [];
+    for (let step = 0; step <= steps; step++) {
+        const angle = facing - Math.PI / 2 + (step / steps) * Math.PI;
+        points.push(iso([cx + radius * Math.cos(angle), cy + radius * Math.sin(angle), z], projection));
+    }
+    return pathOf(points);
+}
+function ringSeam(ring, z, projection) {
+    const count = ring.length;
+    const counter = signedArea(ring) > 0;
+    const [vx, vy] = towardViewer(projection);
+    const facing = ring.map(([ax, ay], index) => {
+        const [bx, by] = ring[(index + 1) % count];
+        const dx = bx - ax;
+        const dy = by - ay;
+        const [nx, ny] = counter ? [dy, -dx] : [-dy, dx];
+        return nx * vx + ny * vy > 1e-9;
+    });
+    return runsOf(facing, true).map((run) => pathOf(run.map((index) => iso([ring[index][0], ring[index][1], z], projection)))).join("");
+}
+const sideSeam = (plan, z, projection, steps = 8) => ringSeam(ringOf(plan, steps), z, projection);
+function sideRing(center, radius, axis, projection, steps = 20) {
+    const [px, py, pz] = center;
+    const points = [];
+    for (let step = 0; step < steps; step++) {
+        const angle = (step / steps) * Math.PI * 2;
+        const u = radius * Math.cos(angle);
+        const v = radius * Math.sin(angle);
+        points.push(iso(axis === "x" ? [px, py + u, pz + v] : [px + u, py, pz + v], projection));
+    }
+    return pathOf(points, true);
+}
+function coil(from, to, center, radius, turns, axis, projection, perTurn = 16) {
+    const count = Math.max(1, Math.round(turns * perTurn));
+    const back = [];
+    const front = [];
+    let run = [];
+    let near = null;
+    for (let index = 0; index <= count; index++) {
+        const share = index / count;
+        const angle = share * turns * Math.PI * 2;
+        const u = radius * Math.cos(angle);
+        const v = radius * Math.sin(angle);
+        const along = from + (to - from) * share;
+        const point = axis === "x" ? [along, center[0] + u, center[1] + v] : [center[0] + u, along, center[1] + v];
+        const normal = axis === "x" ? [0, Math.cos(angle), Math.sin(angle)] : [Math.cos(angle), 0, Math.sin(angle)];
+        const facing = depthOf(normal, projection) > 0;
+        const flat = iso(point, projection);
+        if (near === null)
+            near = facing;
+        if (facing !== near) {
+            run.push(flat);
+            (near ? front : back).push(pathOf(run));
+            run = [flat];
+            near = facing;
+            continue;
+        }
+        run.push(flat);
+    }
+    if (run.length > 1)
+        (near ? front : back).push(pathOf(run));
+    return { back: back.join(""), front: front.join("") };
+}
+function topTicks(from, to, step, every, edge, z, lengths, projection, axis = "x") {
+    const minor = [];
+    const major = [];
+    const first = Math.ceil(from / step) * step;
+    for (let at = first, index = Math.round(first / step); at <= to + 1e-9; at += step, index++) {
+        const big = index % every === 0;
+        const length = big ? lengths[1] : lengths[0];
+        const a = axis === "x" ? [at, edge] : [edge, at];
+        const b = axis === "x" ? [at, edge + length] : [edge + length, at];
+        (big ? major : minor).push(lineOnTop(a, b, z, projection));
+    }
+    return { minor: minor.join(""), major: major.join("") };
+}
+function sideTicks(from, to, step, every, face, top, lengths, projection, axis = "x") {
+    const minor = [];
+    const major = [];
+    const first = Math.ceil(from / step) * step;
+    for (let at = first, index = Math.round(first / step); at <= to + 1e-9; at += step, index++) {
+        const big = index % every === 0;
+        const length = big ? lengths[1] : lengths[0];
+        const a = axis === "x" ? [at, face, top] : [face, at, top];
+        const b = axis === "x" ? [at, face, top - length] : [face, at, top - length];
+        (big ? major : minor).push(segment(a, b, projection));
+    }
+    return { minor: minor.join(""), major: major.join("") };
+}
+function radialTicks(cx, cy, radius, count, every, z, lengths, projection, from = 0, span = Math.PI * 2) {
+    const minor = [];
+    const major = [];
+    const closed = Math.abs(span - Math.PI * 2) < 1e-9;
+    const steps = closed ? count : count + 1;
+    for (let index = 0; index < steps; index++) {
+        const angle = from + (index / count) * span;
+        const big = index % every === 0;
+        const inner = radius - (big ? lengths[1] : lengths[0]);
+        const sx = Math.sin(angle);
+        const sy = -Math.cos(angle);
+        (big ? major : minor).push(lineOnTop([cx + sx * inner, cy + sy * inner], [cx + sx * radius, cy + sy * radius], z, projection));
+    }
+    return { minor: minor.join(""), major: major.join("") };
+}
+const haloOf = (plan, z, height, projection) => slabOf(plan, z, height, projection).fill;
+function axisVector(projection, [dx, dy, dz]) {
+    const origin = iso([0, 0, 0], projection);
+    const moved = iso([dx, dy, dz], projection);
+    return [moved[0] - origin[0], moved[1] - origin[1]];
+}
+const fine = (value) => Math.round(value * 100) / 100;
+function translateAlong(projection, by) {
+    const [x, y] = axisVector(projection, by);
+    return `translate(${fine(x)} ${fine(y)})`;
+}
+const thousandth = (value) => Math.round(value * 1000) / 1000;
+function axesAt(at, z, projection) {
+    const origin = iso([at[0], at[1], z], projection);
+    const along = (point) => {
+        const [px, py] = iso(point, projection);
+        return [px - origin[0], py - origin[1]];
+    };
+    return { origin, x: along([at[0] + 1, at[1], z]), y: along([at[0], at[1] + 1, z]), z: along([at[0], at[1], z + 1]) };
+}
+const matrixOf = (u, v, origin) => `matrix(${thousandth(u[0])} ${thousandth(u[1])} ${thousandth(v[0])} ${thousandth(v[1])} ${thousandth(origin[0])} ${thousandth(origin[1])})`;
+function holdStill(element, [dx, dy]) {
+    const text = dx || dy ? `translate(${-dx} ${-dy})` : "";
+    element.querySelectorAll("[data-hold]").forEach((node) => (text ? node.setAttribute("transform", text) : node.removeAttribute("transform")));
+}
+function topMatrix(at, z, projection, along = "x") {
+    const { origin, x, y } = axesAt(at, z, projection);
+    return along === "x" ? matrixOf(x, y, origin) : matrixOf([-y[0], -y[1]], x, origin);
+}
+function sideMatrix(at, z, projection, face) {
+    const { origin, x, y, z: up } = axesAt(at, z, projection);
+    const down = [-up[0], -up[1]];
+    return face === "left" ? matrixOf(x, down, origin) : matrixOf([-y[0], -y[1]], down, origin);
+}
+function screenRise(height, projection) {
+    const { cosE, k } = cameraOf(projection);
+    return height * cosE * k;
+}
+function fitProjection(points, width, height, { pad = 24, headroom = 0, azimuth = AZIMUTH, elevation = ELEVATION } = {}) {
+    const unit = { origin: [0, 0], scale: 1, azimuth, elevation };
+    const flat = points.map((point) => iso(point, unit));
+    const xs = flat.map(([x]) => x);
+    const ys = flat.map(([, y]) => y);
+    const left = Math.min(...xs);
+    const right = Math.max(...xs);
+    const up = Math.min(...ys);
+    const down = Math.max(...ys);
+    const scale = Math.min((width - pad * 2) / (right - left), (height - pad * 2 - headroom) / (down - up));
+    return {
+        origin: [width / 2 - ((left + right) / 2) * scale, headroom + (height - headroom) / 2 - ((up + down) / 2) * scale],
+        scale,
+        azimuth,
+        elevation,
+    };
+}
+const escape = (text) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const attrs = (pairs) => Object.entries(pairs)
+    .filter(([, value]) => value !== undefined && value !== false)
+    .map(([key, value]) => ` ${key}="${escape(String(value))}"`)
+    .join("");
+function solidSvg(paths, { tone = "hi", crease = "faint", halo = false, lit = false, flat = false, className, inner = "" } = {}) {
+    const parts = [];
+    if (halo)
+        parts.push(`<path class="iso-halo" d="${paths.fill}"/>`);
+    parts.push(`<path class="iso-fill" d="${paths.fill}"/>`);
+    if (!flat) {
+        paths.shades.forEach((d, shade) => {
+            if (d)
+                parts.push(`<path class="iso-shade" data-shade="${shade}" d="${d}"/>`);
+        });
+        parts.push(`<path class="iso-top" d="${paths.top}"/>`);
+    }
+    if (crease !== "none" && paths.crease)
+        parts.push(`<path class="iso-line iso-crease" data-tone="${crease}" d="${paths.crease}"/>`);
+    if (crease !== "none" && paths.bevel)
+        parts.push(`<path class="iso-line iso-bevel" data-tone="${crease}" d="${paths.bevel}"/>`);
+    if (inner)
+        parts.push(inner);
+    parts.push(`<path class="iso-line iso-edge" data-tone="${tone}" d="${paths.outline}"/>`);
+    return `<g${attrs({ class: className ? `iso-solid ${className}` : "iso-solid", "data-lit": lit ? "" : undefined, "data-seamless": paths.seamless ? "" : undefined })}>${parts.join("")}</g>`;
+}
+function lineSvg(d, { tone = "lo", dotted = false, dashed = false, flow = false, className, free } = {}) {
+    if (!d)
+        return "";
+    return `<path${attrs({
+        class: className ? `iso-line ${className}` : "iso-line",
+        "data-tone": tone,
+        "data-free": free === true ? "" : free || undefined,
+        "data-dotted": dotted ? "" : undefined,
+        "data-dashed": dashed ? "" : undefined,
+        "data-flow": flow ? "" : undefined,
+        d,
+    })}/>`;
+}
+function dotsSvg(points, { size = 0.5, tone = "mid", pulse = false } = {}) {
+    const dots = points
+        .map(([x, y, alpha], index) => `<circle cx="${tenth(x)}" cy="${tenth(y)}" r="${size}"${alpha !== undefined && alpha < 1 ? ` fill-opacity="${Math.max(0, alpha).toFixed(2)}"` : ""}${pulse ? ` data-pulse="" style="--pulse-at:${(index * 137) % 1600}ms"` : ""}/>`)
+        .join("");
+    return `<g class="iso-dots" data-tone="${tone}">${dots}</g>`;
+}
+function fadedSvg(list, style = {}) {
+    const groups = new Map();
+    for (const entry of list) {
+        const [d, alpha] = Array.isArray(entry) ? entry : [entry.d, entry.alpha];
+        if (!d || !(alpha > 0.02))
+            continue;
+        const level = Math.min(1, Math.round(alpha * 20) / 20);
+        groups.set(level, (groups.get(level) ?? "") + d);
+    }
+    return [...groups].map(([alpha, d]) => (alpha >= 1 ? lineSvg(d, style) : `<g opacity="${alpha.toFixed(2)}">${lineSvg(d, style)}</g>`)).join("");
+}
+function fadeLineSvg(points, { fade = [0, 0], tone = "lo", className, stops = 6 } = {}) {
+    if (points.length < 2)
+        return "";
+    const ease = (t) => t * t * (3 - 2 * t);
+    const hashOf = (text) => {
+        let hash = 2166136261;
+        for (let index = 0; index < text.length; index++)
+            hash = Math.imul(hash ^ text.charCodeAt(index), 16777619);
+        return (hash >>> 0).toString(36);
+    };
+    const lengths = [0];
+    for (let index = 1; index < points.length; index++)
+        lengths.push(lengths[index - 1] + Math.hypot(points[index][0] - points[index - 1][0], points[index][1] - points[index - 1][1]));
+    const at = (length) => {
+        let index = 1;
+        while (index < points.length - 1 && lengths[index] < length)
+            index++;
+        const span = lengths[index] - lengths[index - 1] || 1;
+        const t = Math.max(0, Math.min(1, (length - lengths[index - 1]) / span));
+        return [points[index - 1][0] + (points[index][0] - points[index - 1][0]) * t, points[index - 1][1] + (points[index][1] - points[index - 1][1]) * t];
+    };
+    const pieceOf = (from, to) => [at(from), ...points.filter((_, index) => lengths[index] > from + 1e-6 && lengths[index] < to - 1e-6), at(to)];
+    const total = lengths[lengths.length - 1];
+    if (total < 1e-6)
+        return "";
+    let [start, end] = Array.isArray(fade) ? fade : [fade, fade];
+    if (start + end > total) {
+        const share = total / (start + end);
+        start *= share;
+        end *= share;
+    }
+    const paint = `var(--anatomy-${tone})`;
+    const ramp = (piece, rising) => {
+        const d = pathOf(piece);
+        const [x1, y1] = piece[0];
+        const [x2, y2] = piece[piece.length - 1];
+        const id = `iso-fade-${hashOf(`${d}|${tone}|${rising}`)}`;
+        const marks = Array.from({ length: stops + 1 }, (_, index) => {
+            const t = index / stops;
+            const alpha = ease(rising ? t : 1 - t);
+            return `<stop offset="${t.toFixed(3)}" stop-opacity="${alpha.toFixed(3)}" style="stop-color:${paint}"/>`;
+        }).join("");
+        const gradient = `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${tenth(x1)}" y1="${tenth(y1)}" x2="${tenth(x2)}" y2="${tenth(y2)}">${marks}</linearGradient>`;
+        return `<defs>${gradient}</defs><path${attrs({ class: className ? `iso-line ${className}` : "iso-line", "data-tone": tone, "data-free": rising ? "start" : "end", d, style: `stroke:url(#${id})` })}/>`;
+    };
+    const parts = [];
+    if (start > 0.05)
+        parts.push(ramp(pieceOf(0, start), true));
+    if (total - end - start > 0.05)
+        parts.push(lineSvg(pathOf(pieceOf(start, total - end)), { tone, className }));
+    if (end > 0.05)
+        parts.push(ramp(pieceOf(total - end, total), false));
+    return `<g class="iso-fade">${parts.join("")}</g>`;
+}
+function wireSvg(from, to, { via = [], tone = "lo", dotted = false, dashed = false, flow = false, ends = "both", size = 1.2 } = {}) {
+    const d = pathOf([from, ...via, to]);
+    const end = ([x, y]) => `<circle class="iso-wire-end" cx="${tenth(x)}" cy="${tenth(y)}" r="${size}"/>`;
+    return `<g class="iso-wire" data-tone="${tone}">${lineSvg(d, { tone, dotted, dashed, flow })}${ends === "both" || ends === "from" ? end(from) : ""}${ends === "both" || ends === "to" ? end(to) : ""}</g>`;
+}
+function faceTextSvg(transform, text, { size = 3, tone = "mid", anchor = "start" } = {}) {
+    return `<text class="iso-face-text" data-tone="${tone}" transform="${transform}" font-size="${size}" text-anchor="${anchor}">${escape(text)}</text>`;
+}
+function groupSvg(children, extra = {}) {
+    return `<g${attrs(extra)}>${Array.isArray(children) ? children.join("") : children}</g>`;
+}
+function figureSvg({ width, height, label, body, standalone = false, className }) {
+    const style = standalone ? `<style>${ISO_CSS}</style>` : "";
+    return `<svg${attrs({
+        xmlns: "http://www.w3.org/2000/svg",
+        class: `iso-svg${standalone ? " iso" : ""}${className ? ` ${className}` : ""}`,
+        "data-theme": standalone || undefined,
+        viewBox: `0 0 ${width} ${height}`,
+        role: "img",
+        "aria-label": label,
+    })}>${style}${Array.isArray(body) ? body.join("") : body}</svg>`;
+}
+function swatchSvg(mark) {
+    if (mark === "raised" || mark === "flat" || mark === "lit") {
+        const body = mark === "flat" ? "M2 6.5 8 3.5 14 6.5 8 9.5Z" : "M2 4.5 8 1.5 14 4.5 14 6 8 9 2 6Z";
+        const crease = mark === "flat" ? "" : `<path class="iso-swatch-crease" d="M2 4.5 8 7.5 14 4.5"/>`;
+        return `<svg class="iso-swatch" data-mark="${mark}" viewBox="0 0 16 10" aria-hidden="true"><path d="${body}"/>${crease}</svg>`;
+    }
+    return `<svg class="iso-swatch" data-mark="${mark}" viewBox="0 0 16 10" aria-hidden="true"><path d="M1.5 5h13"/></svg>`;
+}
+function plateHtml({ fig, title, hint, readout = "", keys = [], caption, body }) {
+    const corner = (name, text, extra = "") => `<span class="iso-plate-corner" data-corner="${name}"${extra}>${escape(text)}</span>`;
+    const legend = keys.length || caption
+        ? `<figcaption class="iso-legend">${keys.length ? `<span class="iso-keys">${keys.map((key) => `<span class="iso-key">${swatchSvg(key.mark)}${escape(key.label)}</span>`).join("")}</span>` : ""}${caption ? `<span class="iso-caption">${escape(caption)}</span>` : ""}</figcaption>`
+        : "";
+    return `<figure class="iso-figure"><div class="iso-plate"><div class="iso-plate-corners" aria-hidden="true">${corner("fig", fig)}${title ? corner("title", title) : ""}${hint ? corner("hint", hint) : ""}${corner("readout", readout, " data-readout")}</div>${body}</div>${legend}</figure>`;
+}
+function pageHtml({ title, theme = "dark", body, script = "", width = 650 }) {
+    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escape(title)}</title><style>${ISO_CSS}${PAGE_CSS.replace("__WIDTH__", String(width))}</style></head><body class="iso" data-theme="${theme}"><main class="iso-page">${body}</main>${script ? `<script type="module">${script.replace(/<\/(script)/gi, "<\\/$1")}<\/script>` : ""}</body></html>`;
+}
+const PAGE_CSS = `
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body[data-theme="light"]{color-scheme:light}
+body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.iso-page{width:min(__WIDTH__px,100% - 32px);margin:64px auto 96px}
+`;
+const ISO_CSS = `
+.iso{
+  --anatomy-page:#0b0b0b;--anatomy-card:#131313;--anatomy-text:#a3a3a3;--anatomy-strong:#e6e6e6;--anatomy-muted:#6e6e6e;
+  --anatomy-paper:#131313;--anatomy-face:#1b1b1b;--anatomy-top:#1c1c1c;
+  --anatomy-shade-0:#0f0f0f;--anatomy-shade-1:#121212;--anatomy-shade-2:#151515;--anatomy-shade-3:#181818;
+  --anatomy-lit-top:#262626;--anatomy-lit-shade:#1d1d1d;
+  --anatomy-hi:#d4d4d4;--anatomy-mid:#6a6a6a;--anatomy-lo:#3e3e3e;--anatomy-faint:#2a2a2a;--anatomy-lit:#ffffff;
+  --anatomy-halo:#050505;--anatomy-halo-opacity:.9;--anatomy-dot:#e6e6e6;
+  --anatomy-red:#ff6b6b;--anatomy-green:#6be0a0;--anatomy-blue:#6b9bff;
+  --anatomy-weight:.6px;--anatomy-ease:cubic-bezier(.32,.72,0,1);
+  --anatomy-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --anatomy-lift:inset 0 1px 0 0 #ffffff0a,inset 0 0 0 1px #ffffff06,0 0 0 1px #00000026,0 1px 1px -.5px #00000014,0 3px 3px -1.5px #00000014,0 6px 6px -3px #00000014,0 12px 12px -6px #00000014;
+}
+.iso[data-theme="light"]{
+  --anatomy-page:#f2f2ef;--anatomy-card:#fbfbfa;--anatomy-text:#57575a;--anatomy-strong:#18181a;--anatomy-muted:#8c8c90;
+  --anatomy-paper:#fbfbfa;--anatomy-face:#ffffff;--anatomy-top:#ffffff;
+  --anatomy-shade-0:#dcdcd9;--anatomy-shade-1:#e5e5e2;--anatomy-shade-2:#ededea;--anatomy-shade-3:#f4f4f1;
+  --anatomy-lit-top:#ffffff;--anatomy-lit-shade:#eeeeeb;
+  --anatomy-hi:#26262a;--anatomy-mid:#8a8a8f;--anatomy-lo:#b4b4b8;--anatomy-faint:#d4d4d6;--anatomy-lit:#000000;
+  --anatomy-halo:#8a8a80;--anatomy-halo-opacity:.32;--anatomy-dot:#3a3a3e;
+  --anatomy-red:#e5484d;--anatomy-green:#30a46c;--anatomy-blue:#3e63dd;
+  --anatomy-lift:inset 0 1px 0 0 #ffffff,0 0 0 1px #0000000f,0 1px 1px -.5px #0000000a,0 3px 3px -1.5px #0000000a,0 6px 6px -3px #0000000a,0 12px 12px -6px #0000000a;
+}
+.iso-svg{display:block;width:100%;height:auto;overflow:visible}
+.iso-svg path,.iso-svg circle{vector-effect:non-scaling-stroke}
+.iso-fill{fill:var(--anatomy-paper);stroke:none}
+.iso-solid[data-lit]>.iso-fill{fill:var(--anatomy-face)}
+.iso-shade,.iso-top{stroke:none}
+.iso-shade[data-shade="0"]{fill:var(--anatomy-shade-0)}
+.iso-shade[data-shade="1"]{fill:var(--anatomy-shade-1)}
+.iso-shade[data-shade="2"]{fill:var(--anatomy-shade-2)}
+.iso-shade[data-shade="3"]{fill:var(--anatomy-shade-3)}
+.iso-top{fill:var(--anatomy-top)}
+.iso-solid[data-lit]>.iso-top{fill:var(--anatomy-lit-top)}
+.iso-solid[data-lit]>.iso-shade{fill:var(--anatomy-lit-shade)}
+.iso-solid[data-seamless]>.iso-shade,.iso-solid[data-seamless]>.iso-top{stroke-width:.4;stroke-linejoin:round}
+.iso-solid[data-seamless]>.iso-shade[data-shade="0"]{stroke:var(--anatomy-shade-0)}
+.iso-solid[data-seamless]>.iso-shade[data-shade="1"]{stroke:var(--anatomy-shade-1)}
+.iso-solid[data-seamless]>.iso-shade[data-shade="2"]{stroke:var(--anatomy-shade-2)}
+.iso-solid[data-seamless]>.iso-shade[data-shade="3"]{stroke:var(--anatomy-shade-3)}
+.iso-solid[data-seamless]>.iso-top{stroke:var(--anatomy-top)}
+.iso-solid[data-seamless][data-lit]>.iso-top{stroke:var(--anatomy-lit-top)}
+.iso-solid[data-seamless][data-lit]>.iso-shade{stroke:var(--anatomy-lit-shade)}
+.iso-solid[data-lit]>.iso-edge{stroke:var(--anatomy-lit)}
+.iso-halo{fill:var(--anatomy-halo);stroke:none;filter:blur(9px);opacity:var(--anatomy-halo-opacity);transform:translateY(3px)}
+.iso-line{fill:none;stroke:var(--anatomy-lo);stroke-width:var(--anatomy-weight);stroke-linecap:round;stroke-linejoin:round}
+.iso-line[data-tone="hi"]{stroke:var(--anatomy-hi)}
+.iso-line[data-tone="mid"]{stroke:var(--anatomy-mid)}
+.iso-line[data-tone="lo"]{stroke:var(--anatomy-lo)}
+.iso-line[data-tone="faint"]{stroke:var(--anatomy-faint)}
+.iso-line[data-tone="lit"]{stroke:var(--anatomy-lit)}
+.iso-line[data-tone="red"]{stroke:var(--anatomy-red)}
+.iso-line[data-tone="green"]{stroke:var(--anatomy-green)}
+.iso-line[data-tone="blue"]{stroke:var(--anatomy-blue)}
+.iso-line[data-dotted]{stroke-dasharray:.01 3.5;stroke-width:1}
+.iso-line[data-dashed]{stroke-dasharray:3 3}
+.iso-line[data-flow]{stroke-dasharray:2 6}
+.iso-wire-end{fill:var(--anatomy-paper);stroke:var(--anatomy-lo);stroke-width:var(--anatomy-weight)}
+.iso-wire[data-tone="hi"] .iso-wire-end{stroke:var(--anatomy-hi)}
+.iso-wire[data-tone="mid"] .iso-wire-end{stroke:var(--anatomy-mid)}
+.iso-wire[data-tone="faint"] .iso-wire-end{stroke:var(--anatomy-faint)}
+.iso-wire[data-tone="lit"] .iso-wire-end{stroke:var(--anatomy-lit)}
+.iso-dots circle{fill:var(--anatomy-dot);stroke:none;opacity:.32}
+.iso-dots[data-tone="hi"] circle{opacity:.85}
+.iso-dots[data-tone="mid"] circle{opacity:.45}
+.iso-dots[data-tone="lo"] circle{opacity:.22}
+.iso-dots[data-tone="faint"] circle{opacity:.12}
+.iso-face-text{fill:var(--anatomy-mid);font-family:var(--anatomy-mono);letter-spacing:.04em}
+.iso-face-text[data-tone="hi"]{fill:var(--anatomy-hi)}
+.iso-face-text[data-tone="lo"]{fill:var(--anatomy-lo)}
+.iso-face-text[data-tone="faint"]{fill:var(--anatomy-faint)}
+.tb-body{fill:var(--anatomy-shade-2);stroke:none}
+.tb-shine{fill:var(--anatomy-top);stroke:none}
+.tb-shade{fill:var(--anatomy-shade-0);stroke:none}
+.tb-ring{fill:none;stroke:var(--anatomy-lo);stroke-width:.45;stroke-linecap:butt;stroke-linejoin:round}
+.tb-ring[data-tone="mid"]{stroke:var(--anatomy-mid)}
+.tb-ring[data-tone="faint"]{stroke:var(--anatomy-faint)}
+.tb-ring[data-tone="hi"]{stroke:var(--anatomy-hi)}
+@keyframes iso-flow{to{stroke-dashoffset:-32}}
+@keyframes iso-pulse{0%,100%{opacity:.18}12%{opacity:1}40%{opacity:.18}}
+.iso-line[data-flow]{animation:iso-flow 1600ms linear infinite}
+.iso-dots circle[data-pulse]{animation:iso-pulse 1600ms steps(1,end) infinite;animation-delay:var(--pulse-at,0ms)}
+.iso-figure{margin:32px 0 36px}
+.iso-plate{position:relative;padding:52px 24px;border-radius:0;background:var(--anatomy-card);box-shadow:0 0 0 1px var(--anatomy-mid);--anatomy-paper:var(--anatomy-card)}
+.iso-plate-corners{position:absolute;inset:18px 20px;pointer-events:none}
+.iso-plate-corner{position:absolute;color:var(--anatomy-muted);font-family:var(--anatomy-mono);font-size:10.5px;line-height:1;letter-spacing:.04em;white-space:nowrap}
+.iso-plate-corner[data-corner="fig"]{top:0;left:0;color:var(--anatomy-text)}
+.iso-plate-corner[data-corner="title"]{top:0;right:0;text-transform:uppercase;letter-spacing:.1em}
+.iso-plate-corner[data-corner="hint"]{bottom:0;left:0;text-transform:uppercase;letter-spacing:.1em}
+.iso-plate-corner[data-corner="readout"]{right:0;bottom:0;color:var(--anatomy-text);font-variant-numeric:tabular-nums}
+.iso-plate .iso-svg{margin:0 auto}
+.iso-legend{display:grid;gap:8px;margin-top:12px;color:var(--anatomy-muted);font-size:13px;line-height:1.55}
+.iso-keys{display:flex;flex-wrap:wrap;gap:6px 18px}
+.iso-key{display:inline-flex;align-items:center;gap:7px}
+.iso-swatch{width:16px;height:10px;flex:none;overflow:visible}
+.iso-swatch path{fill:none;stroke:var(--anatomy-hi);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
+.iso-swatch[data-mark="raised"] path,.iso-swatch[data-mark="flat"] path{stroke:var(--anatomy-mid)}
+.iso-swatch[data-mark="lit"] path{stroke:var(--anatomy-lit)}
+.iso-swatch[data-mark="dim"] path{stroke:var(--anatomy-lo)}
+.iso-swatch[data-mark="dotted"] path{stroke-dasharray:.01 3;stroke-width:1.4}
+.iso-swatch[data-mark="dashed"] path{stroke-dasharray:3 2.5}
+.iso-swatch[data-mark="red"] path{stroke:var(--anatomy-red)}
+.iso-swatch[data-mark="green"] path{stroke:var(--anatomy-green)}
+.iso-swatch[data-mark="blue"] path{stroke:var(--anatomy-blue)}
+.iso-swatch-crease{stroke:var(--anatomy-lo)!important}
+@media (max-width:560px){.iso-plate{padding:48px 12px 70px}.iso-plate-corner[data-corner="hint"]{bottom:18px}}
+@media (prefers-reduced-motion:reduce){.iso-line[data-flow],.iso-dots circle[data-pulse]{animation:none}}
+`;
+const GLSL_ISO = `precision highp float;
+uniform vec2 uCanvas;
+uniform vec2 uView;
+uniform vec2 uOrigin;
+uniform float uK;
+uniform vec4 uCam;
+uniform float uTime;
+vec2 viewOf(vec2 frag){return vec2(frag.x,uCanvas.y-frag.y)*(uView.x/uCanvas.x);}
+vec2 project(vec3 p){return uOrigin+uK*vec2(p.x*uCam.x-p.y*uCam.y,(p.x*uCam.y+p.y*uCam.x)*uCam.z-p.z*uCam.w);}
+vec3 towardViewer(){return vec3(uCam.y*uCam.w,uCam.x*uCam.w,uCam.z);}
+vec3 rayOf(vec2 vb){vec2 q=(vb-uOrigin)/uK;return vec3(q.x*uCam.x,-q.x*uCam.y,-q.y/uCam.w);}
+float pixelOf(){return (uView.x/uCanvas.x)/uK;}
+vec3 lightDir(){return normalize(vec3(-uCam.x,uCam.y,1.2));}
+vec3 onFloor(vec2 vb,float h){vec2 q=(vb-uOrigin)/uK;float b=(q.y+h*uCam.w)/uCam.z;return vec3(q.x*uCam.x+b*uCam.y,-q.x*uCam.y+b*uCam.x,h);}
+vec3 onWallY(vec2 vb,float y){vec2 q=(vb-uOrigin)/uK;float x=(q.x+y*uCam.y)/uCam.x;return vec3(x,y,((x*uCam.y+y*uCam.x)*uCam.z-q.y)/uCam.w);}
+vec3 onWallX(vec2 vb,float x){vec2 q=(vb-uOrigin)/uK;float y=(x*uCam.x-q.x)/uCam.y;return vec3(x,y,((x*uCam.y+y*uCam.x)*uCam.z-q.y)/uCam.w);}
+float hash12(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
+float hash13(vec3 p){p=fract(p*.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}
+float noise2(vec2 p){vec2 i=floor(p);vec2 f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash12(i),hash12(i+vec2(1.,0.)),f.x),mix(hash12(i+vec2(0.,1.)),hash12(i+vec2(1.,1.)),f.x),f.y);}
+float noise3(vec3 p){vec3 i=floor(p);vec3 f=fract(p);f=f*f*(3.-2.*f);
+  float a=mix(mix(hash13(i),hash13(i+vec3(1.,0.,0.)),f.x),mix(hash13(i+vec3(0.,1.,0.)),hash13(i+vec3(1.,1.,0.)),f.x),f.y);
+  float b=mix(mix(hash13(i+vec3(0.,0.,1.)),hash13(i+vec3(1.,0.,1.)),f.x),mix(hash13(i+vec3(0.,1.,1.)),hash13(i+vec3(1.,1.,1.)),f.x),f.y);
+  return mix(a,b,f.z);}
+float fbm2(vec2 p){float s=0.;float a=.5;for(int i=0;i<4;i++){s+=a*noise2(p);p=p*2.07+vec2(17.1,9.2);a*=.5;}return s/.9375;}
+float fbm3(vec3 p){float s=0.;float a=.5;for(int i=0;i<4;i++){s+=a*noise3(p);p=p*2.07+vec3(17.1,9.2,4.7);a*=.5;}return s/.9375;}
+float window(float x,float a,float b,float soft){return smoothstep(a-soft,a+soft,x)*(1.-smoothstep(b-soft,b+soft,x));}
+vec3 tonemap(vec3 c,float exposure){return 1.-exp(-c*exposure);}
+`;
+
+const GLSL_TURN = `uniform vec3 uGroupX;
+uniform vec3 uGroupY;
+uniform vec3 uGroupZ;
+uniform vec3 uGroupT;
+uniform vec3 uCoverEdge[60];
+uniform float uCoverCount[6];
+vec3 toGroup(vec3 p){vec3 q=p-uGroupT;return vec3(dot(q,uGroupX),dot(q,uGroupY),dot(q,uGroupZ));}
+vec3 toWorld(vec3 g){return uGroupT+g.x*uGroupX+g.y*uGroupY+g.z*uGroupZ;}
+vec3 dirToGroup(vec3 d){return vec3(dot(d,uGroupX),dot(d,uGroupY),dot(d,uGroupZ));}
+vec3 dirToWorld(vec3 d){return d.x*uGroupX+d.y*uGroupY+d.z*uGroupZ;}
+float coverOf(vec2 vb,float soft){float c=0.;for(int p=0;p<6;p++){float n=uCoverCount[p];float inside=-1e4;for(int e=0;e<10;e++){if(float(e)>=n)break;vec3 h=uCoverEdge[p*10+e];inside=max(inside,h.x*vb.x+h.y*vb.y+h.z);}if(n>0.)c=max(c,1.-smoothstep(-soft,soft,inside));}return c;}
+`;
+
+function glslPose(name, prefix = `u${name}`) {
+  return `uniform vec3 ${prefix}X;uniform vec3 ${prefix}Y;uniform vec3 ${prefix}Z;uniform vec3 ${prefix}T;
+vec3 to${name}(vec3 p){vec3 q=p-${prefix}T;return vec3(dot(q,${prefix}X),dot(q,${prefix}Y),dot(q,${prefix}Z));}
+vec3 from${name}(vec3 g){return ${prefix}T+g.x*${prefix}X+g.y*${prefix}Y+g.z*${prefix}Z;}
+vec3 dirTo${name}(vec3 d){return vec3(dot(d,${prefix}X),dot(d,${prefix}Y),dot(d,${prefix}Z));}
+vec3 dirFrom${name}(vec3 d){return d.x*${prefix}X+d.y*${prefix}Y+d.z*${prefix}Z;}
+`;
+}
+
+function glCamera(projection) {
+  const a = ((projection.azimuth ?? 45) * Math.PI) / 180;
+  const e = ((projection.elevation ?? 30) * Math.PI) / 180;
+  return {
+    origin: [projection.origin[0], projection.origin[1]],
+    k: projection.scale * Math.sqrt(1.6),
+    cam: [Math.sin(a), Math.cos(a), Math.sin(e), Math.cos(e)],
+  };
+}
+
+const VERTEX = "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
+
+function glLayer({ canvas, fragment, view, camera, uniforms = [], fixed = {}, extensions = [], maxRatio = 1.5, onError = (message) => console.error(message) }) {
+  const gl = canvas.getContext("webgl", { premultipliedAlpha: true, alpha: true, antialias: false, preserveDrawingBuffer: false });
+  if (!gl) return null;
+  const compile = (type, source) => {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (gl.getShaderParameter(shader, gl.COMPILE_STATUS)) return shader;
+    onError(gl.getShaderInfoLog(shader));
+    return null;
+  };
+  const vs = compile(gl.VERTEX_SHADER, VERTEX);
+  const enabled = extensions.filter((name) => gl.getExtension(name.replace(/^GL_/, "")));
+  const fs = compile(gl.FRAGMENT_SHADER, enabled.map((name) => `#extension ${name} : enable\n`).join("") + GLSL_ISO + fragment);
+  if (!vs || !fs) return null;
+  const program = gl.createProgram();
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    onError(gl.getProgramInfoLog(program));
+    return null;
+  }
+  gl.useProgram(program);
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const position = gl.getAttribLocation(program, "p");
+  gl.enableVertexAttribArray(position);
+  gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+  const where = {};
+  for (const name of ["uCanvas", "uView", "uOrigin", "uK", "uCam", "uTime", ...uniforms, ...Object.keys(fixed)]) where[name] = gl.getUniformLocation(program, name);
+  const types = {};
+  const active = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+  for (let index = 0; index < active; index++) {
+    const info = gl.getActiveUniform(program, index);
+    if (info) types[info.name.replace(/\[0\]$/, "")] = info.type;
+  }
+  let painted = false;
+  const fit = () => {
+    const box = canvas.getBoundingClientRect();
+    const ratio = Math.min(maxRatio, window.devicePixelRatio || 1);
+    const width = Math.max(1, Math.round(box.width * ratio));
+    const height = Math.max(1, Math.round(box.height * ratio));
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+  };
+  const set = (name, value) => {
+    const at = where[name];
+    if (at === undefined || at === null) return;
+    if (typeof value === "number") gl.uniform1f(at, value);
+    else if (value.length > 4) {
+      const data = value instanceof Float32Array ? value : new Float32Array(value);
+      const type = types[name];
+      if (type === gl.FLOAT_VEC2) gl.uniform2fv(at, data);
+      else if (type === gl.FLOAT_VEC3) gl.uniform3fv(at, data);
+      else if (type === gl.FLOAT_VEC4) gl.uniform4fv(at, data);
+      else gl.uniform1fv(at, data);
+    }
+    else if (value.length === 1) gl.uniform1f(at, value[0]);
+    else if (value.length === 2) gl.uniform2f(at, value[0], value[1]);
+    else if (value.length === 3) gl.uniform3f(at, value[0], value[1], value[2]);
+    else if (value.length === 4) gl.uniform4f(at, value[0], value[1], value[2], value[3]);
+  };
+  for (const [name, value] of Object.entries(fixed)) set(name, value);
+  return {
+    gl,
+    extensions: enabled,
+    set(values = {}) {
+      for (const [name, value] of Object.entries(values)) set(name, value);
+    },
+    draw(values = {}, time = 0) {
+      fit();
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      set("uCanvas", [canvas.width, canvas.height]);
+      set("uView", view);
+      set("uOrigin", camera.origin);
+      set("uK", camera.k);
+      set("uCam", camera.cam);
+      set("uTime", time);
+      for (const [name, value] of Object.entries(values)) set(name, value);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      painted = true;
+    },
+    clear() {
+      if (!painted) return;
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      painted = false;
+    },
+  };
+}
+
+const smooth = (a, b, x) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+
+const burst = (age, rise, fall) => (age > 0 ? smooth(0, rise, age) * Math.exp(-Math.max(0, age - rise) / fall) : 0);
+
+function settle(state, target, dt, seconds, calm = false) {
+  if (calm) {
+    state.x = target;
+    state.v = 0;
+    return false;
+  }
+  const w = 1 / seconds;
+  for (let index = 0; index < 4; index++) {
+    const h = dt / 4;
+    state.v += (w * w * (target - state.x) - 2 * w * state.v) * h;
+    state.x += state.v * h;
+  }
+  if (Math.abs(target - state.x) < 1e-4 && Math.abs(state.v) < 1e-4) {
+    state.x = target;
+    state.v = 0;
+    return false;
+  }
+  return true;
+}
+const STRIP = { length: 270, width: 160, sea: 22, rise: 1 / 12 };
+const GRAVITY = 981;
+const SLOPE = Math.atan(STRIP.rise);
+const DOWNHILL = GRAVITY * Math.sin(SLOPE);
+const surfaceAt = (y) => STRIP.sea + STRIP.rise * y;
+
+const GAIT = { step: 66, width: 10.4, toeOut: 7, gap: 0.9, depth: 1.6, line: 56, wander: 3 };
+
+const FOOT = {
+  length: 24.8,
+  sole: [
+    [0.3, 0.0], [0.6, 1.6], [1.6, 2.7], [3.2, 3.2], [5.2, 3.3], [7.5, 3.4], [10.0, 3.7], [12.5, 4.1], [14.6, 4.6], [16.4, 4.95],
+    [18.0, 4.7], [19.1, 3.9], [19.8, 2.6], [20.2, 1.0], [20.4, -0.8], [20.3, -2.4], [19.8, -3.7], [18.6, -4.6], [16.9, -4.85], [15.2, -4.4],
+    [13.8, -3.2], [12.4, -1.6], [10.8, -0.6], [9.0, -0.5], [7.4, -1.2], [6.1, -2.3], [4.8, -3.0], [3.0, -3.1], [1.5, -2.6], [0.6, -1.6],
+  ],
+  toes: [
+    { c: [22.75, -2.85], r: [1.95, 1.45], turn: 0.08, weight: 0.82 },
+    { c: [22.75, -0.55], r: [1.2, 0.88], turn: 0.05, weight: 0.6 },
+    { c: [22.2, 1.15], r: [1.05, 0.8], turn: -0.05, weight: 0.56 },
+    { c: [21.35, 2.62], r: [0.95, 0.76], turn: -0.15, weight: 0.52 },
+    { c: [20.35, 3.95], r: [0.85, 0.7], turn: -0.3, weight: 0.46 },
+  ],
+  pressure: { base: 0.42, heel: [4, 0.2, 9, 7, 0.58], ball: [17, -1.2, 6, 10, 0.45], outer: [16.5, 3, 5, 4, 0.25] },
+  roll: [0.012, 0.13],
+  lift: 0.32,
+  wall: 0.5,
+  rim: { height: 0.2, width: 1.25, front: 0.9 },
+  pool: 0.3,
+  seep: [0.5, 2.6],
+  pale: { rise: [0.06, 0.18], fall: [0.5, 1.7], reach: 3 },
+};
+
+const SWASH = { from: -60, bore: 1.3, boreSpeed: [0.66, 0.5], reach: 120, spread: 6, lobes: 0.035, smooth: 1.4, drain: [1.6, 3.2] };
+const LOOP = { first: 0.9, steps: 4, collapse: 5.4, period: 14.5 };
+
+const ramp = (a, b, x) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+
+function hashOf(n) {
+  const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+const launchOf = (reach) => Math.sqrt(2 * DOWNHILL * (reach - SWASH.from));
+
+function waveOf(at, index) {
+  const reach = SWASH.reach + SWASH.spread * (2 * hashOf(index * 3.1 + 0.7) - 1);
+  return { at, index, reach, u0: launchOf(reach), seed: hashOf(index * 7.3 + 2.1) };
+}
+
+function lobeOf(x, seed) {
+  return 0.5 * Math.sin(x / 37 + seed * 6.1) + 0.3 * Math.sin(x / 19 + seed * 13.7) + 0.2 * Math.sin(x / 11.5 + seed * 29.3);
+}
+
+const launchAt = (wave, x) => wave.u0 * (1 + SWASH.lobes * lobeOf(x, wave.seed));
+
+function frontAt(wave, x, s) {
+  if (s <= 0) return -Infinity;
+  const u = launchAt(wave, x);
+  return SWASH.from + u * s - 0.5 * DOWNHILL * s * s;
+}
+
+const speedAt = (wave, x, s) => launchAt(wave, x) - DOWNHILL * s;
+const boreAt = (wave, x, s) => launchAt(wave, x) * (SWASH.boreSpeed[1] * s - (0.5 * (SWASH.boreSpeed[0] - SWASH.boreSpeed[1]) * s * s) / SWASH.bore);
+const boreSpeedAt = (wave, x, s) => launchAt(wave, x) * (SWASH.boreSpeed[1] - ((SWASH.boreSpeed[0] - SWASH.boreSpeed[1]) * s) / SWASH.bore);
+const topOf = (wave, x) => SWASH.from + launchAt(wave, x) ** 2 / (2 * DOWNHILL);
+const turnOf = (wave, x) => launchAt(wave, x) / DOWNHILL;
+
+function depthAt(wave, x, y, s) {
+  const front = frontAt(wave, x, s);
+  if (!(y < front)) return 0;
+  return (front - y) ** 2 / (9 * GRAVITY * s * s);
+}
+
+function timesAt(wave, x, y) {
+  const u = launchAt(wave, x);
+  const disc = u * u - 2 * DOWNHILL * (y - SWASH.from);
+  if (disc <= 0) return null;
+  const root = Math.sqrt(disc);
+  return [(u - root) / DOWNHILL, (u + root) / DOWNHILL];
+}
+
+function exposureAt(wave, x, y, s, born) {
+  const times = timesAt(wave, x, y);
+  if (!times) return 0;
+  return Math.max(0, Math.min(s, times[1]) - Math.max(times[0], born));
+}
+
+const erosionOf = (exposure) => ramp(0, SWASH.smooth, exposure);
+
+function tourSteps(cycle) {
+  const shift = (hashOf(cycle * 5.7 + 1.3) - 0.5) * 2 * GAIT.wander;
+  const lead = hashOf(cycle * 2.9 + 4.4) < 0.5 ? 1 : -1;
+  const out = [];
+  const span = (LOOP.steps - 1) * GAIT.step + FOOT.length;
+  const start = (STRIP.length - span) / 2;
+  for (let index = 0; index < LOOP.steps; index++) {
+    const x = start + index * GAIT.step;
+    const side = index % 2 ? -lead : lead;
+    const bend = 3.2 * Math.sin((x + cycle * 41) / 150);
+    const slope = (3.2 / 150) * Math.cos((x + cycle * 41) / 150);
+    out.push({ at: LOOP.first + index * GAIT.gap, ...footAt(x, GAIT.line + shift + bend, Math.atan(slope), side, hashOf(cycle * 11.1 + index * 1.7)) });
+  }
+  return out;
+}
+
+function footAt(x, y, walk, side, jitter = 0.5) {
+  const heading = walk + side * (GAIT.toeOut * Math.PI) / 180;
+  const off = (side * GAIT.width) / 2;
+  return { x: x - Math.sin(walk) * off, y: y + Math.cos(walk) * off, heading, side, scale: 0.94 + 0.12 * jitter };
+}
+
+function toWorld(print, u, v) {
+  const c = Math.cos(print.heading);
+  const s = Math.sin(print.heading);
+  const w = v * print.side;
+  return [print.x + u * c - w * s, print.y + u * s + w * c];
+}
+
+function regionsOf() {
+  const ellipse = (toe, steps) =>
+    Array.from({ length: steps }, (_, i) => {
+      const a = (i / steps) * Math.PI * 2;
+      const u = toe.r[0] * Math.cos(a);
+      const v = toe.r[1] * Math.sin(a);
+      return [toe.c[0] + u * Math.cos(toe.turn) - v * Math.sin(toe.turn), toe.c[1] + u * Math.sin(toe.turn) + v * Math.cos(toe.turn)];
+    });
+  return [{ name: "sole", ring: FOOT.sole, at: 0 }, ...FOOT.toes.map((toe, index) => ({ name: `toe${index}`, ring: ellipse(toe, 16), at: toe.c[0] }))];
+}
+
+function pressOf(u, age) {
+  const [lag, rise] = FOOT.roll;
+  return ramp(lag * u, lag * u + rise, age);
+}
+
+const metres = (cm) => (cm / 100).toFixed(2);
+const D = {"W":880,"H":560,"P":{"origin":[152.85200399118963,171.4367017711745],"scale":2.0554804791094465,"azimuth":70,"elevation":42},"camera":{"origin":[152.85200399118963,171.4367017711745],"k":2.6,"cam":[0.9396926207859083,0.3420201433256688,0.6691306063588582,0.7431448254773942]},"view":{"x0":-82.30751679003636,"x1":352.30751679003635,"y0":-181.0371234091302,"y1":277.03712340913023},"strip":{"length":270,"width":160,"sea":22,"rise":0.08333333333333333}};
+const root = document.querySelector(".fp");
+const stage = root.querySelector(".fp-stage");
+const readout = root.querySelector("[data-readout]");
+const canvas = stage.querySelector(".fp-gl");
+const said = stage.querySelector(".fp-said");
+const printLayer = stage.querySelector('[data-part="prints"]');
+const sheetPath = stage.querySelector('[data-part="sheet"]');
+const lacePath = stage.querySelector('[data-part="lace"]');
+const lineLayer = stage.querySelector('[data-part="lines"]');
+const still = matchMedia("(prefers-reduced-motion: reduce)");
+const themeHost = root.closest("[data-theme]");
+const isPale = () => themeHost?.getAttribute("data-theme") !== "dark";
+const MAXP = 12;
+const KEEP = 10;
+const FADE = 0.8;
+const f1 = (v) => (Number.isInteger(v) ? `${v}.` : String(v));
+const v2 = (a) => `vec2(${f1(a[0])},${f1(a[1])})`;
+
+const tokenOf = (name) => {
+  const text = getComputedStyle(root).getPropertyValue(name).trim();
+  const hex = text.replace("#", "");
+  const full = hex.length === 3 ? hex.split("").map((c) => c + c).join("") : hex.slice(0, 6);
+  return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+};
+
+const FRAGMENT = `
+#define MAXP ${MAXP}
+uniform vec4 uPrint[MAXP];
+uniform vec4 uAge[MAXP];
+uniform vec4 uWave;
+uniform vec4 uPrev;
+uniform vec3 uWet;uniform vec3 uDry;uniform vec3 uSea;uniform vec3 uSkyLo;uniform vec3 uSkyHi;uniform vec3 uWater;uniform vec3 uFoam;uniform vec3 uGlint;
+uniform vec4 uGain;uniform float uPool;
+uniform float uClock;
+const float LEN=${f1(STRIP.length)};const float WID=${f1(STRIP.width)};const float SEA=${f1(STRIP.sea)};const float RISE=${STRIP.rise.toFixed(6)};
+const float FROM=${f1(SWASH.from)};const float BORE=${f1(SWASH.bore)};const vec2 BORE_U=${v2(SWASH.boreSpeed)};const float DOWN=${DOWNHILL.toFixed(4)};const float GRAV=${f1(GRAVITY)};const float LOBE=${f1(SWASH.lobes)};const float SMOOTH=${f1(SWASH.smooth)};
+const float DEPTH=${f1(GAIT.depth)};const float WALL=${f1(FOOT.wall)};
+const vec2 ROLL=${v2(FOOT.roll)};
+#define NS ${FOOT.sole.length}
+uniform vec2 uSole[NS];
+const vec4 PH=vec4(${FOOT.pressure.heel.slice(0, 4).map(f1).join(",")});const float PHW=${f1(FOOT.pressure.heel[4])};
+const vec4 PL=vec4(${FOOT.pressure.ball.slice(0, 4).map(f1).join(",")});const float PLW=${f1(FOOT.pressure.ball[4])};
+const vec4 PO=vec4(${FOOT.pressure.outer.slice(0, 4).map(f1).join(",")});const float POW=${f1(FOOT.pressure.outer[4])};
+const float PB=${f1(FOOT.pressure.base)};
+${FOOT.toes.map((toe, i) => `const vec4 T${i}=vec4(${f1(toe.c[0])},${f1(toe.c[1])},${f1(toe.r[0])},${f1(toe.r[1])});const vec2 T${i}B=vec2(${f1(toe.turn)},${f1(toe.weight)});`).join("")}
+const vec3 RIM=vec3(${f1(FOOT.rim.height)},${f1(FOOT.rim.width)},${f1(FOOT.rim.front)});
+const float POOL=${f1(FOOT.pool)};const vec2 SEEP=${v2(FOOT.seep)};
+const vec2 PALE_UP=${v2(FOOT.pale.rise)};const vec2 PALE_DOWN=${v2(FOOT.pale.fall)};const float PALE_R=${f1(FOOT.pale.reach)};
+const float LIFT=${f1(FOOT.lift)};
+
+vec3 lin(vec3 c){return pow(c,vec3(2.2));}
+float smin(float a,float b,float k){float h=max(k-abs(a-b),0.)/k;return min(a,b)-h*h*k*.25;}
+float smax(float a,float b,float k){float h=max(k-abs(a-b),0.)/k;return max(a,b)+h*h*k*.25;}
+vec2 unturn(vec2 p,float a){float c=cos(a);float s=sin(a);return vec2(c*p.x+s*p.y,-s*p.x+c*p.y);}
+float sdE(vec2 p,vec2 r){float k0=length(p/r);float k1=length(p/(r*r));return k0*(k0-1.)/max(k1,1e-5);}
+float dip(float sd,float wall){float s=-sd;return smoothstep(0.,wall,s)*(.66+.34*smoothstep(0.,2.6,s));}
+vec2 localOf(vec2 p,vec4 P){vec2 d=p-P.xy;float c=cos(P.z);float s=sin(P.z);return vec2(d.x*c+d.y*s,(-d.x*s+d.y*c)*P.w);}
+
+float lobe(float x,float seed){return .5*sin(x/37.+seed*6.1)+.3*sin(x/19.+seed*13.7)+.2*sin(x/11.5+seed*29.3);}
+float launch(vec4 w,float x){return w.y*(1.+LOBE*lobe(x,w.z));}
+float frontOf(vec4 w,float x){float s=w.x;if(w.w<.5||s<-BORE)return -1e4;if(s<=0.){float u=launch(w,x);return FROM+u*(BORE_U.y*s-.5*(BORE_U.x-BORE_U.y)/BORE*s*s);}return FROM+launch(w,x)*s-.5*DOWN*s*s;}
+float topOf(vec4 w,float x){float u=launch(w,x);return FROM+u*u/(2.*DOWN);}
+float turnOf(vec4 w,float x){return launch(w,x)/DOWN;}
+vec2 timesOf(vec4 w,float x,float y){float u=launch(w,x);float disc=u*u-2.*DOWN*(y-FROM);if(disc<=0.)return vec2(1e4,-1e4);float r=sqrt(disc);return vec2(u-r,u+r)/DOWN;}
+
+float sdSole(vec2 p){
+  vec2 lo=vec2(-.2,-5.4);vec2 hi=vec2(20.9,5.4);
+  vec2 o=max(max(lo-p,p-hi),0.);
+  float box=length(o);
+  if(box>8.)return box;
+  vec2 prev=uSole[NS-1];float d=1e4;float s=1.;
+  for(int i=0;i<NS;i++){
+    vec2 vi=uSole[i];vec2 e=prev-vi;vec2 w=p-vi;
+    vec2 q=w-e*clamp(dot(w,e)/dot(e,e),0.,1.);d=min(d,dot(q,q));
+    bvec3 cnd=bvec3(p.y>=vi.y,p.y<prev.y,e.x*w.y>e.y*w.x);
+    if(all(cnd)||all(not(cnd)))s=-s;
+    prev=vi;
+  }
+  return s*sqrt(d);
+}
+float paleOf(float t){return smoothstep(PALE_UP.x,PALE_UP.y,t)*(1.-smoothstep(PALE_DOWN.x,PALE_DOWN.y,t));}
+float gauss(vec2 q,vec4 g){vec2 r=q-g.xy;return exp(-(r.x*r.x/g.z+r.y*r.y/g.w));}
+float rollOf(float u,float age){return smoothstep(ROLL.x*u,ROLL.x*u+ROLL.y,age);}
+float toeOf(vec2 q,vec4 t,vec2 b,float age,float wall,inout float d,inout float su){
+  float st=sdE(unturn(q-t.xy,b.x),t.zw);
+  d=smax(d,b.y*rollOf(t.x,age)*dip(st,wall),.15);
+  su=smin(su,st,.8);
+  return st;
+}
+float footH(vec2 q,float age,float ero,float scale,out float su,out float tl){
+  float wall=WALL*(1.+4.*ero);
+  float keep=1.-ero;
+  float ss=sdSole(q);
+  float pr=min(1.,PB+PHW*gauss(q,PH)+PLW*gauss(q,PL)+POW*gauss(q,PO));
+  float d=pr*rollOf(q.x,age)*dip(ss,wall);
+  su=ss;
+  toeOf(q,T0,T0B,age,wall,d,su);
+  toeOf(q,T1,T1B,age,wall,d,su);
+  toeOf(q,T2,T2B,age,wall,d,su);
+  toeOf(q,T3,T3B,age,wall,d,su);
+  toeOf(q,T4,T4B,age,wall,d,su);
+  float depth=d*DEPTH*scale*keep;
+  tl=age-ROLL.x*clamp(q.x,0.,23.);
+  float grow=rollOf(22.,age);
+  float rimH=RIM.x*(1.+RIM.z*smoothstep(15.,23.,q.x))*grow*keep*keep;
+  float s=max(su,0.)/(RIM.y*(1.+2.*ero));
+  return rimH*s*exp(1.-s)-depth;
+}
+
+vec4 gPa;vec4 gAa;vec4 gPb;vec4 gAb;float gEa;float gEb;float gHasA;float gHasB;float gRa;float gRb;
+float gSuA;float gSuB;float gTa;float gTb;
+
+float sandAt(vec2 p){
+  float h=0.;
+  if(gHasA>.5)h+=footH(localOf(p,gPa),gAa.x,gEa,gAa.z,gSuA,gTa);
+  if(gHasB>.5)h+=footH(localOf(p,gPb),gAb.x,gEb,gAb.z,gSuB,gTb);
+  return h;
+}
+float poolOf(vec4 A,float ero){return -DEPTH*A.z*(1.-POOL*smoothstep(SEEP.x,SEEP.y,A.x))*(1.-ero)-3.*smoothstep(.25,.45,ero);}
+float surfAt(vec2 p){
+  float h=sandAt(p);
+  float w=-1e3;
+  if(gHasA>.5&&gSuA<-.3)w=max(w,poolOf(gAa,gEa));
+  if(gHasB>.5&&gSuB<-.3)w=max(w,poolOf(gAb,gEb));
+  return max(h,w);
+}
+
+vec2 cellular(vec2 p){
+  vec2 i=floor(p);vec2 f=fract(p);float d1=8.;float d2=8.;
+  for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){
+    vec2 g=vec2(float(x),float(y));
+    vec2 o=vec2(hash12(i+g),hash12(i+g+19.7))*.8+.1;
+    float d=length(g+o-f);
+    if(d<d1){d2=d1;d1=d;}else if(d<d2){d2=d;}
+  }
+  return vec2(d1,d2);
+}
+
+vec3 envOf(vec3 r){
+  float e=clamp(r.z,0.,1.);
+  return mix(lin(uSkyLo),lin(uSkyHi),smoothstep(.05,.95,e));
+}
+float sparkleOf(vec2 p,float px){
+  vec2 cs=p/.8;vec2 ci=floor(cs);vec2 f=fract(cs);
+  float h=hash12(ci+7.3);
+  vec2 o=vec2(hash12(ci+1.1),hash12(ci+2.9))*.8+.1;
+  float r=length(f-o)*.8;
+  float size=max(1.3*px,.16);
+  float flick=pow(max(0.,sin(uClock*(1.3+2.*fract(h*91.))+h*517.)),8.);
+  return smoothstep(.997,.9995,h)*flick*exp(-r*r/(size*size));
+}
+float fresnel(float c){return .02+.98*pow(1.-clamp(c,0.,1.),5.);}
+float shoreAt(float x){return FROM+1.8*sin(uClock*.75+x/31.)+1.1*sin(uClock*1.21-x/17.+2.);}
+float seaFoamOf(vec2 p,float pxw){
+  float drift=p.y-uClock*9.;
+  vec2 q=vec2(p.x/38.+.35*noise2(vec2(p.x/23.,drift/9.)),drift/2.6+.8*noise2(vec2(p.x/14.,drift/11.)));
+  float streak=smoothstep(.68,.9,noise2(q))*smoothstep(.45,.75,fbm2(vec2(p.x/27.,drift/13.)));
+  float grain=.55+.45*noise2(p.xy/(.9+pxw));
+  return streak*grain;
+}
+
+float erodeOf(float ex){return smoothstep(0.,SMOOTH,ex);}
+float exposureOf(vec4 w,vec2 t,float born){return w.w<.5?0.:max(0.,min(w.x,t.y)-max(t.x,born));}
+vec3 shoulder(vec3 c){vec3 k=vec3(.8);return mix(c,k+.2*(1.-exp(-(c-k)/.2)),step(k,c));}
+void geomOf(vec4 w,vec2 p,float ew,out float dist,out float up,out float turnW,out float topW,out float jag){
+  float s=w.x;
+  turnW=turnOf(w,p.x);
+  topW=topOf(w,p.x);
+  up=1.-smoothstep(turnW-.2,turnW+.2,s);
+  jag=((noise2(vec2(p.x/6.,s*1.1)+w.z*7.)-.5)*2.6+(noise2(vec2(p.x/2.1,s*1.9+4.)+w.z*3.)-.5)*1.1)*mix(.8,1.,up);
+  dist=frontOf(w,p.x)+jag-p.y;
+}
+float foamOf(vec4 w,vec2 p,float px,float ew){
+  float dist;float up;float turnW;float topW;float jag;
+  geomOf(w,p,ew,dist,up,turnW,topW,jag);
+  float s=w.x;
+  float front=frontOf(w,p.x);
+  float wcover=smoothstep(-ew,ew,dist);
+  float speed=max(launch(w,p.x)-DOWN*s,0.);
+  float age=max(s-turnW,0.);
+  float drift=.35*max(topW-front,0.)*wcover*(1.-up);
+  float fy=mix(topW+jag-p.y-drift,dist,up);
+  float edge=smoothstep(-ew,ew,fy);
+  float pop=(1.-up)*smoothstep(0.,3.,age);
+  float strength=mix(.45,1.,smoothstep(10.,130.,speed))*mix(1.,exp(-age/2.2),1.-up);
+  float flow=.3*min(s,turnW);
+  vec2 seed=vec2(w.z*17.,w.z*5.);
+  float pa=fbm2(vec2(p.x/5.,fy/3.4+flow)+seed);
+  float st=fbm2(vec2(p.x/1.6,fy/11.+flow*.5)+seed.yx);
+  vec2 cl=cellular(vec2(p.x,fy)/.85+seed+vec2(0.,flow*4.));
+  float walls=1.-smoothstep(.04,.16+px/.85,cl.y-cl.x);
+  float lineV=.65+.35*noise2(vec2(p.x/3.,s*.7)+seed);
+  float tip=exp(-max(fy,0.)/mix(.9,1.6,pop))*lineV*mix(1.,.6,pop);
+  float patchy=smoothstep(.38+.24*pop,.58+.24*pop,pa+.22*exp(-max(fy,0.)/2.5));
+  float bandF=exp(-max(fy,0.)/mix(3.6,8.,pop))*patchy*(.55+.45*walls);
+  float trail=exp(-max(fy,0.)/14.)*smoothstep(.66,.84,st)*smoothstep(.45,.65,pa)*.35*up;
+  vec2 lp=vec2(p.x,fy*1.3)/5.+seed*.3+vec2(0.,flow*1.2);
+  lp+=.9*(vec2(noise2(lp*.8+3.1),noise2(lp*.8+8.4))-.5);
+  float ridgeA=1.-abs(2.*noise2(lp)-1.);
+  float ridgeB=1.-abs(2.*noise2(lp*2.3+5.7)-1.);
+  float thinL=.012+px/14.;
+  float lace=max(smoothstep(.93-thinL*4.,.985,ridgeA),.7*smoothstep(.94-thinL*6.,.99,ridgeB));
+  lace*=smoothstep(.3+.3*pop,.6+.3*pop,fbm2(vec2(p.x,fy)/8.+seed.yx+3.));
+  float laceAmt=exp(-max(fy,0.)/mix(6.5,16.,pop))*smoothstep(1.,6.,fy+4.*pop)*mix(.42,.8,1.-up);
+  return clamp((max(tip,bandF)+trail*(.6+.4*walls)+laceAmt*lace*(.7+.3*walls))*edge*strength,0.,1.);
+}
+vec2 drainOf(vec4 w,vec2 p){
+  if(w.w<.5||w.x<=0.)return vec2(0.);
+  vec2 t=timesOf(w,p.x,p.y);
+  if(t.y<=t.x||w.x<t.x)return vec2(0.);
+  float q=w.x-t.y;
+  float tau=${SWASH.drain[0].toFixed(2)}+${(SWASH.drain[1] - SWASH.drain[0]).toFixed(2)}*(1.-p.y/WID);
+  float patchS=.75+.5*fbm2(p.xy/21.+vec2(w.z*13.,4.));
+  float sheen=exp(-max(q,0.)*patchS/tau);
+  float glint=smoothstep(0.,.3,q)*exp(-max(q-.3,0.)/1.2);
+  return vec2(sheen,glint);
+}
+
+void main(){
+  vec2 vb=viewOf(gl_FragCoord.xy);
+  float px=pixelOf();
+  float pxw=px/uCam.z;
+  float ew=.8*pxw;
+  vec3 V=towardViewer();
+  float c=V.z-RISE*V.y;
+  vec3 p0=onFloor(vb,SEA);
+  float t0=RISE*p0.y/c;
+  vec3 hp=p0+t0*V;
+  float sWave=uWave.x;
+  float waveOn=uWave.w;
+  float shore=shoreAt(hp.x);
+  float dryness=smoothstep(150.,265.,hp.y+14.*(fbm2(hp.xy/47.+vec2(5.3,1.7))-.5));
+  float wetness=1.-dryness;
+
+  gHasA=0.;gHasB=0.;gEa=0.;gEb=0.;gRa=0.;gRb=0.;gSuA=1e3;gSuB=1e3;
+  vec2 tw=timesOf(uWave,hp.x,hp.y);
+  vec2 tv=timesOf(uPrev,hp.x,hp.y);
+  float gap=uPrev.x-uWave.x;
+  for(int i=0;i<MAXP;i++){
+    vec4 P=uPrint[i];vec4 A=uAge[i];
+    if(abs(P.w)<.5)continue;
+    vec2 q=localOf(hp.xy,P);
+    if(q.x<-7.||q.x>33.||abs(q.y)>13.)continue;
+    float exNow=exposureOf(uWave,tw,A.y);
+    float exPrev=exposureOf(uPrev,tv,A.y+gap);
+    float ero=1.-(1.-A.w)*(1.-erodeOf(exPrev))*(1.-erodeOf(exNow));
+    float born=max(tw.x,A.y);
+    float live=uWave.w*smoothstep(born,born+.12,sWave)*(1.-smoothstep(tw.y-.12,tw.y,sWave));
+    float rate=live*smoothstep(.12*SMOOTH,.4*SMOOTH,exNow)*(1.-smoothstep(.6*SMOOTH,SMOOTH,exNow));
+    if(gHasA<.5){gPa=P;gAa=A;gEa=ero;gRa=rate;gHasA=1.;}
+    else if(gHasB<.5){gPb=P;gAb=A;gEb=ero;gRb=rate;gHasB=1.;}
+  }
+  float near=max(gHasA,gHasB);
+  vec3 p=hp;
+  float hs=0.;
+  float pool=0.;
+  if(near>.5){
+    float tHi=t0+.7/c;float tLo=t0-2.6/c;
+    float ta=tHi;float tb=tLo;bool found=false;
+    for(int i=1;i<=14;i++){
+      float t=mix(tHi,tLo,float(i)/14.);
+      vec3 q=p0+t*V;
+      if(c*(t-t0)<=surfAt(q.xy)){tb=t;found=true;break;}
+      ta=t;
+    }
+    if(found){
+      for(int i=0;i<5;i++){
+        float t=.5*(ta+tb);
+        vec3 q=p0+t*V;
+        if(c*(t-t0)<=surfAt(q.xy))tb=t;else ta=t;
+      }
+    }
+    p=p0+tb*V;
+    hs=sandAt(p.xy);
+    float lift=c*(tb-t0);
+    pool=smoothstep(.01,.06,lift-hs)*wetness;
+  }
+  vec3 L=lightDir();
+  float e=max(.22,1.2*pxw);
+  float slope2=0.;
+  vec3 nflat=normalize(vec3(0.,-RISE,1.));
+  float ux=.026*cos(p.x/17.+p.y/41.)+.014*cos(p.x/7.3-p.y/11.)+.004*cos(p.x/3.1+p.y/2.3);
+  float uy=.022*cos(p.y/23.-p.x/53.)+.012*cos(p.y/9.1+p.x/13.)+.004*cos(p.y/2.7-p.x/3.9);
+  vec3 n=nflat;
+  float shadow=1.;
+  float paleA=0.;
+  float floorWet=0.;
+  if(near>.5){
+    float hx=(sandAt(p.xy+vec2(e,0.))-sandAt(p.xy-vec2(e,0.)))/(2.*e);
+    float hy=(sandAt(p.xy+vec2(0.,e))-sandAt(p.xy-vec2(0.,e)))/(2.*e);
+    slope2=hx*hx+hy*hy;
+    n=normalize(vec3(-hx-ux,-RISE-hy-uy,1.));
+    hs=sandAt(p.xy);
+    float base=SEA+RISE*p.y+hs;
+    float occ=0.;
+    for(int i=1;i<=6;i++){
+      float t=float(i)*.55;
+      vec3 q=vec3(p.xy,base)+L*t;
+      float gp=q.z-(SEA+RISE*q.y+sandAt(q.xy));
+      occ=max(occ,smoothstep(.02,-.12,gp));
+    }
+    shadow=1.-.85*occ;
+    hs=sandAt(p.xy);
+    if(gHasA>.5){float k=1.-gEa;paleA=max(paleA,paleOf(gTa)*exp(-max(gSuA,0.)/PALE_R)*smoothstep(-1.2,0.,gSuA)*(1.-smoothstep(4.,6.8,gSuA))*k);
+      floorWet=max(floorWet,smoothstep(LIFT-.1,LIFT+.7,gTa)*smoothstep(0.,-.9,gSuA)*k);}
+    if(gHasB>.5){float k=1.-gEb;paleA=max(paleA,paleOf(gTb)*exp(-max(gSuB,0.)/PALE_R)*smoothstep(-1.2,0.,gSuB)*(1.-smoothstep(4.,6.8,gSuB))*k);
+      floorWet=max(floorWet,smoothstep(LIFT-.1,LIFT+.7,gTb)*smoothstep(0.,-.9,gSuB)*k);}
+    paleA*=wetness;
+    floorWet*=wetness;
+  }else{
+    n=normalize(vec3(-ux,-RISE-uy,1.));
+  }
+
+  float dist=-1e4;float up=1.;float turnW=0.;float topW=0.;float jag=0.;
+  float wcover=0.;
+  if(waveOn>.5){
+    geomOf(uWave,p.xy,ew,dist,up,turnW,topW,jag);
+    wcover=smoothstep(-ew,ew,dist);
+  }
+  float seaD=max(shore-p.y,0.)*RISE;
+  float seaCov=smoothstep(-ew,ew,shore-p.y);
+  float water=max(wcover,seaCov);
+  vec2 tn=timesOf(uWave,p.x,p.y);
+  float reached=waveOn>.5?max(wcover,step(tn.x,sWave)*step(tn.x,tn.y)):0.;
+  vec2 dNow=drainOf(uWave,p.xy);
+  vec2 dPrev=drainOf(uPrev,p.xy);
+  float sheen=mix(dPrev.x,dNow.x,reached);
+  float drainGlint=mix(dPrev.y,dNow.y,reached);
+  float mark=0.;
+  if(waveOn>.5){
+    float top=topOf(uWave,p.x);
+    float turn=turnOf(uWave,p.x);
+    mark=exp(-pow((p.y-top+.6)/.75,2.))*smoothstep(turn,turn+.6,sWave)*exp(-max(sWave-turn,0.)/9.);
+  }
+  if(uPrev.w>.5){
+    float topP=topOf(uPrev,p.x);
+    float gone=waveOn>.5?smoothstep(0.,.3,sWave-timesOf(uWave,p.x,topP).x):0.;
+    mark=max(mark,exp(-pow((p.y-topP+.6)/.75,2.))*(1.-gone)*exp(-max(uPrev.x-turnOf(uPrev,p.x),0.)/9.));
+  }
+
+  vec3 wet=lin(uWet);
+  vec3 dry=lin(uDry);
+  float mott=fbm2(p.xy/29.+vec2(3.1,7.7))-.5;
+  float grain=noise2(p.xy*2.3)-.5;
+  vec3 alb=wet*(1.+.16*mott+.12*grain);
+  alb=mix(alb,dry*(.94+.3*grain+.12*mott),.85*dryness);
+  alb=mix(alb,dry,.72*paleA);
+  alb*=1.-.32*floorWet;
+  alb*=1.-.3*mark;
+  alb*=1.-.22*sheen;
+  float ndl=max(dot(n,L),0.);
+  float ndl0=max(dot(nflat,L),.05);
+  float amb=.55;
+  float lit=(amb+(1.-amb)*ndl*shadow)/(amb+(1.-amb)*ndl0);
+  vec3 col=alb*lit;
+  float glassy=exp(-max(p.y-shore,0.)/22.)*(1.-seaCov);
+  alb*=1.-.12*glassy;
+  float film=(.26+.34*max(sheen,.7*glassy)+.4*floorWet)*mix(1.,.12,dryness);
+  film*=1.-.9*paleA;
+  vec3 R=reflect(-V,n);
+  float dryTop=1.-.85*water;
+  float inPrint=mix(1.,uPool,floorWet);
+  col+=fresnel(dot(n,V))*envOf(R)*film*uGain.x*dryTop*inPrint;
+  vec3 H=normalize(L+V);
+  float gl=pow(max(dot(n,H),0.),mix(40.,160.,clamp(film,0.,1.))/(1.+40.*slope2));
+  col+=lin(uGlint)*gl*film*uGain.y*shadow*dryTop*inPrint;
+  col+=lin(uSkyLo)*pow(max(dot(n,H),0.),9.)*.045*uGain.y*shadow*dryTop*(1.-.8*paleA)*wetness;
+
+  if(pool>.001){
+    vec3 nw=normalize(vec3(-ux*.3,-RISE-uy*.3,1.));
+    vec3 under=col*mix(vec3(1.),lin(uWater)/max(lin(uWet),vec3(.02)),.2)*.7;
+    vec3 pw=under+fresnel(dot(nw,V))*envOf(reflect(-V,nw))*uGain.x*.4*uPool;
+    float g2=pow(max(dot(nw,H),0.),260.);
+    pw+=lin(uGlint)*g2*uGain.y*.8*uPool;
+    col=mix(col,pw,pool*(1.-water));
+  }
+
+  float foamNow=waveOn>.5?foamOf(uWave,p.xy,px,ew):0.;
+  float foamPrev=0.;
+  if(uPrev.w>.5&&uPrev.x-turnOf(uPrev,LEN*.5)<14.)foamPrev=foamOf(uPrev,p.xy,px,ew);
+  float foam=mix(foamPrev,foamNow,reached);
+  foam=max(foam,seaCov*seaFoamOf(p.xy,pxw)*smoothstep(3.,30.,shore-p.y)*.22);
+  foam=max(foam,seaCov*(1.-wcover)*exp(-max(shore-p.y,0.)/1.3)*(.3+.7*smoothstep(.4,.85,noise2(vec2(p.x/1.3,(shore-p.y)/.8+uClock*.5))))*.4);
+  if(water>.001){
+    float speed=max(launch(uWave,p.x)-DOWN*sWave,0.);
+    float roller=waveOn*(1.-smoothstep(0.,.35,sWave))*smoothstep(-1.,1.5,dist)*exp(-max(dist,0.)/14.);
+    float hw=sWave>0.?pow(max(dist,0.),2.)/(9.*GRAV*sWave*sWave)*smoothstep(0.,.35,sWave):0.;
+    float deep=max(-hs,0.);
+    float turb=1.-exp(-(hw+seaD+deep*.5+.02)/.5);
+    vec2 seed=vec2(uWave.z*17.,uWave.z*5.);
+    vec2 g=vec2(0.);
+    float ripple=up*smoothstep(0.,10.,dist)*mix(.5,1.,smoothstep(10.,120.,speed))*smoothstep(.02,.25,hw)*smoothstep(0.,.5,sWave);
+    vec2 r1=vec2(.34,.94);vec2 r2=vec2(-.5,.87);vec2 r3=vec2(.12,.99);
+    float w1=6.2832*fbm2(p.xy/14.+seed);
+    float w2=6.2832*noise2(p.xy/8.3+seed.yx+5.);
+    float w3=6.2832*noise2(p.xy/5.1+seed+9.);
+    vec3 lod=1.-smoothstep(vec3(.16),vec3(.3),pxw*vec3(1.9,1.45,2.6)/6.2832);
+    g+=1.8*ripple*(.022*lod.x*cos(dot(p.xy,r1)*1.9-sWave*7.+w1)*r1+.018*lod.y*cos(dot(p.xy,r2)*1.45-sWave*5.5+w2)*r2+.014*lod.z*cos(dot(p.xy,r3)*2.6-sWave*9.+w3)*r3);
+    float kr=6.2832/6.5;
+    vec2 d1=vec2(.574,.819);vec2 d2=vec2(-.574,.819);
+    float om=sWave*2.4;
+    float thinB=(1.-up)*smoothstep(1.,14.,dist)*exp(-max(hw-.1,0.)/.2);
+    g+=.009*thinB*(cos(kr*dot(p.xy,d1)+om+w2*.3)*d1+cos(kr*dot(p.xy,d2)+om+w3*.3)*d2);
+    float streak=(1.-up)*smoothstep(1.,12.,dist)*(1.-smoothstep(.3,.6,pxw/2.2));
+    g.x+=.03*streak*(noise2(vec2(p.x/2.2,p.y/18.+max(sWave-turnW,0.)*2.2)+seed)-.5);
+    float swell=smoothstep(0.,12.,shore-p.y);
+    vec2 s1=vec2(.2,.98);vec2 s2=vec2(-.42,.91);
+    vec2 lodS=1.-smoothstep(vec2(.16),vec2(.3),pxw*vec2(.55,1.3)/6.2832);
+    g+=swell*(1.-.8*roller)*(.009*lodS.x*cos(dot(p.xy,s1)*.55-uClock*2.1+w1*.6)*s1+.005*lodS.y*cos(dot(p.xy,s2)*1.3-uClock*3.3+w3*.5)*s2);
+    g+=.012*roller*(vec2(noise2(p.xy/1.4+vec2(sWave*3.,0.)),noise2(p.xy/1.4+vec2(5.,sWave*3.)))-.5);
+    vec3 nw=normalize(vec3(-g.x,-RISE-g.y,1.));
+    nw=normalize(mix(n,nw,smoothstep(.05,.4,hw+seaD)));
+    float puff=0.;
+    if(gHasA>.5)puff=max(puff,gRa*exp(-max(gSuA+1.,0.)/3.5));
+    if(gHasB>.5)puff=max(puff,gRb*exp(-max(gSuB+1.,0.)/3.5));
+    puff*=.55+.45*fbm2(p.xy/3.+vec2(0.,sWave*.8));
+    vec3 seen=mix(col*(.8-.1*turb)*(1.-.45*smoothstep(.1,1.2,deep)),lin(uWater),.35*uGain.w*turb);
+    seen=mix(seen,lin(uSea),1.-exp(-seaD/3.2));
+    seen=mix(seen,mix(lin(uWet),lin(uDry),.35)*.9,.45*clamp(puff,0.,1.));
+    vec3 skyR=mix(envOf(reflect(-V,nw)),mix(lin(uSkyLo),lin(uSkyHi),.5),.55*seaCov);
+    seen+=fresnel(dot(nw,V))*skyR*uGain.x*.6;
+    seen=mix(seen,lin(uSea)*.72,.4*roller*seaCov);
+    float gw=pow(max(dot(nw,H),0.),320.);
+    seen+=lin(uGlint)*gw*uGain.y*1.2*mix(.3,1.,smoothstep(.05,.4,hw+seaD))*(1.-.7*seaCov*(1.-wcover));
+    float lip=waveOn*exp(-max(dist,0.)/.7)*(1.-up)*(.15+.85*smoothstep(.3,.7,noise2(vec2(p.x/9.,sWave*.8)+seed)))*(.6+.4*noise2(vec2(p.x/1.7,sWave*3.)+seed))*(1.-seaCov);
+    seen+=lin(uFoam)*.3*lip*uGain.z;
+    col=mix(col,seen,water);
+  }
+  col=mix(col,lin(uFoam),foam*uGain.z);
+  col+=mix(lin(uGlint),lin(uSkyLo),.4)*sparkleOf(p.xy,pxw)*drainGlint*uGain.y*1.2*(1.-paleA)*(1.-water)*(1.-foam);
+  vec3 outc=pow(max(shoulder(col),0.),vec3(1./2.2));
+  float nz=(hash12(gl_FragCoord.xy+fract(uClock*.61)*91.)+hash12(gl_FragCoord.yx*1.37+fract(uClock*.37)*57.)-1.)/255.;
+  outc=clamp(outc+nz,0.,1.);
+  gl_FragColor=vec4(outc,1.);
+}`;
+
+
+const themeOf = () => ({
+  uWet: tokenOf("--fp-wet"),
+  uDry: tokenOf("--fp-dry"),
+  uSea: tokenOf("--fp-sea"),
+  uSkyLo: tokenOf("--fp-sky-lo"),
+  uSkyHi: tokenOf("--fp-sky-hi"),
+  uWater: tokenOf("--fp-water"),
+  uFoam: tokenOf("--fp-foam"),
+  uGlint: tokenOf("--fp-glint"),
+  uGain: isPale() ? [5.5, 0.7, 1, 0.2] : [7, 1.1, 0.92, 0.2],
+  uPool: isPale() ? 0.28 : 1,
+});
+const layerAt = (maxRatio) =>
+  glLayer({
+    canvas,
+    fragment: FRAGMENT,
+    view: [D.W, D.H],
+    camera: D.camera,
+    uniforms: ["uPrint", "uAge", "uWave", "uPrev", "uClock"],
+    fixed: { uSole: FOOT.sole.flat(), ...themeOf() },
+    maxRatio,
+  });
+const RATIOS = [2, 1.5, 1, 0.75];
+let quality = 0;
+let layer = layerAt(RATIOS[quality]);
+const pace = { sum: 0, count: 0 };
+function watchPace(dt) {
+  if (!layer || quality >= RATIOS.length - 1 || dt <= 0) return;
+  pace.sum += dt;
+  pace.count += 1;
+  if (pace.count < 45) return;
+  const slow = pace.sum / pace.count > 0.028;
+  pace.sum = 0;
+  pace.count = 0;
+  if (!slow) return;
+  quality += 1;
+  layer = layerAt(RATIOS[quality]) || layer;
+}
+if (layer) stage.setAttribute("data-gl", "");
+
+const state = { clock: 0, prints: [], wave: null, prev: null, waves: 0, cycle: 0, plan: [], next: 0, side: 1, lastStep: -10, lastWord: "" };
+let touring = !still.matches;
+let idleTimer = 0;
+let visible = false;
+let frame = 0;
+let last = 0;
+let dirty = true;
+let frozen = false;
+
+function planCycle(at) {
+  const steps = tourSteps(state.cycle);
+  const plan = steps.map((foot, index) => ({ at: at + foot.at, kind: "step", foot, step: index + 1 }));
+  plan.push({ at: at + LOOP.collapse - SWASH.bore, kind: "wave", collapse: at + LOOP.collapse });
+  plan.push({ at: at + LOOP.period, kind: "cycle" });
+  state.plan = plan;
+  state.next = 0;
+}
+
+function press(foot, at = state.clock, step = 0) {
+  state.prints.push({ ...foot, born: at, worn: 0, fadeAt: null, step });
+  const standing = state.prints.filter((print) => print.fadeAt === null);
+  for (const print of standing.slice(0, Math.max(0, standing.length - KEEP))) print.fadeAt = at;
+  if (still.matches) state.prints = state.prints.filter((print) => print.fadeAt === null);
+  while (state.prints.length > MAXP) state.prints.shift();
+  state.side = -foot.side;
+  state.lastStep = at;
+  dirty = true;
+}
+
+const fadeOf = (print) => (print.fadeAt === null ? 0 : ramp(print.fadeAt, print.fadeAt + FADE, state.clock));
+const wornOf = (print) => 1 - (1 - print.worn) * (1 - fadeOf(print));
+
+function launchWave(at = state.clock) {
+  if (state.prev) for (const print of state.prints) print.worn = 1 - (1 - print.worn) * (1 - meanOf(print, state.prev));
+  if (state.wave) state.prev = state.wave;
+  state.wave = waveOf(at, state.waves++);
+  dirty = true;
+}
+
+function waveAge() {
+  return state.wave ? state.clock - state.wave.at : -1;
+}
+
+function waveBusy() {
+  if (!state.wave) return false;
+  const s = waveAge();
+  return s < 2 * turnOf(state.wave, STRIP.length / 2) + 0.4;
+}
+
+const PROBES = [[4, 0.2], [12, 3.4], [17, -1.2], [17, 4.4], ...FOOT.toes.map((toe) => toe.c)];
+function wearOf(wave, print, u, v) {
+  if (!wave) return 0;
+  const [x, y] = toWorld(print, u, v);
+  return erosionOf(exposureAt(wave, x, y, state.clock - wave.at, print.born - wave.at));
+}
+function meanOf(print, wave) {
+  return PROBES.reduce((sum, [u, v]) => sum + wearOf(wave, print, u, v), 0) / PROBES.length;
+}
+function erosionAt(print) {
+  const worn = wornOf(print);
+  let least = 1;
+  for (const [u, v] of PROBES) least = Math.min(least, 1 - (1 - worn) * (1 - wearOf(state.prev, print, u, v)) * (1 - wearOf(state.wave, print, u, v)));
+  return least;
+}
+
+function advance(dt) {
+  state.clock += dt;
+  if (touring) {
+    while (state.next < state.plan.length && state.plan[state.next].at <= state.clock) {
+      const item = state.plan[state.next++];
+      if (item.kind === "step") press(item.foot, item.at, item.step);
+      else if (item.kind === "wave") launchWave(item.collapse);
+      else {
+        state.cycle += 1;
+        planCycle(item.at);
+      }
+    }
+  }
+  sweep();
+}
+
+function sweep() {
+  const settled = !waveBusy();
+  const keep = state.prints.filter((print) => fadeOf(print) < 1 && !(settled && erosionAt(print) >= 0.999));
+  if (keep.length !== state.prints.length) state.prints = keep;
+}
+
+function uniforms() {
+  const print = new Float32Array(MAXP * 4);
+  const age = new Float32Array(MAXP * 4);
+  const base = state.wave ? state.wave.at : 0;
+  state.prints.forEach((p, i) => {
+    print.set([p.x, p.y, p.heading, p.side], i * 4);
+    age.set([still.matches ? 9 : state.clock - p.born, p.born - base, p.scale, wornOf(p)], i * 4);
+  });
+  const wave = state.wave ? [state.clock - state.wave.at, state.wave.u0, state.wave.seed, 1] : [0, 0, 0, 0];
+  const prev = state.prev ? [state.clock - state.prev.at, state.prev.u0, state.prev.seed, 1] : [0, 0, 0, 0];
+  return { uPrint: print, uAge: age, uWave: wave, uPrev: prev, uClock: still.matches ? 0.8 : state.clock % 1800 };
+}
+
+function phaseOf() {
+  const mid = STRIP.length / 2;
+  if (state.wave && waveBusy()) {
+    const s = waveAge();
+    const w = state.wave;
+    const front = frontAt(w, mid, s);
+    const turn = turnOf(w, mid);
+    const alive = state.prints.filter((print) => erosionAt(print) < 0.97).length;
+    if (s <= 0) return { word: "wave coming", text: `bore ${metres(-boreAt(w, mid, s))} m out · ${(boreSpeedAt(w, mid, s) / 100).toFixed(1)} m/s` };
+    if (Math.abs(s - turn) < 0.3) return { word: "run-up", text: `run-up ${metres(topOf(w, mid) - SWASH.from)} m · ${turn.toFixed(1)} s` };
+    if (s < turn) return { word: "swash", text: `swash ${(speedAt(w, mid, s) / 100).toFixed(1)} m/s · ${metres(front - SWASH.from)} m up` };
+    if (front > SWASH.from) return { word: "backwash", text: `backwash ${(-speedAt(w, mid, s) / 100).toFixed(1)} m/s · ${alive ? `${alive} ${alive === 1 ? "print" : "prints"} left` : "prints gone"}` };
+    return { word: "drained", text: `smooth again · sheen draining` };
+  }
+  if (state.wave && waveAge() < 2 * turnOf(state.wave, mid) + 4 && !(state.prints.length && state.clock - state.lastStep < 1.4)) return { word: "drained", text: state.prints.length ? `${state.prints.length} ${state.prints.length === 1 ? "print" : "prints"} · sheen draining` : "smooth again · sheen draining" };
+  const recent = state.clock - state.lastStep;
+  const standing = state.prints.filter((print) => print.fadeAt === null);
+  if (standing.length && recent < 1.4) {
+    const n = standing.length;
+    const latest = standing[n - 1];
+    const before = standing[n - 2];
+    const deep = `${(GAIT.depth * latest.scale * 10).toFixed(0)} mm deep`;
+    if (!latest.step) return { word: `print ${n}`, text: `print ${n} · ${deep}` };
+    if (!before || before.step !== latest.step - 1) return { word: `step ${latest.step}`, text: `step ${latest.step} · ${deep}` };
+    const [ax, ay] = toWorld(before, 4, 0);
+    const [bx, by] = toWorld(latest, 4, 0);
+    const walk = (before.heading + latest.heading) / 2;
+    const along = Math.abs((bx - ax) * Math.cos(walk) + (by - ay) * Math.sin(walk));
+    return { word: `step ${latest.step}`, text: `step ${latest.step} · ${metres(along)} m · ${deep}` };
+  }
+  if (standing.length) {
+    const n = standing.length;
+    return { word: `${n} ${n === 1 ? "print" : "prints"}`, text: `${n} ${n === 1 ? "print" : "prints"} · water in the heels` };
+  }
+  return { word: "smooth", text: state.wave ? "smooth again" : "smooth" };
+}
+
+function speak() {
+  const phase = phaseOf();
+  if (readout.textContent !== phase.text) readout.textContent = phase.text;
+  if (phase.word !== state.lastWord) {
+    state.lastWord = phase.word;
+    if (document.activeElement === stage) said.textContent = phase.word;
+  }
+}
+
+function surfacePoint(x, y) {
+  return iso([x, y, surfaceAt(y)], D.P);
+}
+
+const POOLS = [[4, 0.2, 2.2, 1.5], [17, -1.2, 1.9, 2.3]];
+function ellipseAt(print, [cu, cv, ru, rv]) {
+  return pathOf(Array.from({ length: 18 }, (_, i) => {
+    const a = (i / 18) * Math.PI * 2;
+    return surfacePoint(...toWorld(print, cu + ru * Math.cos(a), cv + rv * Math.sin(a)));
+  }), true);
+}
+
+function drawFallback() {
+  if (layer) return;
+  const parts = [];
+  const regions = regionsOf();
+  const { rise, fall } = FOOT.pale;
+  for (const print of state.prints) {
+    const age = still.matches ? 9 : state.clock - print.born;
+    const keep = 1 - erosionAt(print);
+    if (keep < 0.02) continue;
+    const rings = regions.map((region) => ({ d: pathOf(region.ring.map(([u, v]) => surfacePoint(...toWorld(print, u, v))), true), on: pressOf(region.at, age) }));
+    const shown = rings.filter((ring) => ring.on > 0.02);
+    const pale = ramp(rise[0], rise[1], age) * (1 - ramp(fall[0], fall[1], age));
+    const seep = ramp(FOOT.seep[0], FOOT.seep[1], age) * ramp(0.4, 0.8, keep);
+    const halo = pale > 0.02 ? `<path class="fp-print-pale" d="${rings[0].d}" opacity="${pale.toFixed(2)}"/>` : "";
+    const pools = seep > 0.02 ? POOLS.map((pool) => `<path class="fp-print-pool" d="${ellipseAt(print, pool)}" opacity="${(0.6 * seep).toFixed(2)}"/>`).join("") : "";
+    parts.push(`<g opacity="${keep.toFixed(3)}">${halo}${shown.map((ring) => `<path class="fp-print-rim" d="${ring.d}" opacity="${ring.on.toFixed(2)}"/>`).join("")}${shown.map((ring) => `<path class="fp-print-floor" d="${ring.d}" opacity="${ring.on.toFixed(2)}"/>`).join("")}${pools}</g>`);
+  }
+  printLayer.innerHTML = parts.join("");
+  const xs = Array.from({ length: 81 }, (_, i) => D.view.x0 - 20 + (i / 80) * (D.view.x1 - D.view.x0 + 40));
+  const far = D.view.y1 + 20;
+  let sheet = "";
+  let lace = "";
+  let laceOpacity = 0;
+  const lines = [];
+  const mid = STRIP.length / 2;
+  const markOf = (wave) => {
+    const s = state.clock - wave.at;
+    const turn = turnOf(wave, mid);
+    const shown = ramp(turn, turn + 0.6, s) * Math.exp(-Math.max(s - turn, 0) / 9);
+    if (shown > 0.02) lines.push(`<path d="${pathOf(xs.map((x) => surfacePoint(x, Math.min(far, topOf(wave, x)))))}" opacity="${shown.toFixed(2)}"/>`);
+  };
+  if (state.wave) {
+    const s = waveAge();
+    const turn = turnOf(state.wave, mid);
+    if (waveBusy()) {
+      const front = xs.map((x) => Math.min(far, frontAt(state.wave, x, s)));
+      if (Math.max(...front) > SWASH.from) {
+        const edge = xs.map((x, i) => surfacePoint(x, Math.max(SWASH.from, front[i])));
+        sheet = pathOf([...edge, surfacePoint(xs[xs.length - 1], SWASH.from), surfacePoint(xs[0], SWASH.from)], true);
+        laceOpacity = 1 - ramp(turn - 0.3, turn + 0.5, s);
+        if (laceOpacity > 0.02) lace = pathOf(edge);
+      }
+    }
+    if (state.prev) markOf(state.prev);
+    markOf(state.wave);
+  }
+  sheetPath.setAttribute("d", sheet);
+  lacePath.setAttribute("d", lace);
+  lacePath.setAttribute("opacity", laceOpacity.toFixed(2));
+  lineLayer.innerHTML = lines.join("");
+}
+
+function draw() {
+  if (layer && canvas.clientWidth) layer.draw(uniforms(), still.matches ? 0.8 : state.clock);
+  drawFallback();
+  speak();
+}
+
+function tick(now) {
+  const raw = last ? (now - last) / 1000 : 0;
+  const dt = last ? Math.min(raw, 0.25) : 1 / 60;
+  last = now;
+  const calm = still.matches;
+  if (!calm && !frozen) {
+    advance(dt);
+    if (raw < 1) watchPace(raw);
+  }
+  const busy = !calm && !frozen && (touring || waveBusy() || state.prints.some((print) => state.clock - print.born < FOOT.seep[1] + 0.5) || (state.wave && waveAge() < 2 * turnOf(state.wave, STRIP.length / 2) + 8));
+  if (busy || dirty) draw();
+  dirty = false;
+  frame = visible && (busy || dirty) ? requestAnimationFrame(tick) : 0;
+}
+
+function run() {
+  if (!frame && visible) {
+    last = 0;
+    frame = requestAnimationFrame(tick);
+  }
+}
+
+function hold() {
+  touring = false;
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    if (still.matches) return;
+    touring = true;
+    const at = state.clock + (state.prints.length && !waveBusy() ? 0.6 : 0);
+    state.plan = [];
+    state.next = 0;
+    if (state.prints.length && !waveBusy()) state.plan.push({ at, kind: "wave", collapse: at + SWASH.bore });
+    const resume = at + (state.prints.length || waveBusy() ? 7.5 : 1.2);
+    state.plan.push({ at: resume, kind: "cycle" });
+    run();
+  }, 4200);
+}
+
+function planeAt(clientX, clientY) {
+  const box = stage.getBoundingClientRect();
+  const sx = ((clientX - box.left) / box.width) * D.W;
+  const sy = ((clientY - box.top) / box.height) * D.H;
+  const { sinA, cosA, sinE, cosE, k } = cameraOf(D.P);
+  const a = (sx - D.P.origin[0]) / k;
+  const b = (sy - D.P.origin[1]) / k + STRIP.sea * cosE;
+  const m11 = sinA, m12 = -cosA;
+  const m21 = cosA * sinE, m22 = sinA * sinE - STRIP.rise * cosE;
+  const det = m11 * m22 - m12 * m21;
+  return [(a * m22 - m12 * b) / det, (m11 * b - m21 * a) / det];
+}
+
+function stepAt(x, y, step = 0) {
+  const foot = footAt(x - FOOT.length / 2, y, 0, state.side, Math.random());
+  press(foot, state.clock, step);
+}
+
+function walkable(y) {
+  const { sinA, cosA, sinE, cosE, k } = cameraOf(D.P);
+  const z = surfaceAt(y);
+  const margin = 36;
+  const sx = (x) => D.P.origin[0] + (x * sinA - y * cosA) * k;
+  const sy = (x) => D.P.origin[1] + ((x * cosA + y * sinA) * sinE - z * cosE) * k;
+  const bounds = (f, lo, hi) => {
+    const a = f(0);
+    const slope = f(1) - a;
+    return [(lo - a) / slope, (hi - a) / slope].sort((p, q) => p - q);
+  };
+  const [ax, bx] = bounds(sx, margin, D.W - margin);
+  const [ay, by] = bounds(sy, margin, D.H - margin);
+  return [Math.max(ax, ay), Math.min(bx, by)];
+}
+
+function clearLine() {
+  const lines = [GAIT.line, GAIT.line - 26, GAIT.line + 26, GAIT.line + 48];
+  const near = state.prints.filter((print) => print.x < walkable(print.y)[0] + FOOT.length + GAIT.step);
+  const gap = (y) => Math.min(Infinity, ...near.map((print) => Math.abs(print.y - y)));
+  return lines.reduce((best, y) => (gap(y) > gap(best) ? y : best));
+}
+
+let down = null;
+stage.addEventListener("pointerdown", (event) => {
+  down = event.pointerType === "mouse" ? null : { x: event.clientX, y: event.clientY, at: performance.now(), id: event.pointerId };
+  if (event.pointerType === "mouse" && event.button === 0) tapAt(event.clientX, event.clientY);
+});
+stage.addEventListener("pointerup", (event) => {
+  if (!down || down.id !== event.pointerId) return;
+  const moved = Math.hypot(event.clientX - down.x, event.clientY - down.y);
+  if (moved < 10 && performance.now() - down.at < 500) tapAt(event.clientX, event.clientY);
+  down = null;
+});
+stage.addEventListener("pointercancel", () => {
+  down = null;
+});
+
+function tapAt(clientX, clientY) {
+  const [x, y] = planeAt(clientX, clientY);
+  if (y < SWASH.from + 14) return;
+  const cx = x;
+  const cy = y;
+  hold();
+  stepAt(cx, cy);
+  run();
+}
+
+stage.addEventListener("keydown", (event) => {
+  if (event.key === " " || event.key === "Enter") {
+    event.preventDefault();
+    hold();
+    if (still.matches) {
+      state.clock += 7;
+      launchWave(state.clock - 6.5);
+      sweep();
+    } else if (!waveBusy()) launchWave(state.clock + SWASH.bore);
+    run();
+    return;
+  }
+  if (event.key === "ArrowRight") {
+    event.preventDefault();
+    hold();
+    const lastPrint = state.prints[state.prints.length - 1];
+    const lineOf = (print) => print.y - (print.side * GAIT.width) / 2;
+    let y = lastPrint ? lineOf(lastPrint) : GAIT.line;
+    const [from, to] = walkable(y);
+    let x = lastPrint ? lastPrint.x + GAIT.step + FOOT.length / 2 : from + FOOT.length / 2;
+    let step = lastPrint && lastPrint.step ? lastPrint.step + 1 : 1;
+    if (x + FOOT.length / 2 > to) {
+      y = clearLine();
+      x = walkable(y)[0] + FOOT.length / 2;
+      step = 1;
+    }
+    stepAt(x, y, step);
+    run();
+  }
+});
+
+new IntersectionObserver(
+  (entries) => {
+    visible = entries[entries.length - 1].isIntersecting;
+    if (visible) run();
+  },
+  { rootMargin: "120px 0px" },
+).observe(stage);
+
+still.addEventListener("change", () => {
+  clearTimeout(idleTimer);
+  touring = !still.matches;
+  frozen = false;
+  if (still.matches) stillScene();
+  else tourScene();
+  dirty = true;
+  run();
+});
+if (themeHost)
+  new MutationObserver(() => {
+    if (layer) layer.set(themeOf());
+    dirty = true;
+    run();
+  }).observe(themeHost, { attributes: true, attributeFilter: ["data-theme"] });
+window.addEventListener("resize", () => {
+  dirty = true;
+  run();
+});
+stage.addEventListener("focus", () => {
+  said.textContent = phaseOf().word;
+});
+if (matchMedia("(hover: none)").matches) {
+  const hint = root.querySelector('[data-corner="hint"]');
+  if (hint) hint.textContent = "Tap the sand to step";
+}
+
+function tourScene() {
+  Object.assign(state, { clock: 0, prints: [], wave: null, prev: null, waves: 0, cycle: 0, lastStep: -10, side: 1 });
+  planCycle(0);
+}
+
+function stillScene() {
+  Object.assign(state, { clock: 0, prints: [], wave: null, prev: null, waves: 0, cycle: 0, plan: [], next: 0, lastStep: -10, side: 1 });
+  tourSteps(0).forEach((foot, index) => press(foot, -9, index + 1));
+  launchWave(-timesAt(waveOf(0, 0), STRIP.length / 2, GAIT.line - 24)[0]);
+  state.lastStep = -10;
+}
+
+window.__fpSeek = (t, hold = true) => {
+  touring = true;
+  tourScene();
+  while (state.clock < t - 1e-9) advance(Math.min(1 / 60, t - state.clock));
+  frozen = hold;
+  dirty = true;
+  draw();
+  run();
+  return readout.textContent;
+};
+
+if (still.matches) stillScene();
+else tourScene();
+draw();
+</script></body></html>
