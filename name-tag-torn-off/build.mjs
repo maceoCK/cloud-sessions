@@ -198,6 +198,14 @@ function wall() {
   // Paint far to near: lower courses first (higher ones are nearer from above), then along x.
   bricks.sort((a, b) => a[2] - b[2] || a[0] - b[0]);
   const tints = ["a", "b", "c", "d", "e"];
+  // Each brick stands 2 mm proud of the raked joints, so the light from the upper left leaves a
+  // soft shadow along the joint under its lower edge and beside its right end.
+  const shade = [];
+  for (const [b0, b1, zb] of bricks) {
+    const pts = [[b0 + 1, zb], [b1, zb], [b1, zb + 30], [b1 + 3.2, zb + 30], [b1 + 3.2, zb - 3.4], [b0 + 4, zb - 3.4]];
+    shade.push(pathOf(pts.map(([x, z]) => at([x, -RAKE, z])), true));
+  }
+  out.push(`<path class="nt-jointshade" d="${shade.join("")}"/>`);
   for (const [b0, b1, zb, zt] of bricks) {
     const tint = tints[Math.floor(R() * tints.length)];
     let chips = "";

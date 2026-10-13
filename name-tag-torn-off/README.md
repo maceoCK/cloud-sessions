@@ -18,8 +18,9 @@ Drag across the figure (or use the arrow keys) to peel by hand; Space tears it o
 |---|---|
 | `name-tag-torn-off-light.html`, `name-tag-torn-off.html` | The built pages, light and dark. Open either in a browser; no server needed. |
 | `model.mjs` | The truth: the label and the line it tears along, the developable curl (a tight bend at the front, then a tightening spiral), the strips the flap is drawn in, the scribble, the residue, the stick-slip timing and the numbers (Kendall's peel force, the share that comes away). The build and the page both run it. |
-| `build.mjs` | Builds the static half with the Anatomy kit (brick wall with raked joints and chipped bricks, plate, spacers, screws, residue, the piece that stays) with its textures as SVG patterns laid onto each plane by the camera's affine map, then writes the pages. |
-| `live.js` | The loop: the idle tour, pointer and keyboard input, the readout and reduced motion. |
+| `build.mjs` | Builds the static half with the Anatomy kit: the brick wall (bricks standing 2 mm proud of raked joints, chips, grime run off the plate, two old wall plugs), the plate on its spacers with its sheen, grain and scratches, the residue and the piece that stays. Every texture is an SVG pattern laid onto its plane by the iso camera's affine map, so it sits in that plane. Then it writes the pages. |
+| `textures.mjs` | Makes the raster grain as small tileable PNGs, with no dependencies: adhesive with paper fibre, adhesive drifts, clay and mortar sand. |
+| `live.js` | The loop: the idle tour (the peel runs on a stick-slip clock that lingers at each row of bare spots), pointer and keyboard input, the readout, the aria value and reduced motion. |
 | `name-tag.css` | Theme tokens for the bricks, mortar, steel, label and residue. |
 | `kit/` | `iso-kit.mjs` and `lathe.mjs` from the Anatomy kit, MIT licensed (see `kit/LICENSE`). |
 
