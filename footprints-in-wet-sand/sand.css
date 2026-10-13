@@ -8,6 +8,7 @@
   --fp-sky-lo: #8a9196;
   --fp-sky-hi: #353b41;
   --fp-water: #59605e;
+  --fp-sea: #263130;
   --fp-foam: #eef1f0;
   --fp-glint: #ffffff;
   --fp-lamina: #4a443c;
@@ -26,6 +27,7 @@
   --fp-sky-lo: #f3f5f6;
   --fp-sky-hi: #c4ccd1;
   --fp-water: #a5aaa5;
+  --fp-sea: #7d8b89;
   --fp-foam: #ffffff;
   --fp-glint: #ffffff;
   --fp-lamina: #84796a;
@@ -87,6 +89,15 @@
 
 .fp-old.iso-line {
   stroke: var(--fp-old);
+}
+
+.fp-sea-top,
+.fp-sea-end {
+  fill: var(--fp-sea);
+}
+
+.fp-sea-end {
+  opacity: 0.85;
 }
 
 .fp-sheet {

@@ -31,11 +31,12 @@ uniform vec4 uAge[MAXP];
 uniform vec4 uWave;
 uniform vec4 uPrev;
 uniform vec3 uEdge[4];
-uniform vec3 uWet;uniform vec3 uDry;uniform vec3 uSkyLo;uniform vec3 uSkyHi;uniform vec3 uWater;uniform vec3 uFoam;uniform vec3 uGlint;
+uniform vec3 uWet;uniform vec3 uDry;uniform vec3 uSea;uniform vec3 uSkyLo;uniform vec3 uSkyHi;uniform vec3 uWater;uniform vec3 uFoam;uniform vec3 uGlint;
 uniform vec4 uGain;uniform float uPool;
 uniform float uClock;
 const float LEN=${f1(STRIP.length)};const float WID=${f1(STRIP.width)};const float SEA=${f1(STRIP.sea)};const float RISE=${STRIP.rise.toFixed(6)};
-const float FROM=${f1(SWASH.from)};const float DOWN=${DOWNHILL.toFixed(4)};const float GRAV=${f1(GRAVITY)};const float LOBE=${f1(SWASH.lobes)};const float SMOOTH=${f1(SWASH.smooth)};
+const float FROM=${f1(SWASH.from)};const float BORE=${f1(SWASH.bore)};const vec2 BORE_U=${v2(SWASH.boreSpeed)};const float DRAW=${f1(SWASH.draw)};const float DROP=${f1(SWASH.drop)};
+const float LAP_T=${f1(LAP.period)};const float LAP_RUN=${f1(LAP.run)};const float LAP_RISE=${f1(LAP.rise)};const float LAP_DIP=${f1(LAP.dip)};const float LAP_C=${f1(LAP.speed)};const float DOWN=${DOWNHILL.toFixed(4)};const float GRAV=${f1(GRAVITY)};const float LOBE=${f1(SWASH.lobes)};const float SMOOTH=${f1(SWASH.smooth)};
 const float DEPTH=${f1(GAIT.depth)};const float WALL=${f1(FOOT.wall)};
 const vec2 ROLL=${v2(FOOT.roll)};
 #define NS ${FOOT.sole.length}
@@ -60,7 +61,7 @@ vec2 localOf(vec2 p,vec4 P){vec2 d=p-P.xy;float c=cos(P.z);float s=sin(P.z);retu
 
 float lobe(float x,float seed){return .5*sin(x/37.+seed*6.1)+.3*sin(x/19.+seed*13.7)+.2*sin(x/11.5+seed*29.3);}
 float launch(vec4 w,float x){return w.y*(1.+LOBE*lobe(x,w.z));}
-float frontOf(vec4 w,float x){float s=w.x;if(s<=0.||w.w<.5)return -1e4;return FROM+launch(w,x)*s-.5*DOWN*s*s;}
+float frontOf(vec4 w,float x){float s=w.x;if(w.w<.5||s<-BORE)return -1e4;if(s<=0.){float u=launch(w,x);return FROM+u*(BORE_U.y*s-.5*(BORE_U.x-BORE_U.y)/BORE*s*s);}return FROM+launch(w,x)*s-.5*DOWN*s*s;}
 float topOf(vec4 w,float x){float u=launch(w,x);return FROM+u*u/(2.*DOWN);}
 float turnOf(vec4 w,float x){return launch(w,x)/DOWN;}
 vec2 timesOf(vec4 w,float x,float y){float u=launch(w,x);float disc=u*u-2.*DOWN*(y-FROM);if(disc<=0.)return vec2(1e4,-1e4);float r=sqrt(disc);return vec2(u-r,u+r)/DOWN;}
@@ -152,6 +153,42 @@ float sparkleOf(vec2 p,float px){
   return smoothstep(.997,.9995,h)*flick*exp(-r*r/(size*size));
 }
 float fresnel(float c){return .02+.98*pow(1.-clamp(c,0.,1.),5.);}
+float lapPhase(float x){return uClock/LAP_T+.035*sin(x/61.)+x/4200.;}
+vec2 lapOf(float x){
+  float ph=lapPhase(x);
+  float k=floor(ph);float f=fract(ph);
+  float a=LAP_RUN*(.55+.6*hash12(vec2(k,3.7)))*(1.+.25*sin(x/29.+k*2.3));
+  float r=f/LAP_RISE;
+  float y=f<LAP_RISE?a*4.*r*(1.-r):-LAP_DIP*sin(3.1416*(f-LAP_RISE)/(1.-LAP_RISE));
+  return vec2(y,f<.5*LAP_RISE?1.-2.*r:0.);
+}
+float calmOf(vec4 w,float x){
+  if(w.w<.5)return 0.;
+  float t=turnOf(w,x);
+  return smoothstep(-DRAW,-DRAW+.6,w.x)*(1.-smoothstep(2.*t-.2,2.*t+1.4,w.x));
+}
+vec2 crestOf(vec2 p){
+  float ph=lapPhase(p.x);
+  float k=ceil(ph);
+  float wait=(k-ph)*LAP_T;
+  float a=.55+.6*hash12(vec2(k,3.7));
+  float d=p.y-(FROM-LAP_C*wait);
+  float calm=max(calmOf(uWave,p.x),calmOf(uPrev,p.x));
+  return vec2(d,a*(1.-calm)*smoothstep(1.6,.2,wait));
+}
+vec2 shoreOf(float x){
+  float s=uWave.x;
+  float draw=uWave.w>.5?DROP*smoothstep(-DRAW,-BORE,s)*(1.-smoothstep(-BORE,0.,s)):0.;
+  float calm=max(calmOf(uWave,x),calmOf(uPrev,x));
+  vec2 lap=lapOf(x);
+  return vec2(FROM+lap.x*(1.-calm)-draw,lap.y*(1.-calm));
+}
+float seaFoamOf(vec2 p,float pxw){
+  float drift=p.y-uClock*6.;
+  vec2 q=vec2(p.x/38.+.35*noise2(vec2(p.x/23.,drift/9.)),drift/2.6+.8*noise2(vec2(p.x/14.,drift/11.)));
+  float streak=smoothstep(.68,.9,noise2(q))*smoothstep(.45,.75,fbm2(vec2(p.x/27.,drift/13.)));
+  return streak*(.55+.45*noise2(p.xy/(.9+pxw)));
+}
 
 float erodeOf(float ex){return smoothstep(0.,SMOOTH,ex);}
 float exposureOf(vec4 w,vec2 t,float born){return w.w<.5?0.:max(0.,min(w.x,t.y)-max(t.x,born));}
@@ -226,19 +263,24 @@ void main(){
   vec3 pe=onWallX(vb,LEN);
   float zsE=SEA+RISE*pe.y;
   float sWave=uWave.x;
-  float waveOn=uWave.w*step(0.,sWave);
+  float waveOn=uWave.w;
   float frontE=frontOf(uWave,LEN);
+  float shoreE=shoreOf(LEN).x;
   float band=0.;
   vec3 bandCol=vec3(0.);
-  if(waveOn>.5&&sWave>0.&&pe.y>-1.&&pe.y<WID+1.&&pe.y<frontE+1.){
-    float hw=pow(max(frontE-pe.y,0.),2.)/(9.*GRAV*sWave*sWave);
-    float upE=1.-smoothstep(turnOf(uWave,LEN)-.2,turnOf(uWave,LEN)+.2,sWave);
-    float head=.35*exp(-max(frontE-pe.y,0.)/5.)*upE*smoothstep(0.,40.,launch(uWave,LEN)-DOWN*sWave);
-    float top=zsE+max(hw,.12)+head;
+  float reachE=max(shoreE,frontE);
+  if(pe.y>-1.&&pe.y<min(reachE,WID)+1.){
     float sz=.7*px/uCam.w;
-    float inY=smoothstep(-sz,sz,pe.y)*smoothstep(-sz,sz,frontE-pe.y);
+    float sea=RISE*max(shoreE-pe.y,0.);
+    float behind=smoothstep(-sz,sz,frontE-pe.y);
+    float hwE=sWave>0.?pow(max(frontE-pe.y,0.),2.)/(9.*GRAV*sWave*sWave)*smoothstep(0.,.35,sWave):0.;
+    float upE=1.-smoothstep(turnOf(uWave,LEN)-.2,turnOf(uWave,LEN)+.2,sWave);
+    float head=waveOn*mix(.35,.7,1.-smoothstep(-.1,.3,sWave))*exp(-max(frontE-pe.y,0.)/5.)*upE*smoothstep(0.,40.,launch(uWave,LEN)-DOWN*sWave);
+    float top=zsE+max(sea,behind*max(hwE,.12))+behind*head;
+    float inY=smoothstep(-sz,sz,pe.y)*smoothstep(-sz,sz,reachE-pe.y);
     band=smoothstep(zsE-sz,zsE+sz,pe.z)*(1.-smoothstep(top-sz,top+sz,pe.z))*inY;
-    bandCol=mix(lin(uWater)*.8,lin(uFoam),clamp(smoothstep(.1,.35,head)*uGain.z,0.,1.));
+    vec3 body=mix(lin(uWater)*.8,lin(uSea)*.85,smoothstep(0.,.6,sea));
+    bandCol=mix(body,lin(uFoam),clamp(smoothstep(.1,.35,head)*uGain.z,0.,1.));
   }
   if(cover<-1.5*pxv&&band<.001){gl_FragColor=vec4(0.);return;}
 
@@ -325,6 +367,11 @@ void main(){
     geomOf(uWave,p.xy,ew,dist,up,turnW,topW,jag);
     wcover=smoothstep(-ew,ew,dist);
   }
+  vec2 sh=shoreOf(p.x);
+  float shore=sh.x;
+  float seaD=max(shore-p.y,0.)*RISE;
+  float seaCov=smoothstep(-ew,ew,shore-p.y);
+  float water=max(wcover,seaCov);
   vec2 tn=timesOf(uWave,p.x,p.y);
   float reached=waveOn>.5?max(wcover,step(tn.x,sWave)*step(tn.x,tn.y)):0.;
   vec2 dNow=drainOf(uWave,p.xy);
@@ -353,15 +400,17 @@ void main(){
   alb*=1.-.32*floorWet;
   alb*=1.-.3*mark;
   alb*=1.-.22*sheen;
+  float glassy=exp(-max(p.y-shore,0.)/12.)*(1.-seaCov);
+  alb*=1.-.12*glassy;
   float ndl=max(dot(n,L),0.);
   float ndl0=max(dot(nflat,L),.05);
   float amb=.55;
   float lit=(amb+(1.-amb)*ndl*shadow)/(amb+(1.-amb)*ndl0);
   vec3 col=alb*lit;
-  float film=.26+.34*sheen+.4*floorWet;
+  float film=.26+.34*max(sheen,.7*glassy)+.4*floorWet;
   film*=1.-.9*paleA;
   vec3 R=reflect(-V,n);
-  float dryTop=1.-.85*wcover;
+  float dryTop=1.-.85*water;
   float inPrint=mix(1.,uPool,floorWet);
   col+=fresnel(dot(n,V))*envOf(R)*film*uGain.x*dryTop*inPrint;
   vec3 H=normalize(L+V);
@@ -375,21 +424,28 @@ void main(){
     vec3 pw=under+fresnel(dot(nw,V))*envOf(reflect(-V,nw))*uGain.x*.4*uPool;
     float g2=pow(max(dot(nw,H),0.),260.);
     pw+=lin(uGlint)*g2*uGain.y*.8*uPool;
-    col=mix(col,pw,pool*(1.-wcover));
+    col=mix(col,pw,pool*(1.-water));
   }
 
   float foamNow=waveOn>.5?foamOf(uWave,p.xy,px,ew):0.;
   float foamPrev=0.;
   if(uPrev.w>.5&&uPrev.x-turnOf(uPrev,LEN*.5)<14.)foamPrev=foamOf(uPrev,p.xy,px,ew);
   float foam=mix(foamPrev,foamNow,reached);
-  if(waveOn>.5){
+  foam=max(foam,seaCov*seaFoamOf(p.xy,pxw)*smoothstep(2.,20.,shore-p.y)*.2);
+  float edgeFoam=exp(-max(shore-p.y,0.)/1.1)*(.3+.7*smoothstep(.4,.85,noise2(vec2(p.x/1.3,(shore-p.y)/.8+uClock*.5))));
+  foam=max(foam,seaCov*(1.-wcover)*edgeFoam*(.3+.55*sh.y));
+  vec2 crest=crestOf(p.xy);
+  float crestCap=exp(-pow((crest.x+1.)/2.2,2.))*crest.y*smoothstep(-22.,-3.,p.y-FROM)*(.25+.75*smoothstep(.35,.8,noise2(vec2(p.x/3.,uClock*1.1))));
+  foam=max(foam,seaCov*(1.-wcover)*crestCap*.32);
+  if(water>.001){
     float speed=max(launch(uWave,p.x)-DOWN*sWave,0.);
-    float hw=pow(max(dist,0.),2.)/(9.*GRAV*max(sWave*sWave,.01));
+    float hw=sWave>0.?pow(max(dist,0.),2.)/(9.*GRAV*sWave*sWave)*smoothstep(0.,.35,sWave):0.;
     float deep=max(-hs,0.);
-    float turb=1.-exp(-(hw+deep*.5+.02)/.5);
+    float roller=waveOn*(1.-smoothstep(0.,.35,sWave))*smoothstep(-1.,1.5,dist)*exp(-max(dist,0.)/9.);
+    float turb=1.-exp(-(hw+seaD+deep*.5+.02)/.5);
     vec2 seed=vec2(uWave.z*17.,uWave.z*5.);
     vec2 g=vec2(0.);
-    float ripple=up*smoothstep(0.,10.,dist)*mix(.5,1.,smoothstep(10.,120.,speed))*smoothstep(.02,.25,hw);
+    float ripple=up*smoothstep(0.,10.,dist)*mix(.5,1.,smoothstep(10.,120.,speed))*smoothstep(.02,.25,hw)*smoothstep(0.,.5,sWave);
     vec2 r1=vec2(.34,.94);vec2 r2=vec2(-.5,.87);vec2 r3=vec2(.12,.99);
     float w1=6.2832*fbm2(p.xy/14.+seed);
     float w2=6.2832*noise2(p.xy/8.3+seed.yx+5.);
@@ -403,23 +459,32 @@ void main(){
     g+=.009*thinB*(cos(kr*dot(p.xy,d1)+om+w2*.3)*d1+cos(kr*dot(p.xy,d2)+om+w3*.3)*d2);
     float streak=(1.-up)*smoothstep(1.,12.,dist)*(1.-smoothstep(.3,.6,pxw/2.2));
     g.x+=.03*streak*(noise2(vec2(p.x/2.2,p.y/18.+max(sWave-turnW,0.)*2.2)+seed)-.5);
+    float swell=smoothstep(0.,8.,shore-p.y);
+    vec2 s1=vec2(.2,.98);vec2 s2=vec2(-.42,.91);
+    vec2 lodS=1.-smoothstep(vec2(.16),vec2(.3),pxw*vec2(.9,1.6)/6.2832);
+    g+=swell*(1.-.8*roller)*(.012*lodS.x*cos(dot(p.xy,s1)*.9-uClock*2.4+w1*.6)*s1+.007*lodS.y*cos(dot(p.xy,s2)*1.6-uClock*3.4+w3*.5)*s2);
+    g+=.012*roller*(vec2(noise2(p.xy/1.4+vec2(sWave*3.,0.)),noise2(p.xy/1.4+vec2(5.,sWave*3.)))-.5);
+    g.y+=seaCov*crest.y*.05*(crest.x/4.)*exp(-pow(crest.x/4.,2.));
     vec3 nw=normalize(vec3(-g.x,-RISE-g.y,1.));
-    nw=normalize(mix(n,nw,smoothstep(.05,.4,hw)));
+    nw=normalize(mix(n,nw,smoothstep(.05,.4,hw+seaD)));
     float puff=0.;
     if(gHasA>.5)puff=max(puff,gRa*exp(-max(gSuA+1.,0.)/3.5));
     if(gHasB>.5)puff=max(puff,gRb*exp(-max(gSuB+1.,0.)/3.5));
     puff*=.55+.45*fbm2(p.xy/3.+vec2(0.,sWave*.8));
     vec3 seen=mix(col*(.8-.1*turb)*(1.-.45*smoothstep(.1,1.2,deep)),lin(uWater),.35*uGain.w*turb);
+    seen=mix(seen,lin(uSea),1.-exp(-seaD/2.4));
     seen=mix(seen,mix(lin(uWet),lin(uDry),.35)*.9,.45*clamp(puff,0.,1.));
-    seen+=fresnel(dot(nw,V))*envOf(reflect(-V,nw))*uGain.x*.6;
+    vec3 skyR=mix(envOf(reflect(-V,nw)),mix(lin(uSkyLo),lin(uSkyHi),.5),.5*seaCov);
+    seen+=fresnel(dot(nw,V))*skyR*uGain.x*.6;
+    seen=mix(seen,lin(uSea)*.72,.4*roller*seaCov);
     float gw=pow(max(dot(nw,H),0.),320.);
-    seen+=lin(uGlint)*gw*uGain.y*1.2*mix(.3,1.,smoothstep(.05,.4,hw));
-    float lip=exp(-max(dist,0.)/.7)*(1.-up)*(.15+.85*smoothstep(.3,.7,noise2(vec2(p.x/9.,sWave*.8)+seed)))*(.6+.4*noise2(vec2(p.x/1.7,sWave*3.)+seed));
+    seen+=lin(uGlint)*gw*uGain.y*1.2*mix(.3,1.,smoothstep(.05,.4,hw+seaD))*(1.-.6*seaCov*(1.-wcover));
+    float lip=waveOn*exp(-max(dist,0.)/.7)*(1.-up)*(1.-seaCov)*(.15+.85*smoothstep(.3,.7,noise2(vec2(p.x/9.,sWave*.8)+seed)))*(.6+.4*noise2(vec2(p.x/1.7,sWave*3.)+seed));
     seen+=lin(uFoam)*.3*lip*uGain.z;
-    col=mix(col,seen,wcover);
+    col=mix(col,seen,water);
   }
   col=mix(col,lin(uFoam),foam*uGain.z);
-  col+=mix(lin(uGlint),lin(uSkyLo),.4)*sparkleOf(p.xy,pxw)*drainGlint*uGain.y*1.2*(1.-paleA)*(1.-wcover)*(1.-foam);
+  col+=mix(lin(uGlint),lin(uSkyLo),.4)*sparkleOf(p.xy,pxw)*drainGlint*uGain.y*1.2*(1.-paleA)*(1.-water)*(1.-foam);
   col=mix(col,bandCol,band);
   vec3 outc=pow(max(shoulder(col),0.),vec3(1./2.2));
   float a=max(smoothstep(-.5*pxv,.5*pxv,cover),band);
@@ -452,6 +517,7 @@ const edges = (() => {
 const themeOf = () => ({
   uWet: tokenOf("--fp-wet"),
   uDry: tokenOf("--fp-dry"),
+  uSea: tokenOf("--fp-sea"),
   uSkyLo: tokenOf("--fp-sky-lo"),
   uSkyHi: tokenOf("--fp-sky-hi"),
   uWater: tokenOf("--fp-water"),
@@ -500,7 +566,7 @@ let frozen = false;
 function planCycle(at) {
   const steps = tourSteps(state.cycle);
   const plan = steps.map((foot, index) => ({ at: at + foot.at, kind: "step", foot, step: index + 1 }));
-  plan.push({ at: at + LOOP.collapse, kind: "wave" });
+  plan.push({ at: at + LOOP.collapse - SWASH.draw, kind: "wave", collapse: at + LOOP.collapse });
   plan.push({ at: at + LOOP.period, kind: "cycle" });
   state.plan = plan;
   state.next = 0;
@@ -559,7 +625,7 @@ function advance(dt) {
     while (state.next < state.plan.length && state.plan[state.next].at <= state.clock) {
       const item = state.plan[state.next++];
       if (item.kind === "step") press(item.foot, item.at, item.step);
-      else if (item.kind === "wave") launchWave(item.at);
+      else if (item.kind === "wave") launchWave(item.collapse);
       else {
         state.cycle += 1;
         planCycle(item.at);
@@ -596,10 +662,11 @@ function phaseOf() {
     const front = frontAt(w, mid, s);
     const turn = turnOf(w, mid);
     const alive = state.prints.filter((print) => erosionAt(print) < 0.97).length;
-    if (front < 0 && s < turn) return { word: "wave breaking", text: `bore ${metres(-SWASH.from)} m out · swash coming` };
-    if (Math.abs(s - turn) < 0.3) return { word: "run-up", text: `run-up ${metres(topOf(w, mid))} m · ${turn.toFixed(1)} s` };
-    if (s < turn) return { word: "swash", text: `swash ${(speedAt(w, mid, s) / 100).toFixed(1)} m/s · ${metres(front)} m up` };
-    if (front > 0) return { word: "backwash", text: `backwash ${(-speedAt(w, mid, s) / 100).toFixed(1)} m/s · ${alive ? `${alive} ${alive === 1 ? "print" : "prints"} left` : "prints gone"}` };
+    if (s < -SWASH.bore) return { word: "water drawing back", text: "water drawing back · wave coming" };
+    if (s <= 0) return { word: "bore", text: `bore ${metres(Math.max(0, -boreAt(w, mid, s)))} m out · ${(boreSpeedAt(w, mid, s) / 100).toFixed(1)} m/s` };
+    if (Math.abs(s - turn) < 0.3) return { word: "run-up", text: `run-up ${metres(topOf(w, mid) - SWASH.from)} m · ${turn.toFixed(1)} s` };
+    if (s < turn) return { word: "swash", text: `swash ${(speedAt(w, mid, s) / 100).toFixed(1)} m/s · ${metres(front - SWASH.from)} m up` };
+    if (front > SWASH.from) return { word: "backwash", text: `backwash ${(-speedAt(w, mid, s) / 100).toFixed(1)} m/s · ${alive ? `${alive} ${alive === 1 ? "print" : "prints"} left` : "prints gone"}` };
     return { word: "drained", text: `smooth again · sheen draining` };
   }
   if (state.wave && waveAge() < 2 * turnOf(state.wave, mid) + 4 && !(state.prints.length && state.clock - state.lastStep < 1.4)) return { word: "drained", text: state.prints.length ? `${state.prints.length} ${state.prints.length === 1 ? "print" : "prints"} · sheen draining` : "smooth again · sheen draining" };
@@ -734,7 +801,7 @@ function hold() {
     const at = state.clock + (state.prints.length && !waveBusy() ? 0.6 : 0);
     state.plan = [];
     state.next = 0;
-    if (state.prints.length && !waveBusy()) state.plan.push({ at, kind: "wave" });
+    if (state.prints.length && !waveBusy()) state.plan.push({ at, kind: "wave", collapse: at + SWASH.draw });
     const resume = at + (state.prints.length || waveBusy() ? 7.5 : 1.2);
     state.plan.push({ at: resume, kind: "cycle" });
     run();
@@ -783,9 +850,9 @@ stage.addEventListener("pointercancel", () => {
 
 function tapAt(clientX, clientY) {
   const [x, y] = planeAt(clientX, clientY);
-  if (x < -4 || x > STRIP.length + 4 || y < -4 || y > STRIP.width + 4) return;
+  if (x < -4 || x > STRIP.length + 4 || y < SWASH.from || y > STRIP.width + 4) return;
   const cx = Math.min(STRIP.length - FOOT.length / 2 - 4, Math.max(FOOT.length / 2 + 4, x));
-  const cy = Math.min(STRIP.width - 12, Math.max(12, y));
+  const cy = Math.min(STRIP.width - 12, Math.max(SWASH.from + LAP.run * 1.4 + 10, y));
   hold();
   stepAt(cx, cy);
   run();
@@ -799,7 +866,7 @@ stage.addEventListener("keydown", (event) => {
       state.clock += 7;
       launchWave(state.clock - 6.5);
       sweep();
-    } else if (!waveBusy()) launchWave(state.clock);
+    } else if (!waveBusy()) launchWave(state.clock + SWASH.draw);
     run();
     return;
   }

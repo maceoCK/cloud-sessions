@@ -1,10 +1,10 @@
-export const STRIP = { length: 270, width: 160, sea: 22, rise: 1 / 12 };
+export const STRIP = { length: 270, width: 170, sea: 22, rise: 1 / 12 };
 export const GRAVITY = 981;
 export const SLOPE = Math.atan(STRIP.rise);
 export const DOWNHILL = GRAVITY * Math.sin(SLOPE);
 export const surfaceAt = (y) => STRIP.sea + STRIP.rise * y;
 
-export const GAIT = { step: 66, width: 10.4, toeOut: 7, gap: 0.9, depth: 1.6, line: 66, wander: 3 };
+export const GAIT = { step: 66, width: 10.4, toeOut: 7, gap: 0.9, depth: 1.6, line: 78, wander: 3 };
 
 export const FOOT = {
   length: 24.8,
@@ -30,8 +30,9 @@ export const FOOT = {
   pale: { rise: [0.06, 0.18], fall: [0.5, 1.7], reach: 3 },
 };
 
-export const SWASH = { from: -60, reach: 130, spread: 6, lobes: 0.035, smooth: 1.4, drain: [1.6, 3.2] };
-export const LOOP = { first: 0.9, steps: 4, collapse: 5.4, period: 14.5 };
+export const SWASH = { from: 34, draw: 1.8, drop: 6, bore: 0.55, boreSpeed: [0.72, 0.52], reach: 138, spread: 6, lobes: 0.035, smooth: 1.4, drain: [1.6, 3.2] };
+export const LOOP = { first: 0.9, steps: 4, collapse: 6.0, period: 15 };
+export const LAP = { period: 2.6, run: 13, rise: 0.55, dip: 1.6, speed: 42 };
 
 export const ramp = (a, b, x) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -63,6 +64,8 @@ export function frontAt(wave, x, s) {
 }
 
 export const speedAt = (wave, x, s) => launchAt(wave, x) - DOWNHILL * s;
+export const boreAt = (wave, x, s) => launchAt(wave, x) * (SWASH.boreSpeed[1] * s - (0.5 * (SWASH.boreSpeed[0] - SWASH.boreSpeed[1]) * s * s) / SWASH.bore);
+export const boreSpeedAt = (wave, x, s) => launchAt(wave, x) * (SWASH.boreSpeed[1] - ((SWASH.boreSpeed[0] - SWASH.boreSpeed[1]) * s) / SWASH.bore);
 export const topOf = (wave, x) => SWASH.from + launchAt(wave, x) ** 2 / (2 * DOWNHILL);
 export const turnOf = (wave, x) => launchAt(wave, x) / DOWNHILL;
 

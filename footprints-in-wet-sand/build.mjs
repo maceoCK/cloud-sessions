@@ -42,7 +42,7 @@ const sheetAt = (layer, k, x, y) => M.surfaceAt(y) - layer.depth - layer.wave * 
 const scourAt = (x, y) => 10.6 + 0.055 * y + 1.3 * Math.sin(x / 41 + 0.6) + 0.7 * Math.sin(x / 13 + 2.1) + 0.9 * Math.sin(y / 29 + 1.4);
 const OLD = Array.from({ length: 16 }, (_, k) => -14 + 2.1 * k);
 const oldAt = (c, k, x, y) => c + (1 / 8) * y + 0.02 * (x - L / 2) + 0.45 * Math.sin(x / 31 + k) + 0.3 * Math.sin(y / 21 + k * 1.3);
-const TABLE = (x, y) => M.surfaceAt(y) - 2 - 0.06 * y + 0.4 * Math.sin(x / 57);
+const TABLE = (x, y) => Math.min(M.surfaceAt(y) - 0.3, M.surfaceAt(M.SWASH.from) - 0.045 * (y - M.SWASH.from) + 0.4 * Math.sin(x / 57));
 const FACES = [
   { name: "front", count: Math.round(L / 2), at: (t) => [t * L, D] },
   { name: "end", count: Math.round(D / 1.5), at: (t) => [L, t * D] },
@@ -277,7 +277,11 @@ function scale() {
 }
 
 function fallback() {
-  return `<g class="fp-fallback" aria-hidden="true"><g data-part="prints"></g><g data-part="lines" class="fp-swash-line"></g><path data-part="sheet" class="fp-sheet" d=""/><path data-part="lace" class="fp-lace" d=""/></g>`;
+  const shore = M.SWASH.from;
+  const level = M.surfaceAt(shore);
+  const top = poly([[0, 0, Z0], [L, 0, Z0], [L, shore, level], [0, shore, level]], true);
+  const end = poly([[L, 0, Z0], [L, shore, level], [L, 0, level]], true);
+  return `<g class="fp-fallback" aria-hidden="true"><path class="fp-sea-top" d="${top}"/><path class="fp-sea-end" d="${end}"/><g data-part="prints"></g><g data-part="lines" class="fp-swash-line"></g><path data-part="sheet" class="fp-sheet" d=""/><path data-part="lace" class="fp-lace" d=""/></g>`;
 }
 
 const topEdges = poly([[L, 0, Z0], [0, 0, Z0], [0, D, Z1]]);
@@ -298,7 +302,7 @@ const DATA = {
 };
 
 const LABEL_TEXT =
-  `A block of beach cut from the swash zone and set on a plinth: a strip of smooth, dark, wet sand ${M.metres(L)} m long and ${M.metres(D)} m across, rising 1 in 12 from the sea edge at the back. Its cut faces show the swash laminae, ${MODERN.filter((layer) => layer.band).length} dark heavy-mineral bands, an older storm scour with a shell and pebble lag, a buried wedge clam and the water table. Footprints press into the sand one step at a time, each ringed for a moment by pale, drained sand; then a thin sheet of swash slides up from the sea edge with a foam front, covers the prints, smooths them away and drains back, leaving the sand glossy and smooth again.`;
+  `A block of beach cut from the swash zone and set on a plinth: a strip of smooth, dark, wet sand ${M.metres(L)} m long and ${M.metres(D)} m across, rising 1 in 12, with shallow sea lapping at its back edge. Its cut faces show the swash laminae, ${MODERN.filter((layer) => layer.band).length} dark heavy-mineral bands, an older storm scour with a shell and pebble lag, a buried wedge clam and the water table. Footprints press into the sand one step at a time, each ringed for a moment by pale, drained sand; then the water draws back, a bore runs in across the shallows, and a thin sheet of swash slides up from the waterline with a foam front, covers the prints, smooths them away and drains back, leaving the sand glossy and smooth again.`;
 
 const backSvg = k.figureSvg({ width: W, height: H, label: LABEL_TEXT, body: back, className: "fp-back" });
 const frontSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="iso-svg fp-layer fp-front" viewBox="0 0 ${W} ${H}" aria-hidden="true">${front.join("")}</svg>`;
@@ -308,13 +312,12 @@ const wave = M.waveOf(0, 0);
 const tops = [];
 for (let index = 0; index < 200; index++) {
   const each = M.waveOf(0, index);
-  for (let x = 0; x <= L; x += 3) tops.push(M.topOf(each, x));
+  for (let x = 0; x <= L; x += 3) tops.push(M.topOf(each, x) - M.SWASH.from);
 }
 const meanTop = tops.reduce((sum, top) => sum + top, 0) / tops.length;
 let deepest = 0;
 for (let s = 0.5; s < 5; s += 0.02) for (let y = 0; y < D; y += 2) deepest = Math.max(deepest, M.depthAt(wave, L / 2, y, s));
-const entry = M.speedAt(wave, L / 2, M.timesAt(wave, L / 2, 0)[0]);
-const caption = `A strip of the swash zone, ${M.metres(L)} m along the shore and ${M.metres(D)} m up it, cut from a beach that rises 1 in 12. Someone walks across at ${((M.GAIT.step / 100) / M.GAIT.gap).toFixed(2)} m/s, ${M.metres(M.GAIT.step)} m a step, and each bare heel sinks ${(M.GAIT.depth * 10).toFixed(0)} mm. While the foot is down, the sand around it turns pale: shearing makes the packed grains dilate, and the water drains down into the new pore space (Reynolds' dilatancy). When the foot lifts, the water comes back and pools in the heel and the ball. Then a bore collapses ${M.metres(-M.SWASH.from)} m seaward of the strip. Its swash crosses the sea edge at ${(entry / 100).toFixed(1)} m/s and slows at g·sin β = ${(M.DOWNHILL / 100).toFixed(2)} m/s², so it turns ${M.turnOf(wave, L / 2).toFixed(1)} s after the collapse, about ${M.metres(meanTop)} m up the strip (${M.metres(Math.min(...tops))} to ${M.metres(Math.max(...tops))} m along its lobes, from wave to wave), and drains back the same way (Shen and Meyer's ballistic swash). The sheet is never more than ${(deepest * 10).toFixed(0)} mm deep, yet it smooths each print away within a second or two of covering it. The film it leaves sinks into the sand, and the sheen fades.`;
+const caption = `A strip of the swash zone, ${M.metres(L)} m along the shore and ${M.metres(D)} m up it, cut from a beach that rises 1 in 12, with the sea lapping along its back edge. Someone walks across at ${((M.GAIT.step / 100) / M.GAIT.gap).toFixed(2)} m/s, ${M.metres(M.GAIT.step)} m a step, and each bare heel sinks ${(M.GAIT.depth * 10).toFixed(0)} mm. While the foot is down, the sand around it turns pale: shearing makes the packed grains dilate, and the water drains down into the new pore space (Reynolds' dilatancy). When the foot lifts, the water comes back and pools in the heel and the ball. Then the waterline draws back ${M.SWASH.drop} cm, a bore runs in across the shallows, slowing from ${((M.SWASH.boreSpeed[0] * wave.u0) / 100).toFixed(1)} to ${((M.SWASH.boreSpeed[1] * wave.u0) / 100).toFixed(1)} m/s as they shoal, and collapses at the waterline. Its swash shoots off at ${(wave.u0 / 100).toFixed(1)} m/s and slows at g·sin β = ${(M.DOWNHILL / 100).toFixed(2)} m/s², so it turns ${M.turnOf(wave, L / 2).toFixed(1)} s after the collapse, about ${M.metres(meanTop)} m up from the waterline (${M.metres(Math.min(...tops))} to ${M.metres(Math.max(...tops))} m along its lobes, from wave to wave), and drains back the same way (Shen and Meyer's ballistic swash). The sheet is never more than ${(deepest * 10).toFixed(0)} mm deep, yet it smooths each print away within a second or two of covering it. The film it leaves sinks into the sand, and the sheen fades.`;
 
 const body = `<div class="fp">${k.plateHtml({
   fig: "Fig 1",
@@ -322,7 +325,7 @@ const body = `<div class="fp">${k.plateHtml({
   hint: "Click the sand to step · Space sends a wave",
   readout: "smooth",
   keys: [
-    { mark: "lit", label: "Wet sand, where the prints press in and the swash runs" },
+    { mark: "lit", label: "Shallow sea lapping at the back; wet sand where the prints press in" },
     { mark: "dotted", label: "Swash line: foam stranded where the wave turned" },
     { mark: "raised", label: "Beach block, cut to show its laminae and water table" },
     { mark: "flat", label: "Ruler, 5 cm ticks; depth scale on the end, 1 cm" },
