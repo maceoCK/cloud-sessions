@@ -2,6 +2,16 @@
 
 An interactive isometric figure, built with the [Anatomy](https://github.com/wheresryan22/anatomy) skill: a block of beach cut from the swash zone, a strip of smooth, dark, wet sand 3.3 m long and 1.8 m across, rising 1 in 12 from the sea edge at the back.
 
+<p align="center"><img src="shots/dark-swash.webp" width="720" alt="Dark theme: a block of wet beach sand on a plinth. A thin sheet of swash with a lobed foam front has slid up from the sea edge and is covering two footprints."></p>
+
+| | Light | Dark |
+|---|---|---|
+| A foot presses in, heel first, ringed by pale drained sand | <img src="shots/light-press.webp" width="360" alt=""> | <img src="shots/dark-press.webp" width="360" alt=""> |
+| Five prints, water pooled in the heels and balls | <img src="shots/light-prints.webp" width="360" alt=""> | <img src="shots/dark-prints.webp" width="360" alt=""> |
+| The swash slides in with its foam front | <img src="shots/light-swash.webp" width="360" alt=""> | <img src="shots/dark-swash.webp" width="360" alt=""> |
+| Backwash: the prints are gone, foam is stranded | <img src="shots/light-backwash.webp" width="360" alt=""> | <img src="shots/dark-backwash.webp" width="360" alt=""> |
+| Smooth again, the glossy film draining | <img src="shots/light-smooth.webp" width="360" alt=""> | <img src="shots/dark-smooth.webp" width="360" alt=""> |
+
 The loop runs on its own:
 
 1. Footprints press in one step at a time, heel first and rolling to the toes. While each foot is down, the sand around it turns pale (Reynolds' dilatancy: the sheared grains dilate and draw the water down). When the foot lifts, water seeps back and pools in the heel and the ball.
@@ -22,6 +32,7 @@ Tap or click the sand to press a footprint there. The right arrow key takes the 
 | `live.js` | The WebGL layer and the loop: a heightfield march for the prints in the figure's own isometric camera, the seep pools, the dilatancy ring, the swash sheet with its foam front and ripples, erosion, the drained sheen, plus pointer and keyboard input, the SVG fallback and reduced motion. |
 | `sand.css` | Theme tokens for the sand, water, foam and section. |
 | `kit/` | `iso-kit.mjs` and `gl.mjs` from the Anatomy kit, MIT licensed (see `kit/LICENSE`). |
+| `shots/` | The screenshots above. |
 
 ## Build
 
@@ -31,4 +42,4 @@ node build.mjs --light    # light page
 node build.mjs --artifact out.html   # a theme-following page body for embedding
 ```
 
-Node 20.10 or later; no dependencies.
+Node 20.10 or later; no dependencies. The pages expose `window.__fpSeek(seconds)`, which replays the loop deterministically to a given time and holds it there; the screenshots were taken with it and the Anatomy skill's `scripts/drive.mjs`.

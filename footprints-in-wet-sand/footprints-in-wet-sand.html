@@ -1447,7 +1447,8 @@ float sparkleOf(vec2 p,float px){
   vec2 o=vec2(hash12(ci+1.1),hash12(ci+2.9))*.8+.1;
   float r=length(f-o)*.8;
   float size=max(.75*px,.1);
-  return smoothstep(.994,.9995,h)*exp(-r*r/(size*size));
+  float flick=pow(max(0.,sin(uClock*(1.3+2.*fract(h*91.))+h*517.)),10.);
+  return smoothstep(.99,.9995,h)*flick*exp(-r*r/(size*size));
 }
 float fresnel(float c){return .02+.98*pow(1.-clamp(c,0.,1.),5.);}
 
@@ -1477,9 +1478,9 @@ void main(){
     float sz=.7*px/uCam.w;
     float inY=smoothstep(-sz,sz,pe.y)*smoothstep(-sz,sz,frontE-pe.y);
     band=smoothstep(zsE-sz,zsE+sz,pe.z)*(1.-smoothstep(top-sz,top+sz,pe.z))*inY;
-    float foamy=smoothstep(.15,.9,head)+.25;
-    bandCol=mix(lin(uWater)*1.05,lin(uFoam),clamp(foamy*uGain.z,0.,1.));
-    bandCol=mix(bandCol,lin(uFoam),.35*smoothstep(top-2.*sz,top,pe.z));
+    float foamy=smoothstep(.15,.9,head);
+    bandCol=mix(lin(uWater)*.8,lin(uFoam),clamp(foamy*uGain.z,0.,1.));
+    bandCol=mix(bandCol,lin(uFoam),.12*smoothstep(top-2.*sz,top,pe.z));
   }
   if(cover<-1.5*pxv&&band<.001){gl_FragColor=vec4(0.);return;}
 
@@ -1684,7 +1685,7 @@ void main(){
     col=mix(col,lin(uFoam),foam*uGain.z);
   }
   float drainGlint=3.*sheen*(1.-sheen);
-  col+=lin(uGlint)*sparkleOf(p.xy,pxw)*drainGlint*uGain.y*.7*(1.-paleA)*(1.-wcover)*(1.-foam);
+  col+=lin(uGlint)*sparkleOf(p.xy,pxw)*drainGlint*uGain.y*1.2*(1.-paleA)*(1.-wcover)*(1.-foam);
   col=mix(col,bandCol,band);
   vec3 outc=pow(max(col,0.),vec3(1./2.2));
   float a=max(smoothstep(-.5*pxv,.5*pxv,cover),band);
@@ -1976,15 +1977,30 @@ function stepAt(x, y, at = state.clock) {
   press(foot, at);
 }
 
+let down = null;
 stage.addEventListener("pointerdown", (event) => {
-  const [x, y] = planeAt(event.clientX, event.clientY);
+  down = event.pointerType === "mouse" ? null : { x: event.clientX, y: event.clientY, at: performance.now(), id: event.pointerId };
+  if (event.pointerType === "mouse" && event.button === 0) tapAt(event.clientX, event.clientY);
+});
+stage.addEventListener("pointerup", (event) => {
+  if (!down || down.id !== event.pointerId) return;
+  const moved = Math.hypot(event.clientX - down.x, event.clientY - down.y);
+  if (moved < 10 && performance.now() - down.at < 500) tapAt(event.clientX, event.clientY);
+  down = null;
+});
+stage.addEventListener("pointercancel", () => {
+  down = null;
+});
+
+function tapAt(clientX, clientY) {
+  const [x, y] = planeAt(clientX, clientY);
   if (x < -4 || x > STRIP.length + 4 || y < -4 || y > STRIP.width + 4) return;
   const cx = Math.min(STRIP.length - FOOT.length / 2 - 4, Math.max(FOOT.length / 2 + 4, x));
   const cy = Math.min(STRIP.width - 12, Math.max(12, y));
   hold();
   stepAt(cx, cy);
   run();
-});
+}
 
 stage.addEventListener("keydown", (event) => {
   if (event.key === " " || event.key === "Enter") {
