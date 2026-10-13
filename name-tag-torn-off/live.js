@@ -307,7 +307,7 @@ stage.addEventListener("keydown", (event) => {
 
 if (still.matches || DATA.hold !== null) {
   touring = false;
-  state = { s: DATA.hold ?? 0.55, place: 0, alpha: 1 };
+  state = { s: DATA.hold ?? 0.78, place: 0, alpha: 1 };
   target = { ...state };
 }
 still.addEventListener?.("change", () => {

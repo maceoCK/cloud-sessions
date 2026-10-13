@@ -174,11 +174,33 @@ function wall() {
     shade.push(pathOf(pts.map(([x, z]) => at([x, -RAKE, z])), true));
   }
   out.push(`<path class="nt-jointshade" d="${shade.join("")}"/>`);
+  let flashes = 0;
   for (const [b0, b1, zb, zt] of bricks) {
     const tint = tints[Math.floor(R() * tints.length)];
-    let chips = "";
-    for (let i = 0, m = R() < 0.6 ? 1 + Math.floor(R() * 2) : 0; i < m; i++) chips += chipOn(b0, b1, zb, zt);
-    out.push(texturedBox(box(b0, b1, zb, zt, -RAKE, 0), `data-part="brick" data-tint="${tint}"`, "nt-brick", chips));
+    let extra = "";
+    // Fire flash: the end that sat nearest the flame in the kiln came out darker.
+    if (R() < 0.3) {
+      const left = R() < 0.5;
+      const a = at([left ? b0 : b1, 0, (zb + zt) / 2]), b = at([left ? b0 + (b1 - b0) * 0.55 : b1 - (b1 - b0) * 0.55, 0, (zb + zt) / 2]);
+      const id = `nt-flash-${flashes++}`;
+      const face = pathOf([[b0, zb], [b1, zb], [b1, zt], [b0, zt]].map(([x, z]) => at([x, 0, z])), true);
+      extra += `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${fx(a[0])}" y1="${fx(a[1])}" x2="${fx(b[0])}" y2="${fx(b[1])}"><stop offset="0" class="nt-flash-0"/><stop offset="1" class="nt-flash-1"/></linearGradient><path class="nt-flash" d="${face}" fill="url(#${id})"/>`;
+    }
+    for (let i = 0, m = R() < 0.6 ? 1 + Math.floor(R() * 2) : 0; i < m; i++) extra += chipOn(b0, b1, zb, zt);
+    out.push(texturedBox(box(b0, b1, zb, zt, -RAKE, 0), `data-part="brick" data-tint="${tint}"`, "nt-brick", extra));
+  }
+  // Salt bloom: lime washed out of the mortar dried white on a low brick and the joint under it.
+  {
+    const Rb = PEEL.rng(7171);
+    const cx = 160, cz = 128;
+    const pts = [];
+    for (let i = 0; i < 26; i++) {
+      const a = (i / 26) * Math.PI * 2;
+      const r = 1 + 0.35 * Math.sin(a * 3 + 1) + 0.25 * (Rb() - 0.5);
+      pts.push(at([cx + Math.cos(a) * 62 * r, 0.3, cz + Math.sin(a) * 30 * r]));
+    }
+    const d = pathOf(pts, true);
+    out.push(`<path class="nt-bloom" d="${d}"/><path class="nt-bloomgrain" d="${d}" fill="url(#nt-grainlight-front)"/>`);
   }
   out.push(weathering());
   // The crop: the card's own paper closes over the brickwork in an ellipse on the wall.
@@ -277,6 +299,8 @@ function plate() {
     out.push(L(seg(Math.cos(a), Math.sin(a)) + seg(Math.cos(a + Math.PI / 2), Math.sin(a + Math.PI / 2)), { tone: "mid" }));
     out.push(L(faceRing(x, z, 1.4, Y_FACE, 16), { tone: "lo" }));
   }
+  // Dust has settled on the plate's top edge.
+  if (slab.top) out.push(`<path class="nt-dust" d="${slab.top}" fill="url(#nt-grain-front)"/>`);
   // Light scratches in the steel, from keys and cleaning; each fades out at both ends.
   const Rs = PEEL.rng(919);
   for (let i = 0; i < 7; i++) {
