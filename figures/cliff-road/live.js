@@ -251,8 +251,15 @@ function drawDetail(pose, hidden) {
   [1, -1].forEach((side, n) => {
     const lx = car.x + c * 9.3 - s * side * 2.55;
     const ly = car.y + s * 9.3 + c * side * 2.55;
-    const fan = [at(lx, ly)];
-    for (let a = -0.36; a <= 0.361; a += 0.06) fan.push(at(lx + Math.cos(pose.yaw + a) * 80, ly + Math.sin(pose.yaw + a) * 80));
+    // three nested fans, so the beam's edges fall off instead of stopping
+    const fanOf = (spread) => {
+      const fan = [at(lx, ly)];
+      for (let i = 0; i <= 10; i++) {
+        const a = -spread + (2 * spread * i) / 10;
+        fan.push(at(lx + Math.cos(pose.yaw + a) * 80, ly + Math.sin(pose.yaw + a) * 80));
+      }
+      return pathOf(fan, true);
+    };
     const [x1, y1] = at(lx, ly);
     const [x2, y2] = at(lx + c * 80, ly + s * 80);
     const g = beamGrads[n];
@@ -262,7 +269,7 @@ function drawDetail(pose, hidden) {
       g.setAttribute("x2", x2.toFixed(1));
       g.setAttribute("y2", y2.toFixed(1));
     }
-    beams += `<path class="cr-d-beam" fill="url(#cr-beam-${n})" d="${pathOf(fan, true)}"/>`;
+    for (const spread of [0.42, 0.3, 0.17]) beams += `<path class="cr-d-beam" fill="url(#cr-beam-${n})" opacity="0.4" d="${fanOf(spread)}"/>`;
   });
   parts.push(`<g class="cr-d-beams"><clipPath id="cr-detail-land"><path fill-rule="evenodd" d="${land}"/></clipPath><g clip-path="url(#cr-detail-land)">${beams}</g></g>`);
 

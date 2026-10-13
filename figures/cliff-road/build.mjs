@@ -460,6 +460,15 @@ for (const [i, [x, y, r]] of [[20, -40, 4.2], [96, 10, 3.4], [128, -42, 3.8], [-
   const bi = SC.bin({ P, x: -110, y: 14, z: Z.road });
   put("bin", bi.at, bi.svg);
 }
+// a trig pillar on the knoll's crown, and a lifebuoy at the viewpoint
+{
+  const [tx, ty] = [118, -14];
+  const tz = Z.road + (KNOLL(tx, ty) < -0.42 ? 4.8 : KNOLL(tx, ty) < 0 ? 2.6 : 0);
+  const tg = SC.trig({ P, x: tx, y: ty, z: tz });
+  put("trig", tg.at, tg.svg, 6);
+  const lb = SC.lifebuoy({ P, x: -111, y: -4, z: Z.road, facing: 0.15 });
+  put("buoy", lb.at, lb.svg, 6);
+}
 // a windsock inside the hairpin: crosswind warning for the exposed headland
 const SOCK = [146, -2, Z.road];
 put("sock", SOCK, sockSvg(SOCK, windOf(0), P, G, k));

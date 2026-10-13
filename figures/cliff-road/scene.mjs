@@ -285,3 +285,28 @@ export function viewer({ P, x, y, z, facing = 0 }) {
 export function bin({ P, x, y, z }) {
   return { svg: S(k.cylinder(x, y, 1.6, z, 4.2, P, 16, 0.3), { tone: "mid", inner: Ln(k.sideArc(x, y, 1.6, z + 3.4, P, 12), { tone: "faint" }) }) + S(k.cylinder(x, y, 1.75, z + 4.2, 0.6, P, 16), { tone: "mid" }), at: [x, y, z] };
 }
+
+// an Ordnance Survey trig pillar: a tapered square concrete column, 1.2 m, with a brass spider on top
+export function trig({ P, x, y, z }) {
+  const F = G.frameAlong([x, y, z], [0, 0, 1]);
+  const body = G.lathe([[0, 0], [0, 2.3], [0.6, 2.3], [0.6, 2.05], [5.4, 1.5], [5.4, 1.25], [6.0, 1.25], [6.0, 0]], F, P, { steps: 4, smooth: false });
+  const parts = [S(body, { tone: "mid", crease: "lo" })];
+  parts.push(k.dotsSvg([k.iso([x, y, z + 6.05], P)], { tone: "lo", size: 0.55 }));
+  return { svg: parts.join(""), at: [x, y, z] };
+}
+
+// a lifebuoy on a post, the ring hung on the side that faces the path
+export function lifebuoy({ P, x, y, z, facing = 0 }) {
+  const c = Math.cos(facing);
+  const s = Math.sin(facing);
+  const F = (o) => G.frameOf([x + c * o[0] - s * o[1], y + s * o[0] + c * o[1], z], [-s, c, 0], [c, s, 0], [0, 0, 1]);
+  const parts = [S(G.prismOf(F([0, 0]), [[-0.45, 0], [0.45, 0], [0.45, 8.4], [-0.45, 8.4]], -0.45, 0.45, P), { tone: "mid", crease: "lo" })];
+  parts.push(S(G.prismOf(F([0, 0]), [[-0.7, 8.4], [0.7, 8.4], [0.7, 9.0], [-0.7, 9.0]], -0.7, 0.7, P), { tone: "mid" }));
+  const ring = G.frameAlong([x + c * 0.9, y + s * 0.9, z + 5.6], [c, s, 0]);
+  const back = G.frameAlong([x + c * 0.5, y + s * 0.5, z + 5.6], [c, s, 0]);
+  const annulus = (Fr) => `${G.circleOf(Fr, 0, 2.1, P, 28)}${G.circleOf(Fr, 0, 1.2, P, 20)}`;
+  parts.push(`<path class="cr-buoy cr-buoy-back" fill-rule="evenodd" d="${annulus(back)}"/>`);
+  parts.push(`<path class="cr-buoy" fill-rule="evenodd" d="${annulus(ring)}"/>`);
+  parts.push(Ln(G.circleOf(ring, 0, 2.1, P, 28), { tone: "lo" }) + Ln(G.circleOf(ring, 0, 1.2, P, 20), { tone: "lo" }));
+  return { svg: parts.join(""), at: [x, y, z] };
+}

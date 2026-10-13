@@ -469,3 +469,12 @@
 .cr .cr-detail-mark.iso-line {
   stroke-width: 0.9;
 }
+
+.cr-buoy {
+  fill: var(--cr-sock);
+  stroke: none;
+}
+
+.cr-buoy-back {
+  fill: color-mix(in srgb, var(--cr-sock) 68%, #000000);
+}
