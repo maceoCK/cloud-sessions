@@ -164,6 +164,39 @@ back.push(Ln(k.planOutline(k.insetPlan(LABEL, 1.4), Z.bed + 0.9, P), { tone: "fa
 back.push(k.faceTextSvg(k.topMatrix([LABEL.x + 4.6, LABEL.y + LABEL.d - 6], Z.bed + 0.9, P, "y"), "CLIFF ROAD · 5A", { size: 3.2, tone: "lo" }));
 back.push(Dots([at([LABEL.x + LABEL.w / 2, LABEL.y + 2.4, Z.bed + 0.9]), at([LABEL.x + LABEL.w / 2, LABEL.y + LABEL.d - 2.4, Z.bed + 0.9])], { size: 0.4 }));
 
+// the pace knob on the plinth's front face: the driver's commitment, from grip (left) to the edge (right)
+const KNOB = { x: X1 - 54, y: PLINTH.y + PLINTH.d, z: (Z.base + Z.bed) / 2, plate: 9.5, r: 5.4 };
+const KNOB_SWEEP = [-135, 135];
+{
+  const F = G.frameOf([KNOB.x, KNOB.y, KNOB.z], [0, 1, 0], [1, 0, 0], [0, 0, 1]);
+  const face = (r, deg, y = 0.6) => {
+    const a = (deg * Math.PI) / 180;
+    return at([KNOB.x + Math.sin(a) * r, KNOB.y + y, KNOB.z + Math.cos(a) * r]);
+  };
+  back.push(S(G.disc(0, 0.6, KNOB.plate, F, P), { tone: "mid" }));
+  let minor = "";
+  let major = "";
+  for (let i = 0; i <= 10; i++) {
+    const deg = KNOB_SWEEP[0] + ((KNOB_SWEEP[1] - KNOB_SWEEP[0]) * i) / 10;
+    const big = i % 5 === 0;
+    const d = k.pathOf([face(KNOB.plate - 0.6, deg), face(KNOB.plate - (big ? 3 : 1.8), deg)]);
+    if (big) major += d;
+    else minor += d;
+  }
+  back.push(Ln(minor, { tone: "lo" }), Ln(major, { tone: "mid" }));
+  back.push(Ln(k.pathOf(Array.from({ length: 41 }, (_, i) => face(KNOB.plate - 0.6, KNOB_SWEEP[0] + ((KNOB_SWEEP[1] - KNOB_SWEEP[0]) * i) / 40))), { tone: "lo" }));
+  back.push(Dots([face(KNOB.plate - 4.1, KNOB_SWEEP[1])], { size: 0.7, tone: "hi" }).replace('class="iso-dots"', 'class="iso-dots cr-limit-dot"'));
+  back.push(S(G.disc(0.6, 1.4, KNOB.r + 0.8, F, P), { tone: "mid" }));
+  back.push(S(G.disc(1.4, 4.4, KNOB.r, F, P), { tone: "hi", crease: "lo", inner: k.fadedSvg(G.ribsOf(F, 1.7, 4.1, KNOB.r, 40, P, { fade: [0.1, 0.5] }), { tone: "lo" }) }));
+  back.push(Dots([face(KNOB.plate + 3.2, -150, 0), face(KNOB.plate + 3.2, 150, 0)].map((p) => p), { size: 0.45 }));
+}
+const knobPointer = (share) => {
+  const deg = KNOB_SWEEP[0] + (KNOB_SWEEP[1] - KNOB_SWEEP[0]) * share;
+  const a = (deg * Math.PI) / 180;
+  return k.pathOf([at([KNOB.x + Math.sin(a) * 1.2, KNOB.y + 4.45, KNOB.z + Math.cos(a) * 1.2]), at([KNOB.x + Math.sin(a) * (KNOB.r - 0.8), KNOB.y + 4.45, KNOB.z + Math.cos(a) * (KNOB.r - 0.8)])]);
+};
+back.push(`<path data-part="pace-pointer" class="iso-line" data-tone="lit" data-free="end" d="${knobPointer(1)}" style="stroke-width:1.2"/>`);
+
 // bedrock under the whole model: a sawn section with its strata
 back.push(T.layerSvg([BLOCK_RING], Z.bed, -Z.bed, P, { cut: onCut }));
 back.push(Ln([-6, -12].map((z) => k.sideSeam(BLOCK, z, P, 1)).join(""), { tone: "faint" }));
@@ -518,6 +551,8 @@ const DATA = {
   portal: PORTALS[0].plane,
   x0: X0,
   sock: SOCK,
+  knob: KNOB,
+  sweep: KNOB_SWEEP,
   road: Z.road,
   sea: Z.sea,
   box: BOX,
@@ -556,6 +591,7 @@ const body = `<div class="cr">${k.plateHtml({
     { mark: "dashed", label: "Tyre marks from the model's fastest lap" },
     { mark: "raised", label: `Chalk cliff, ${roadAbove} m from road to sea` },
     { mark: "flat", label: `Sea: ${M.SWELL.period} s swell breaking on the rock` },
+    { mark: "edge", label: "Knob on the plinth: how hard the driver pushes" },
   ],
   caption,
   body: stage,

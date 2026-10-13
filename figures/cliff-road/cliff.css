@@ -316,3 +316,8 @@
 .cr[data-theme="light"] {
   --cr-sock: #e0573c;
 }
+
+.cr-limit-dot circle {
+  fill: var(--anatomy-red);
+  opacity: 0.9;
+}

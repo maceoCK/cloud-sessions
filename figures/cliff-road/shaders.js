@@ -284,7 +284,17 @@ void main(){
   }
   heat/=max(smoke,1e-4);
   // light on the portal walls and down the bores
-  float wall=0.;float bore=0.;
+  float wall=0.;float bore=0.;float sodium=0.;
+  {
+    vec3 w0=onWallX(vb,uPortalX);
+    for(int k=0;k<2;k++){
+      vec4 o=k==0?uPortA:uPortB;
+      float dy=w0.y-o.x;
+      float top=o.w+sqrt(max(o.y*o.y-dy*dy,0.));
+      float soft=1.-smoothstep(-.7*px,.7*px,max(abs(dy)-o.y,max(w0.z-top,o.z-w0.z)));
+      sodium+=soft*(.5+.5*smoothstep(o.z,top,w0.z));
+    }
+  }
   if(uCarA.w>.5){
     vec3 d0;vec3 d1;vec3 la=lampAt(1.,d0);vec3 lb=lampAt(-1.,d1);
     vec3 w=onWallX(vb,uPortalX);
@@ -324,7 +334,7 @@ void main(){
   }
   if(uPale<.5){
     vec3 c=vec3(.52,.58,.64)*(1.-exp(-spray*1.1))*.85+vec3(.55,.56,.58)*smoke*.5+vec3(.9,.25,.15)*smoke*heat*.35;
-    c+=vec3(1.,.9,.72)*(wall+bore)+vec3(.95,.9,.78)*beam*.16;
+    c+=vec3(1.,.9,.72)*(wall+bore)+vec3(.95,.9,.78)*beam*.16+vec3(1.,.48,.12)*sodium*.11;
     c=tonemap(c,1.2);
     col=vec4(c,max(c.r,max(c.g,c.b)));
   }else{
@@ -336,6 +346,8 @@ void main(){
     sm*=ma/max(sm.a,1e-4);
     float wa=.6*(1.-exp(-1.5*(wall+bore)));
     vec4 wl=vec4(vec3(1.,.78,.34)*wa,wa);
+    float na=.16*sodium;
+    wl=over(wl,vec4(vec3(.95,.55,.12)*na,na));
     col=over(sm,over(sp,wl));
   }
   gl_FragColor=dithered(col*uFade);
@@ -476,14 +488,17 @@ function gpuOf(D, stage, pale) {
       p.y += p.vy * dt;
       p.z = Math.max(D.sea + 1, p.z + p.vz * dt);
     }
+    // everything that hangs in the air fades before it leaves the block
+    const inBlock = (x, y, r) => smooth(box[0] - r * 0.2, box[0] + r * 1.6 + 10, x) * smooth(box[2] + r * 0.2, box[2] - r * 1.6 - 10, x) * smooth(box[1] - r * 0.2, box[1] + r * 1.6 + 10, y) * smooth(box[3] + r * 0.2, box[3] - r * 1.6 - 10, y);
     smoke.forEach((p, i) => {
-      const a = p.age > p.life ? 0 : p.a0 * burst(p.age, 0.12, 0.85) * smooth(p.life, p.life * 0.7, p.age);
+      const rr = (p.r0 || 1) + 7.5 * Math.sqrt(Math.max(0, p.age));
+      const a = p.age > p.life ? 0 : p.a0 * burst(p.age, 0.12, 0.85) * smooth(p.life, p.life * 0.7, p.age) * inBlock(p.x, p.y, rr) * (seen(p.x, p.y, p.z) * 0.85 + 0.15 * seen(p.x, p.y, p.z + rr));
       smk.set([p.x || 0, p.y || 0, p.z || 0, (p.r0 || 1) + 7.5 * Math.sqrt(Math.max(0, p.age))], i * 4);
       smkB.set([a, Math.exp(-p.age * 1.8), 0, 0], i * 4);
     });
     spray.forEach((p, i) => {
-      const a = p.age > p.life ? 0 : p.a0 * burst(p.age, 0.1, 0.75) * smooth(p.life, p.life * 0.6, p.age);
       const r = (p.r0 || 1) + 9.5 * Math.sqrt(Math.max(0, p.age));
+      const a = p.age > p.life ? 0 : p.a0 * burst(p.age, 0.1, 0.75) * smooth(p.life, p.life * 0.6, p.age) * inBlock(p.x, p.y, r);
       // rising, the sheet is tall; as it falls back it spreads into round mist
       const tall = 1 + 1.7 * smooth(-30, 25, p.vz || 0);
       spr.set([p.x || 0, p.y || 0, (p.z || 0) - r * (tall - 1) * 0.35, r], i * 4);

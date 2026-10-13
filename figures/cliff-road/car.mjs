@@ -174,11 +174,19 @@ export function carSvg(pose, P, G, k, { lamps = true, brake = 0, cut = null, kee
     for (const l of [3.2, -3.2]) faceOver.push(`<path class="cr-lens cr-fog" d="${k.pathOf([scr(10.78, l - 0.55, 2.55), scr(10.78, l + 0.55, 2.55), scr(10.78, l + 0.55, 2.95), scr(10.78, l - 0.55, 2.95)], true)}"/>`);
   }
   if (G.dot3(F, V) < -0.02 && keep(-10.77)) {
-    for (const l of [2.6, -2.6]) faceOver.push(`<path class="cr-tail${brake > 0.5 ? " cr-brake" : ""}" d="${k.pathOf([scr(-10.77, l - 1.15, 3.3), scr(-10.77, l + 1.15, 3.3), scr(-10.77, l + 1.15, 3.9), scr(-10.77, l - 1.15, 3.9)], true)}"/>`);
+    for (const l of [2.6, -2.6]) {
+      const d = k.pathOf([scr(-10.77, l - 1.15, 3.3), scr(-10.77, l + 1.15, 3.3), scr(-10.77, l + 1.15, 3.9), scr(-10.77, l - 1.15, 3.9)], true);
+      faceOver.push(`<path class="cr-tail" d="${d}"/>`);
+      if (brake > 0.01) faceOver.push(`<path class="cr-tail cr-brake" fill-opacity="${brake.toFixed(2)}" d="${d}"/>`);
+    }
     faceOver.push(`<path class="cr-plate" d="${k.pathOf([scr(-10.8, -1.4, 2.05), scr(-10.8, 1.4, 2.05), scr(-10.8, 1.4, 2.7), scr(-10.8, -1.4, 2.7)], true)}"/>`);
   }
   // tail lights wrap round the rear corners, so the near side shows a sliver from the side too
-  if (keep(-10.7)) faceOver.push(`<path class="cr-tail cr-wrap${brake > 0.5 ? " cr-brake" : ""}" d="${k.pathOf([scr(-10.7, side * H, 3.4), scr(-9.9, side * H, 3.4), scr(-9.9, side * H, 3.9), scr(-10.7, side * H, 3.9)], true)}"/>`);
+  if (keep(-10.7)) {
+    const d = k.pathOf([scr(-10.7, side * H, 3.4), scr(-9.9, side * H, 3.4), scr(-9.9, side * H, 3.9), scr(-10.7, side * H, 3.9)], true);
+    faceOver.push(`<path class="cr-tail cr-wrap" d="${d}"/>`);
+    if (brake > 0.01) faceOver.push(`<path class="cr-tail cr-brake" fill-opacity="${brake.toFixed(2)}" d="${d}"/>`);
+  }
   return halo + `<g class="cr-car-body">${ordered.join("")}${faceOver.join("")}</g>`;
 }
 

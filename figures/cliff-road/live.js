@@ -18,7 +18,8 @@ const paceOf = (share) => D.paceMin + share * (D.limit - D.paceMin);
 const twin = carNode.cloneNode(false);
 twin.removeAttribute("data-item");
 
-const state = { share: 1, target: 1, shareV: 0, clock: 0, laps: 0, tourLap: 0 };
+const state = { target: 1, clock: 0, tourLap: 0 };
+const brake = { x: 0, v: 0 };
 const ease = { x: 1, v: 0 };
 let car = M.carStart(road, profile, paceOf(1));
 let touring = !still.matches;
@@ -34,6 +35,17 @@ if (gpu) stage.setAttribute("data-gl", "");
 
 const items = [...itemsNode.children].filter((node) => node !== carNode).map((node) => ({ node, key: +node.dataset.k }));
 const sockNode = itemsNode.querySelector('[data-item="sock"]');
+const pointer = stage.querySelector('[data-part="pace-pointer"]');
+let pointerAt = -1;
+function drawKnob() {
+  const share = Math.round(ease.x * 1000) / 1000;
+  if (!pointer || share === pointerAt) return;
+  pointerAt = share;
+  const deg = D.sweep[0] + (D.sweep[1] - D.sweep[0]) * share;
+  const a = (deg * Math.PI) / 180;
+  const k0 = D.knob;
+  pointer.setAttribute("d", pathOf([iso([k0.x + Math.sin(a) * 1.2, k0.y + 4.45, k0.z + Math.cos(a) * 1.2], D.P), iso([k0.x + Math.sin(a) * (k0.r - 0.8), k0.y + 4.45, k0.z + Math.cos(a) * (k0.r - 0.8)], D.P)]));
+}
 let sockDrawn = -1;
 function drawSock(t) {
   // redraw at 20 Hz: the sock's flutter is slow and its paths are not cheap
@@ -63,7 +75,7 @@ function placeCar() {
   let open = "";
   let inner = "";
   if (!hidden) {
-    const opts = { lamps: true, brake: car.brake };
+    const opts = { lamps: true, brake: brake.x };
     if (hi <= plane) inner = CARS.carSvg(pose, D.P, G, K, opts);
     else if (lo >= plane) open = CARS.carSvg(pose, D.P, G, K, opts);
     else {
@@ -98,9 +110,9 @@ function readoutOf() {
 }
 
 function describe() {
-  const words = M.wordsOf(car, paceOf(ease.x), D.limit);
+  const words = M.wordsOf(car, ease.x);
   stage.setAttribute("aria-valuenow", String(Math.round(ease.x * 100)));
-  stage.setAttribute("aria-valuetext", `Pace ${Math.round(ease.x * 100)} percent of the way to the limit`);
+  stage.setAttribute("aria-valuetext", `Pace ${Math.round(ease.x * 100)} percent of the way from grip to the limit`);
   return words;
 }
 
@@ -132,6 +144,7 @@ function tick(now) {
   if (calm) {
     poseStill();
     placeCar();
+    drawKnob();
     readout.textContent = readoutOf();
     if (gpu) {
       gpu.step(0, 6.2, car, true);
@@ -147,11 +160,13 @@ function tick(now) {
     state.tourLap = (state.tourLap + 1) % TOUR.length;
     state.target = TOUR[state.tourLap];
   }
+  settle(brake, car.brake, dt, 0.06);
   placeCar();
   drawSock(state.clock);
+  drawKnob();
   if (gpu) {
     gpu.step(dt, state.clock, car, false);
-    gpu.draw(smooth(0, 1, (state.clock - 0.15) / 0.9), state.clock, car, state.clock);
+    gpu.draw(smooth(0, 1, (state.clock - 0.15) / 0.9), state.clock, { ...car, brake: brake.x }, state.clock);
   }
   const text = readoutOf();
   if (readout.textContent !== text) readout.textContent = text;
