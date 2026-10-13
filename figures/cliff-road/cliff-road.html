@@ -4392,17 +4392,21 @@ function worldAround(P2, cx, cy, zc) {
     for (const band of [1, 2, 3]) if (faces[band]) parts.push(`<path class="cr-d-face" data-shade="${band}" d="${faces[band]}"/>`);
     if (topD) parts.push(`<path class="cr-d-land" d="${topD}"/>`, lineSvg(topD, { tone: "lo" }));
     if (T > zc && T - LAYER <= zc) floor = topD;
-    // the road whose height lies under this top and above the one below
+    // the road whose height lies under this top and above the one below. Each piece reaches 2 m into its
+    // neighbours, as in the main view, so the step of the terrace between two pieces never shows as a band
+    // across the asphalt: the higher piece, drawn later, covers it
     for (const list of runs) {
-      let piece = [];
-      for (const i of list) {
-        if (road.z[i] >= T - LAYER && road.z[i] < T) piece.push(i);
-        else if (piece.length) {
-          if (piece.length > 1) parts.push(roadSvg(piece));
-          piece = [];
-        }
-      }
-      if (piece.length > 1) parts.push(roadSvg(piece));
+      let from = -1;
+      const flush = (to) => {
+        if (to - from > 0) parts.push(roadSvg(list.slice(Math.max(0, from - 7), Math.min(list.length, to + 8))));
+        from = -1;
+      };
+      list.forEach((i, q) => {
+        const inSlot = road.z[i] >= T - LAYER && road.z[i] < T;
+        if (inSlot && from < 0) from = q;
+        if (!inSlot && from >= 0) flush(q - 1);
+      });
+      if (from >= 0) flush(list.length - 1);
     }
   });
   // a portal in view: the headwall and its opening, over the rock face the terraces already drew

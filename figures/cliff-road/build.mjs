@@ -896,4 +896,21 @@ if (process.env.CR_OCCLUSION) {
     else if (covered > 0.2) part++;
   }
   console.log(`elevation ${ELEVATION}: hidden ${((hidden / total) * 100).toFixed(1)}% of the lap, partly ${((part / total) * 100).toFixed(1)}%`);
+  if (process.env.CR_OCCLUSION === "ranges") {
+    let run = null;
+    for (const [x, y, , , i] of LAP.trace) {
+      if (i <= road.first || i >= road.last) continue;
+      const cols = hiddenBelow(x, y, road.z[i], 12);
+      const base = at([x, y, road.z[i] + 3])[1];
+      const covered = cols ? cols.filter(([, top]) => top < base).length / cols.length : 0;
+      if (covered > 0.2) {
+        if (!run) run = { a: i, x0: x, y0: y, most: 0 };
+        run.b = i;
+        run.most = Math.max(run.most, covered);
+      } else if (run) {
+        console.log(`  i ${run.a}-${run.b} pin ${road.hairpin[run.a]}/${road.hairpin[run.b]} from (${run.x0.toFixed(0)},${run.y0.toFixed(0)}) up to ${(run.most * 100).toFixed(0)}% covered`);
+        run = null;
+      }
+    }
+  }
 }
