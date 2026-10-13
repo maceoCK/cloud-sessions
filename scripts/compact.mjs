@@ -2,9 +2,10 @@
 // commands with a decimal or two ("M475.8 226.7L475.9 225.5..."); the same
 // outline in relative commands is roughly half the bytes. Coordinates are
 // carried as exact integers at the path's own precision, so every point
-// lands where it did. Only straight-line paths (M L H V Z) are touched.
+// lands where it did. Paths of lines and quadratic curves (M L H V Q Z, the
+// kit's solids and the type's outlines) are touched; anything else is left.
 
-const SHAPE = /^[MLHVZ0-9.\s,-]+$/;
+const SHAPE = /^[MLHVQZ0-9.\s,-]+$/;
 
 // the shortest spelling of an integer count of 10^-places
 function num(units, places) {
@@ -17,7 +18,7 @@ function num(units, places) {
 
 export function compactPath(d) {
   if (!SHAPE.test(d)) return d;
-  const tokens = d.match(/[MLHVZ]|-?(?:\d+\.?\d*|\.\d+)/g);
+  const tokens = d.match(/[MLHVQZ]|-?(?:\d+\.?\d*|\.\d+)/g);
   if (!tokens) return d;
   const places = Math.max(0, ...tokens.filter((t) => /\d/.test(t)).map((t) => (t.includes(".") ? t.split(".")[1].length : 0)));
   const scale = 10 ** places;
@@ -48,7 +49,7 @@ export function compactPath(d) {
   let i = 0;
   let cmd = "";
   while (i < tokens.length) {
-    if (/[MLHVZ]/.test(tokens[i])) cmd = tokens[i++];
+    if (/[MLHVQZ]/.test(tokens[i])) cmd = tokens[i++];
     if (cmd === "Z") {
       out += "z";
       last = "z";
@@ -75,6 +76,14 @@ export function compactPath(d) {
       const nx = int(tokens[i++]);
       write("h", [nx - x]);
       x = nx;
+    } else if (cmd === "Q") {
+      const cx = int(tokens[i++]);
+      const cy = int(tokens[i++]);
+      const nx = int(tokens[i++]);
+      const ny = int(tokens[i++]);
+      write("q", [cx - x, cy - y, nx - x, ny - y]);
+      x = nx;
+      y = ny;
     } else if (cmd === "V") {
       const ny = int(tokens[i++]);
       write("v", [ny - y]);

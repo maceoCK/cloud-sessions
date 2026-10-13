@@ -10,6 +10,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ISO_CSS } from "../kit/iso-kit.mjs";
+import { compactPath } from "../scripts/compact.mjs";
 import { COLOPHON, CONTACT, COVER, ENTRIES, GROUPS, LEDE, META, PERSON } from "./content.mjs";
 import { ROMAN } from "./type/display.mjs";
 
@@ -32,7 +33,7 @@ function line(id, className = "") {
   if (!entry) throw new Error(`no outline for "${id}": run npm run outline`);
   const [x0, , x1] = entry.box;
   const w = num(x1 - x0);
-  return `<svg class="ol${className ? ` ${className}` : ""}" viewBox="${num(x0)} ${-CAP} ${w} ${CAP}" style="aspect-ratio:${w}/${CAP}" aria-hidden="true" focusable="false"><path d="${entry.d}"/></svg>`;
+  return `<svg class="ol${className ? ` ${className}` : ""}" viewBox="${num(x0)} ${-CAP} ${w} ${CAP}" style="aspect-ratio:${w}/${CAP}" aria-hidden="true" focusable="false"><path d="${compactPath(entry.d)}"/></svg>`;
 }
 
 // Display text that wraps: each word an inline svg of <use> glyphs from one
@@ -62,7 +63,7 @@ function flow(id, text) {
   return `<span class="vh">${esc(text)}</span><span class="fl" style="word-spacing:${gap}em" aria-hidden="true">${words.join(" ")}</span>`;
 }
 const atlas = () =>
-  `<svg class="atlas" aria-hidden="true" focusable="false" width="0" height="0"><defs>${[...USED].map(([key, el]) => `<path id="${el}" d="${OUTLINES.atlas[key]}"/>`).join("")}</defs></svg>`;
+  `<svg class="atlas" aria-hidden="true" focusable="false" width="0" height="0"><defs>${[...USED].map(([key, el]) => `<path id="${el}" d="${compactPath(OUTLINES.atlas[key])}"/>`).join("")}</defs></svg>`;
 
 // The seal: an inscription around a circle, MCK in the middle.
 function seal(className) {
@@ -75,13 +76,13 @@ function seal(className) {
     .map((g) => {
       const mid = g.x + g.w / 2;
       const angle = (mid / span) * 360;
-      return `<g transform="rotate(${num(angle)}) translate(0 ${-r}) scale(${num(fit * 100) / 100}) translate(${num(-mid)} 0)"><path d="${g.d}"/></g>`;
+      return `<g transform="rotate(${num(angle)}) translate(0 ${-r}) scale(${num(fit * 100) / 100}) translate(${num(-mid)} 0)"><path d="${compactPath(g.d)}"/></g>`;
     })
     .join("");
   const mck = OUTLINES.lines["seal.mck"];
   const [mx0, , mx1] = mck.box;
   const scale = 1.02;
-  const center = `<g transform="scale(${scale}) translate(${num(-(mx0 + mx1) / 2)} ${CAP / 2})"><path d="${mck.d}"/></g>`;
+  const center = `<g transform="scale(${scale}) translate(${num(-(mx0 + mx1) / 2)} ${CAP / 2})"><path d="${compactPath(mck.d)}"/></g>`;
   return `<svg class="${className}" viewBox="-1960 -1960 3920 3920" aria-hidden="true" focusable="false"><circle r="1900" fill="none" stroke="currentColor" stroke-width="22"/><circle r="1240" fill="none" stroke="currentColor" stroke-width="14"/><g fill="currentColor">${glyphs}${center}</g></svg>`;
 }
 
