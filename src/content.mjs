@@ -24,8 +24,8 @@ export const COVER = {
 };
 
 export const LEDE = [
-  "Engineer and founder in New York City. I started Datost, an applied research lab backed by Y Combinator and OpenAI, and we are building ED1TH: glasses that put a quiet, capable computer in the corner of your eye.",
-  "Everything below is a working drawing. Each figure is a small machine that does what that part of my work does.",
+  "I started Datost, an applied research lab backed by Y Combinator and OpenAI. We are building ED1TH: glasses that put a quiet, capable computer in the corner of your eye.",
+  "Each figure below is a small machine that works the way that part of my work does.",
 ];
 // how to work the figures, by pointer and by finger
 export const HOW = { fine: "Hover, click, or use the arrow keys.", touch: "Tap them." };
@@ -40,27 +40,24 @@ export const GROUPS = [
 
 export const ENTRIES = {
   ed1th: {
-    kicker: "Founder, Datost",
+    kicker: "Datost",
     name: "ED1TH",
     line: "The computers that come after the screen.",
-    body: ["A pair of glasses that puts a quiet, capable computer in the corner of your eye. It is what we are building at Datost."],
-    links: [
-      ["ed1th.com", "https://ed1th.com"],
-      ["datost.com", "https://datost.com"],
-    ],
+    body: [],
+    links: [["ed1th.com", "https://ed1th.com"]],
   },
   datost: {
     kicker: "Founder",
     name: "Datost",
     line: "Sixteen drawers, every one of them locked.",
-    body: ["An applied research lab, backed by Y Combinator and OpenAI. Sixteen of its repositories are private, so the cabinet stays shut."],
+    body: ["Sixteen of its repositories are private."],
     links: [["datost.com", "https://datost.com"]],
   },
   traba: {
     kicker: "Engineering",
     name: "Traba",
     line: "Shifts, filled at market speed.",
-    body: ["I was an engineer at Traba, the industrial labor marketplace, where the work moves at market speed."],
+    body: ["The industrial labor marketplace."],
     links: [],
   },
   simon: {
@@ -82,7 +79,7 @@ export const ENTRIES = {
     name: "h668-z37",
     line: "The smallest Hadamard order nobody has settled.",
     body: [
-      "Cyclotomic nonexistence results for the conference graph of H(668). 668 is the smallest order for which a Hadamard matrix is not known, and the question is still open.",
+      "Cyclotomic nonexistence results for the conference graph of H(668).",
     ],
     links: [["github.com/maceoCK/h668-z37", "https://github.com/maceoCK/h668-z37"]],
   },
@@ -97,40 +94,17 @@ export const ENTRIES = {
     kicker: "B.S. Computer Science",
     name: "Virginia Tech",
     line: "Two years, 4.0.",
-    body: ["I began at Penn State and finished a B.S. in Computer Science at Virginia Tech in two years, with a 4.0."],
+    body: ["I began at Penn State."],
     links: [],
   },
 };
 
-// The record: the same facts as a plain list, for readers who skip drawings.
-export const RECORD = [
-  { when: "Now", what: "Founder, Datost", note: "Applied research lab backed by Y Combinator and OpenAI. Building ED1TH.", links: [["datost.com", "https://datost.com"], ["ed1th.com", "https://ed1th.com"]] },
-  { when: "Before", what: "Engineering, Traba", note: "The industrial labor marketplace.", links: [] },
-  { when: "Before that", what: "Software engineering, SimonComputing", note: "Production systems.", links: [] },
-  { when: "School", what: "B.S. Computer Science, Virginia Tech", note: "Two years, 4.0. Began at Penn State.", links: [] },
-  {
-    when: "Open work",
-    what: "pravost, h668-z37, conway",
-    note: "Sixteen more live privately at Datost.",
-    links: [
-      ["pravost", "https://github.com/maceoCK/pravost"],
-      ["h668-z37", "https://github.com/maceoCK/h668-z37"],
-      ["conway", "https://github.com/maceoCK/conway"],
-    ],
-  },
-];
 
 export const CONTACT = {
   line: "Write to me.",
-  links: [
-    ["maceo@datost.com", "mailto:maceo@datost.com"],
-    ["github.com/maceoCK", "https://github.com/maceoCK"],
-    ["datost.com", "https://datost.com"],
-    ["ed1th.com", "https://ed1th.com"],
-  ],
+  links: [["github.com/maceoCK", "https://github.com/maceoCK"]],
 };
 
 export const COLOPHON = [
-  "Every figure on this page is drawn in code: isometric SVG built from solids with the Anatomy kit by wheresryan22 (MIT), and moved by a small model whose numbers you can read in each corner.",
-  "Display lines are set in Michelangelus, the typeface studiogusto drew from Michelangelo's letters for the Fabbrica di San Pietro, and carried here as outlines. Text is set in Crimson Pro, figures in Geist Mono.",
+  "Figures drawn in code with the Anatomy kit by wheresryan22. Set in Michelangelus by studiogusto, carried as outlines, with Crimson Pro and Geist Mono.",
 ];

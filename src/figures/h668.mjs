@@ -263,11 +263,6 @@ export default {
   label:
     "A rotary index table whose plate is drilled with 37 holes, one per residue mod 37, beside a rack of eight discs, one for each multiplier subgroup of the units mod 37. Each disc carries dots at its subgroup's residues and a mark: filled for a closed case, an open ring for an open one. Loading a disc raises a pin in each of its holes. A tablet on the front corner is inlaid with a Hadamard matrix of order 12, the kind of object still not known to exist at order 668.",
   stage: { role: "slider", label: "Cyclotomic sieve. Arrow keys load the next or previous subgroup.", attrs: { "aria-valuemin": 2, "aria-valuemax": 36, "aria-valuenow": 12, "aria-valuetext": "Order 12 subgroup: 3 classes, no solution" } },
-  keys: [
-    { mark: "lit", label: "Pins of the loaded multiplier subgroup H" },
-    { mark: "raised", label: "Eight discs: six closed, two still open" },
-  ],
-  caption: "An index plate drilled with 37 holes, one per residue mod 37, and a rack of eight discs, one for each multiplier subgroup of the units mod 37. For six of them no H-cyclotomic Z37-symmetric srg(333, 166, 82, 83) exists; orders 2 and 3 are open, and so is H(668).",
   css: `
 #fig-h668 .hx-hole{fill:var(--anatomy-shade-0);stroke:var(--anatomy-lo);stroke-width:.4}
 #fig-h668 .hx-closed{fill:var(--anatomy-hi)}

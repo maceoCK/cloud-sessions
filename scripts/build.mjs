@@ -61,7 +61,7 @@ export function render(fig, label = fig.fig) {
     .join("");
   const stage = `<div class="iso-stage" tabindex="0" role="${fig.stage?.role ?? "group"}" aria-label="${escape(fig.stage?.label ?? fig.title)}"${extra}>${svg}</div>`;
   const plate = k
-    .plateHtml({ fig: label, title: fig.title, hint: fig.hint, readout: built.readout ?? "", keys: fig.keys ?? [], caption: fig.caption, body: stage })
+    .plateHtml({ fig: label, title: fig.title, hint: fig.hint, readout: built.readout ?? "", body: stage })
     .replace(`data-corner="hint">${escape(fig.hint ?? "")}</span>`, `data-corner="hint"><span class="hint-fine">${escape(fig.hint ?? "")}</span><span class="hint-touch">${escape(fig.touch ?? touchHint(fig.hint ?? ""))}</span></span>`);
   const html = `<div class="fig-mount" id="fig-${fig.id}" data-fig="${fig.id}">${plate}</div>`;
   const boot = fig.live ? `FIGS.push([${JSON.stringify(fig.id)}, ${JSON.stringify(built.data ?? {})}, ${sourceOf(fig.live)}]);` : "";

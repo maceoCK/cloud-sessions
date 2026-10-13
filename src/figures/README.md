@@ -18,8 +18,6 @@ export default {
   width: 600, height: 380,      // the svg viewBox
   label: "…",                   // the svg's aria-label: what the object is and what it shows
   stage: { role: "slider" | "group", label: "…controls in words…", attrs: { "aria-valuetext": "…" } },
-  keys: [{ mark: "lit" | "raised" | "flat" | "edge" | "dim" | "dotted" | "dashed", label: "…" }],
-  caption: "…",                 // one or two true sentences under the card
   css: "",                      // optional; scope every rule under #fig-<id>; light first, dark via [data-theme="dark"] #fig-<id> …
   build() {                     // runs in Node at build time
     return { svg: "<g>…</g>", readout: "initial readout text", data: { /* JSON for live */ } };

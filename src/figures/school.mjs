@@ -189,11 +189,6 @@ export default {
   label:
     "A precision linear stage: a bed with two rails, a lead screw between two bearing blocks, a handwheel at one end and end stops at both. A carriage rides the screw past a ruler graduated in months from 0 to 24. A dial gauge on the carriage, graduated 0.0 to 4.0, reads 4.0.",
   stage: { role: "slider", label: "Two-year stage. Arrow keys move the carriage three months, Shift six, Home and End go to the ends.", attrs: { "aria-valuemin": 0, "aria-valuemax": 24, "aria-valuenow": 0, "aria-valuetext": "Month 0, Penn State" } },
-  keys: [
-    { mark: "lit", label: "The gauge needle, reading 4.0" },
-    { mark: "raised", label: "The carriage, on a lead screw that runs 24 months end to end" },
-  ],
-  caption: "A lead-screw stage that runs two years end to end, from Penn State to a B.S. in Computer Science at Virginia Tech. The gauge on the carriage reads the cumulative GPA, 4.0.",
   css: `
 #fig-school .iso-stage{cursor:ew-resize}
 `,

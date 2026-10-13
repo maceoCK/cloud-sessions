@@ -177,12 +177,6 @@ export default {
   label:
     "An equal-arm beam balance on a leveling base. The near pan takes coins one at a time from a dish on the base; the far pan carries a sealed, turned weight. A pointer on the beam reads the tilt against a scale, and a pawl on the pillar latches the beam when it levels.",
   stage: { role: "slider", label: "Held against intention. Space or Enter adds a coin, Backspace takes one off, Home clears the pan.", attrs: { "aria-valuemin": 0, "aria-valuemax": 5, "aria-valuenow": 0, "aria-valuetext": "0 of 5 coins, tilted" } },
-  keys: [
-    { mark: "lit", label: "The latch, which drops in when the money matches the intention" },
-    { mark: "raised", label: "Coins, added one at a time" },
-    { mark: "flat", label: "The sealed intention weight" },
-  ],
-  caption: "pravost holds money against intention. Here that is a beam balance: coins go on one pan, a sealed weight sits on the other, and when the two match the beam levels and a pawl latches it in place.",
   css: `
 #fig-pravost .iso-stage{cursor:pointer}
 #fig-pravost .pv-floor{fill:var(--anatomy-shade-2)}

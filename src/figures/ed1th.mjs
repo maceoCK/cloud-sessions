@@ -355,13 +355,6 @@ export default {
   label:
     "A pair of round glasses on a fitting stand, seen from the wearer's side. A nose rest and two ear rests hold the frame, two model eyes on cups sit where a wearer's eyes would be, a small computer pod rides the right temple, and a small display window sits in the upper outer corner of the right lens.",
   stage: { role: "group", label: "ED1TH fitting stand. Move the pointer or use the arrow keys to turn the model eyes; Enter glances into the corner of the right lens.", attrs: {} },
-  keys: [
-    { mark: "lit", label: "The display, in the corner of the right lens" },
-    { mark: "raised", label: "Model eyes, where yours would be" },
-    { mark: "dashed", label: "Where each eye is looking" },
-  ],
-  caption:
-    "A quiet, capable computer in the corner of your eye. On this stand the model eyes follow your pointer; glance into the upper corner of the right lens and the display comes up, look away and it goes quiet again.",
   css: `
 #fig-ed1th{--ed-light:#d6339f;--ed-glass:#e9eef0;--ed-window:#2a2d33}
 [data-theme="dark"] #fig-ed1th{--ed-light:#ff7fe0;--ed-glass:#1d2224;--ed-window:#0d0f12}

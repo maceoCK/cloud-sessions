@@ -245,11 +245,6 @@ export default {
   label:
     "A small production line: a belt conveyor on a frame, fed from a sprung stack of five sheets, carries each sheet under an inspection gauge and then a stamp press into an out-tray. A two-digit counter on the press shows the revision, and a three-tier stack light on the far corner shows the line running, the stamp coming down, and the batch shipped.",
   stage: { role: "group", label: "Production line. Space or Enter runs one pass, Home starts over.", attrs: { "aria-valuetext": "rev 02, 0 of 5 shipped" } },
-  keys: [
-    { mark: "lit", label: "The stamp, which only comes down on a sheet that passed inspection" },
-    { mark: "raised", label: "Five sheets, one production pass each" },
-  ],
-  caption: "Production systems, built with a consultancy's discipline: every sheet is measured before it is stamped, and every stamp moves the revision counter. A release is a promise made to strangers.",
   css: `
 #fig-simon .iso-stage{cursor:pointer}
 #fig-simon{--pl-window:#26262a;--pl-digit:#f4f4f1;--pl-glow:#3a3a3f}

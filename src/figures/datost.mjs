@@ -195,11 +195,6 @@ export default {
   label:
     "A steel card-catalogue cabinet on a plinth with leveling feet, holding sixteen drawers in four rows of four. Every drawer has a label holder, a pull and a cam lock, and every lock is shut.",
   stage: { role: "group", label: "Sixteen drawers. Arrow keys choose a drawer, Space or Enter tries it. Every drawer is locked.", attrs: { "aria-valuetext": "16 of 16 drawers locked" } },
-  keys: [
-    { mark: "lit", label: "The drawer being tried" },
-    { mark: "raised", label: "Sixteen drawers, one for each private repository" },
-  ],
-  caption: "Sixteen drawers, one for each private repository at Datost, and every one of them locked. Pull any drawer and it travels two units before the cam lock stops it.",
   build() {
     const drawers = Array.from({ length: COLS * ROWS }, (_, n) => drawerAt(n));
     // paint fronts far to near: low rows and far columns first

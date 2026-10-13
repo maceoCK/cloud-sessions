@@ -142,11 +142,6 @@ export default {
   label:
     "A pin table: a twelve by twelve board of wells on a plinth, with a peg in each well that stands up when its cell is alive and sinks flush when it dies. A three-digit counter on the plinth shows the generation, and a tray beside it holds spare pegs.",
   stage: { role: "group", label: "Life table. Click a well to bring that cell to life. Arrow keys move a cursor, Space places a peg, Enter pauses or plays, Home starts over.", attrs: { "aria-valuetext": `${aliveOf(seedBoard(SEED))} alive` } },
-  keys: [
-    { mark: "lit", label: "A peg you placed" },
-    { mark: "raised", label: "Live cells, B3/S23 on a bounded board" },
-  ],
-  caption: "conway is a strategy game grown from Life: the board runs on Conway's rules, and you win by placing cells until nothing is left alive.",
   css: `
 #fig-conway{--lt-window:#26262a;--lt-digit:#f4f4f1}
 [data-theme="dark"] #fig-conway{--lt-window:#050505;--lt-digit:#e6e6e6}

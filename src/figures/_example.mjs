@@ -171,11 +171,6 @@ export default {
   label:
     "A dial indicator on a surface plate. A magnetic base holds a post and an arm; the arm carries a dial whose plunger rests on three gauge blocks, 18, 14 and 10 tall, on a carriage that slides along two rails.",
   stage: { role: "slider", label: "Dial indicator: arrow keys move the carriage from block to block", attrs: { "aria-valuemin": 0, "aria-valuemax": 18, "aria-valuenow": 18 } },
-  keys: [
-    { mark: "lit", label: "Plunger and needle: what moves when the height changes" },
-    { mark: "raised", label: "Three gauge blocks, 18, 14 and 10 tall" },
-  ],
-  caption: "A dial indicator on a surface plate. One turn of the needle is 20 px of travel, so every block reads its own height.",
   build() {
     const svg = [
       plate(),

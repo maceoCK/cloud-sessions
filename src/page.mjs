@@ -1,18 +1,18 @@
 // The page shell. A black cover after the Michelangelus announcement poster
 // (wordmark, one monumental capital over two iridescent lozenges, a spaced
 // line and a small line set edge to edge), then the folio on paper: the
-// figures, the record, contact and colophon.
+// contents, the figures, contact and colophon.
 //
 // Display lines are Michelangelus outlines from src/type/outlines.json (see
-// scripts/outline.py), and so are the standfirst, the entries' lines, the
-// contents and the record's names, set as words that wrap. Body text is
+// scripts/outline.py), and so are the standfirst, the entries' lines and
+// the contents, set as words that wrap. Body text is
 // Crimson Pro unless the reader has Michelangelus installed.
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
 import { ISO_CSS } from "../kit/iso-kit.mjs";
-import { COLOPHON, CONTACT, ENTRIES, GROUPS, HOW, LEDE, META, PERSON, RECORD } from "./content.mjs";
+import { COLOPHON, CONTACT, ENTRIES, GROUPS, HOW, LEDE, META, PERSON } from "./content.mjs";
 import { ROMAN } from "./type/display.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -200,8 +200,7 @@ a:hover{text-decoration-color:var(--pink)}
 .grain{position:absolute;inset:0;z-index:3;pointer-events:none;background-size:160px;mix-blend-mode:overlay;opacity:.42}
 .cover-bar{display:flex;align-items:center;gap:22px;padding:18px 0;font:12px/1 var(--mono);letter-spacing:.02em;color:#bdb8ad;position:relative;z-index:4}
 .cover-bar .seal-mini{width:40px;height:40px;color:var(--cover-ink);display:block}
-.cover-bar .where{flex:1;margin:0}
-.cover-bar nav{display:flex;gap:20px}
+.cover-bar nav{display:flex;gap:20px;margin-left:auto}
 .cover-bar nav a{text-decoration:none;color:#d9d4c9}
 .cover-bar nav a:hover{color:#fff}
 .theme{display:inline-flex;border:1px solid #5a5850}
@@ -221,7 +220,6 @@ a:hover{text-decoration-color:var(--pink)}
   .cover{height:auto;min-height:100svh}
   .cover-bar{gap:12px;font-size:11px}
   .cover-bar .seal-mini{width:34px;height:34px}
-  .cover-bar .where{display:none}
   .cover-bar nav{gap:12px;flex:1;justify-content:flex-end}
   .theme button{padding:6px 7px}
   .cover-word{width:92%}
@@ -231,7 +229,7 @@ a:hover{text-decoration-color:var(--pink)}
 
 /* standfirst */
 .standfirst{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:clamp(20px,3vw,48px);padding-top:clamp(56px,8vw,120px)}
-.standfirst .lead{grid-column:1/9;margin:0;font:400 clamp(26px,2.9vw,42px)/1.18 var(--serif);color:var(--ink);letter-spacing:-.003em}
+.standfirst .lead{grid-column:1/9;margin:0;font:400 clamp(26px,2.9vw,42px)/1.18 var(--serif);color:var(--ink);letter-spacing:-.003em;text-wrap:pretty}
 .standfirst .lead + p{grid-column:9/13;align-self:end;margin:0;font-size:16px;line-height:1.5;color:var(--anatomy-muted)}
 @media (max-width:899px){.standfirst{display:block}.standfirst .lead + p{margin-top:20px}}
 
@@ -259,7 +257,6 @@ a:hover{text-decoration-color:var(--pink)}
 .group-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;border-top:1px solid var(--anatomy-hi);padding-top:18px;color:var(--ink)}
 .group-head h2{margin:0;padding-bottom:.18em}
 .group-head h2 .ol{height:clamp(30px,3.3vw,46px)}
-.group-head span{font-size:16px;color:var(--anatomy-muted);padding-bottom:6px}
 .entry{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);column-gap:clamp(28px,4vw,64px);margin-top:clamp(44px,5vw,76px);scroll-margin-top:24px}
 .entry.flip{grid-template-columns:minmax(0,8fr) minmax(0,4fr)}
 .entry.flip .entry-text{order:2}
@@ -270,7 +267,7 @@ a:hover{text-decoration-color:var(--pink)}
 .entry .kicker{margin:0 0 12px;font-size:17px;color:var(--anatomy-muted)}
 .entry h3{margin:0}
 .entry h3 .ol{height:clamp(26px,2.6vw,38px);max-width:100%}
-.entry .line{margin:18px 0 0;font:italic 400 clamp(25px,2.3vw,33px)/1.12 var(--serif);color:var(--ink);max-width:20ch}
+.entry .line{margin:18px 0 0;font:italic 400 clamp(25px,2.3vw,33px)/1.12 var(--serif);color:var(--ink);max-width:20ch;text-wrap:balance}
 .entry .body{margin:16px 0 0;max-width:38ch;color:var(--anatomy-text)}
 .entry .body p{margin:0 0 .6em}
 .entry .links{display:flex;flex-wrap:wrap;gap:6px 18px;margin:14px 0 0;padding:0;list-style:none;font:13px/1.5 var(--mono)}
@@ -286,26 +283,9 @@ a:hover{text-decoration-color:var(--pink)}
 .iso-plate{border-radius:0}
 @media (max-width:560px){.iso-plate{overflow:hidden}.iso-plate .iso-svg{width:118%;max-width:none;margin-left:-9%}}
 .ln{font-variant-numeric:lining-nums}
-.iso-legend{font-family:var(--serif);font-size:15px}
-.iso-caption{color:var(--anatomy-text)}
 .iso-stage{touch-action:pan-y;outline:none}
 .iso-stage:focus-visible{outline:1px solid var(--anatomy-muted);outline-offset:-10px}
 
-/* record */
-.record{margin-top:clamp(100px,12vw,180px)}
-.record dl{margin:18px 0 0;display:grid;grid-template-columns:minmax(120px,2fr) minmax(0,4fr) minmax(0,4fr) minmax(0,2fr)}
-.record .row{display:contents}
-.record dt,.record dd{margin:0;padding:16px 16px 18px 0;border-bottom:1px solid var(--rule)}
-.record dt{font-size:16px;color:var(--anatomy-muted);padding-top:19px}
-.record .what{font-size:22px;line-height:1.3;color:var(--ink)}
-.record .note{color:var(--anatomy-text)}
-.record .rl{font:12px/1.9 var(--mono);display:flex;flex-direction:column;align-items:flex-start;padding-top:19px}
-@media (max-width:899px){
-  .record dl{grid-template-columns:1fr}
-  .record dt{border-bottom:0;padding-bottom:0}
-  .record dd{border-bottom:0;padding:4px 0 0}
-  .record .rl{flex-direction:row;flex-wrap:wrap;gap:4px 16px;padding:6px 0 18px;border-bottom:1px solid var(--rule)}
-}
 
 /* contact */
 /* display text set as Michelangelus words (see flow()) */
@@ -322,11 +302,10 @@ a:hover{text-decoration-color:var(--pink)}
 .contact ul{display:flex;flex-wrap:wrap;gap:6px 22px;margin:34px 0 0;padding:0;list-style:none;font:13px/1.5 var(--mono)}
 
 /* colophon */
-.colophon{margin:clamp(100px,12vw,170px) 0 0;padding:28px 0 56px;border-top:1px solid var(--rule);display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:clamp(20px,3vw,48px);align-items:start;font-size:15px;line-height:1.55;color:var(--anatomy-muted)}
+.colophon{margin:clamp(56px,7vw,96px) 0 0;padding:28px 0 56px;border-top:1px solid var(--rule);display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(20px,3vw,48px);align-items:center;font-size:15px;line-height:1.55;color:var(--anatomy-muted)}
 .colophon .seal{width:112px;height:112px;color:var(--ink);display:block}
 .colophon p{margin:0 0 .6em;max-width:64ch}
-.colophon .end{text-align:right;font:12px/1.7 var(--mono)}
-@media (max-width:899px){.colophon{grid-template-columns:1fr}.colophon .end{text-align:left}}
+@media (max-width:899px){.colophon{grid-template-columns:1fr}}
 
 /* ruler: a fixed scale on the right edge, one major tick per figure */
 .ruler{position:fixed;right:clamp(10px,1.4vw,22px);top:50%;transform:translateY(-50%);z-index:5;height:min(56vh,520px);width:34px;opacity:0;transition:opacity .4s;pointer-events:none}
@@ -344,7 +323,6 @@ a:hover{text-decoration-color:var(--pink)}
 // Restore an explicit theme choice before first paint; otherwise follow the system.
 const THEME_INIT = `(()=>{let t;try{t=localStorage.getItem("theme")}catch(e){}if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)})()`;
 
-const CONTENTS_SUBJECT = { ed1th: "Datost", datost: "Datost", traba: "Traba", simon: "SimonComputing", pravost: "pravost", h668: "h668-z37", conway: "conway", school: "Virginia Tech" };
 
 function entryHtml(rendered, index, flip, wide) {
   const fig = rendered.fig;
@@ -365,7 +343,7 @@ export function sitePage({ figures, script, fragment = false }) {
   const contents = `<ol class="contents" aria-label="Figures">${order
     .map((id) => {
       const fig = byId[id].fig;
-      return `<li><a href="#${id}"><span class="n"><span class="vh">Figure ${numberOf(id) + 1}</span>${line(`roman.${ROMAN[numberOf(id)]}`)}</span><span class="t">${flow(`flow.title.${id}`, fig.title)}</span><span class="s sc">${esc(CONTENTS_SUBJECT[id] ?? "")}</span></a></li>`;
+      return `<li><a href="#${id}"><span class="n"><span class="vh">Figure ${numberOf(id) + 1}</span>${line(`roman.${ROMAN[numberOf(id)]}`)}</span><span class="t">${flow(`flow.name.${id}`, ENTRIES[id].name)}</span><span class="s sc">${esc(ENTRIES[id].kicker)}</span></a></li>`;
     })
     .join("")}</ol>`;
 
@@ -373,8 +351,6 @@ export function sitePage({ figures, script, fragment = false }) {
   const groups = GROUPS.map((group) => {
     const ids = group.figures.filter((id) => byId[id]);
     if (!ids.length) return "";
-    const nums = ids.map((id) => ROMAN[numberOf(id)]);
-    const range = nums.length === 1 ? `Fig. ${nums[0]}` : `Figs. ${nums.slice(0, -1).join(", ")} and ${nums[nums.length - 1]}`;
     const entries = ids
       .map((id) => {
         const wide = id === "ed1th";
@@ -383,17 +359,12 @@ export function sitePage({ figures, script, fragment = false }) {
         return html;
       })
       .join("");
-    return `<section class="group" id="${group.id}" aria-labelledby="g-${group.id}"><header class="group-head"><h2 id="g-${group.id}"><span class="vh">${esc(group.title)}</span>${line(`group.${group.id}`)}</h2><span class="sc">${range}</span></header>${entries}</section>`;
+    return `<section class="group" id="${group.id}" aria-labelledby="g-${group.id}"><header class="group-head"><h2 id="g-${group.id}"><span class="vh">${esc(group.title)}</span>${line(`group.${group.id}`)}</h2></header>${entries}</section>`;
   }).join("");
 
-  const record = `<section class="record" id="record" aria-labelledby="g-record"><header class="group-head"><h2 id="g-record"><span class="vh">Record</span>${line("group.record")}</h2><span>The same, in plain text</span></header><dl>${RECORD.map(
-    (r, i) =>
-      `<div class="row"><dt class="sc">${esc(r.when)}</dt><dd class="what">${flow(`flow.record.${i}`, r.what)}</dd><dd class="note">${txt(r.note)}</dd><dd class="rl">${r.links.map((l) => link(l)).join("")}</dd></div>`,
-  ).join("")}</dl></section>`;
+  const contact = `<section class="contact" id="contact" aria-labelledby="g-contact"><header class="group-head"><h2 id="g-contact"><span class="vh">Contact</span>${line("group.contact")}</h2></header><p class="say">${flow("flow.say", CONTACT.line)}</p><a class="mail" href="mailto:${PERSON.email}"><span class="vh">${esc(PERSON.email)}</span>${line("contact.mail")}</a><ul>${CONTACT.links.map((l) => `<li>${link(l)}</li>`).join("")}</ul></section>`;
 
-  const contact = `<section class="contact" id="contact" aria-labelledby="g-contact"><header class="group-head"><h2 id="g-contact"><span class="vh">Contact</span>${line("group.contact")}</h2><span class="sc">${esc(PERSON.city)}</span></header><p class="say">${flow("flow.say", CONTACT.line)}</p><a class="mail" href="mailto:${PERSON.email}"><span class="vh">${esc(PERSON.email)}</span>${line("contact.mail")}</a><ul>${CONTACT.links.map((l) => `<li>${link(l)}</li>`).join("")}</ul></section>`;
-
-  const colophon = `<footer class="colophon">${seal("seal")}<div>${COLOPHON.map((p) => `<p>${esc(p)}</p>`).join("")}</div><div class="end"><p>${esc(PERSON.name)}<br>${esc(PERSON.city)}</p></div></footer>`;
+  const colophon = `<footer class="colophon">${seal("seal")}<div>${COLOPHON.map((p) => `<p>${esc(p)}</p>`).join("")}</div></footer>`;
 
   const ruler = `<nav class="ruler" aria-label="Figure scale">${order
     .map((id, i) => {
@@ -482,7 +453,7 @@ export function sitePage({ figures, script, fragment = false }) {
     const near = Math.round(at);
     marks.forEach((a, k) => a.setAttribute("aria-current", String(k === near)));
     const first = entries[0].getBoundingClientRect().top;
-    const last = document.getElementById("record").getBoundingClientRect().top;
+    const last = document.getElementById("contact").getBoundingClientRect().top;
     ruler.classList.toggle("on", first < innerHeight * 0.9 && last > innerHeight * 0.5);
   };
   addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(place); } }, { passive: true });
@@ -503,7 +474,7 @@ export function sitePage({ figures, script, fragment = false }) {
   const cover = `<header class="cover" id="top">
 ${lozenges()}
 <div class="grain" style="background-image:url(${grainPng()})"></div>
-<div class="cover-bar wrap"><a href="#top" aria-label="Maceo Cardinale Kwik, top of page">${seal("seal-mini")}</a><p class="where">New York City</p><nav aria-label="Sections"><a href="#figures">Figures</a><a href="#record">Record</a><a href="#contact">Contact</a></nav><div class="theme" role="group" aria-label="Theme"><button type="button" data-set="light" aria-pressed="false">Paper</button><button type="button" data-set="dark" aria-pressed="false">Carbon</button></div></div>
+<div class="cover-bar wrap"><a href="#top" aria-label="Maceo Cardinale Kwik, top of page">${seal("seal-mini")}</a><nav aria-label="Sections"><a href="#figures">Figures</a><a href="#contact">Contact</a></nav><div class="theme" role="group" aria-label="Theme"><button type="button" data-set="light" aria-pressed="false">Paper</button><button type="button" data-set="dark" aria-pressed="false">Carbon</button></div></div>
 <h1 class="cover-word"><span class="vh">${esc(PERSON.name)}</span>${line("cover.word")}</h1>
 <div class="cover-m" aria-hidden="true">${line("cover.M")}</div>
 <div class="cover-foot wrap"><p class="cover-big"><span class="vh">Engineer and founder.</span>${bigWords.map((k) => line(k)).join("")}</p><p class="cover-small"><span class="vh">Founder of Datost, backed by Y Combinator and OpenAI, in New York City.</span>${smallWords.map((k) => line(k)).join("")}</p></div>
@@ -511,7 +482,7 @@ ${lozenges()}
 
   const standfirst = `<section class="standfirst wrap" aria-label="Introduction"><p class="lead">${flow("flow.lede", LEDE[0])}</p><p>${txt(LEDE[1])} <span class="hint-fine">${esc(HOW.fine)}</span><span class="hint-touch">${esc(HOW.touch)}</span></p></section>`;
 
-  const body = `<a class="skip" href="#figures">Skip to the figures</a>${atlas()}${cover}<main>${standfirst}<div class="wrap" id="figures">${contents}${groups}${record}${contact}${colophon}</div></main>${ruler}<script type="module">${script}\n${pageScript}</script>`;
+  const body = `<a class="skip" href="#figures">Skip to the figures</a>${atlas()}${cover}<main>${standfirst}<div class="wrap" id="figures">${contents}${groups}${contact}${colophon}</div></main>${ruler}<script type="module">${script}\n${pageScript}</script>`;
   // a fragment for hosts that supply their own document around the page
   if (fragment) return `<title>${esc(META.title)}</title><style>${STYLE}</style><script>${THEME_INIT}</script>${body}`;
   return `<!doctype html><html lang="en"><head>${head}</head><body>${body}</body></html>`;

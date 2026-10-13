@@ -244,11 +244,6 @@ export default {
   label:
     "A punch time clock on a desk plate, with a dial on its front, a card throat on top and a punch lever on its side, beside a rack of eight shift cards. Each card rides to the clock, takes its punch, and returns to the rack raised and marked.",
   stage: { role: "group", label: "Time clock. Arrow keys choose a card, Space or Enter punches it in, Escape starts the shift over.", attrs: { "aria-valuetext": "0 of 8 in" } },
-  keys: [
-    { mark: "lit", label: "The card being punched" },
-    { mark: "raised", label: `Eight cards for one shift, ${SHIFT}` },
-  ],
-  caption: "A time clock and a rack of eight shift cards. At Traba, the industrial labor marketplace, shifts fill at market speed: each card rides to the clock, takes its punch and goes back in.",
   css: `
 #fig-traba{--tc-window:#26262a;--tc-digit:#f4f4f1;--tc-punch:#26262a}
 [data-theme="dark"] #fig-traba{--tc-window:#050505;--tc-digit:#e6e6e6;--tc-punch:#e6e6e6}
