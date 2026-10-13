@@ -109,6 +109,9 @@
 .nt-plate-halo { fill: var(--nt-halo); stroke: none; opacity: calc(var(--anatomy-halo-opacity) * .8); filter: blur(5px); }
 
 /* residue */
+.nt-oldfilm { fill: var(--nt-film); stroke: none; opacity: .14; filter: blur(.8px); }
+.nt-oldfuzz { opacity: .5; }
+.nt-oldedge { opacity: .2; }
 .nt-ooze { fill: none; stroke: var(--nt-ooze); stroke-width: 1.3px; opacity: .3; filter: blur(.5px); stroke-linejoin: round; }
 .nt-ooze-top { stroke-width: 2px; opacity: .35; stroke-linecap: round; }
 .nt-film { fill: var(--nt-film); stroke: none; }

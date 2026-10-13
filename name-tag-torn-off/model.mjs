@@ -138,6 +138,11 @@ export const PEEL = (() => {
     return out;
   }
   const OUTLINE = roundedRing(TAG, 10);
+  // An earlier, larger label, put on a little crooked; its adhesive left a faint ghost. In (u, v).
+  const OLD_LABEL = roundedRing({ w: 92 * MM, h: 63 * MM, r: 4 * MM }, 10).map(([u, v]) => {
+    const a = 2.2 * RAD;
+    return [u * Math.cos(a) - v * Math.sin(a) - 5, u * Math.sin(a) + v * Math.cos(a) + 2];
+  });
   const OUTLINE_DW = OUTLINE.map(toDW);
   const TAG_AREA = Math.abs(areaOf(OUTLINE));
 
@@ -1130,7 +1135,7 @@ export const PEEL = (() => {
 
   return {
     TUNE, MM, BRICK, JOINT, RAKE, COURSE, MODULE, BOND, COURSES, PLATE, STANDOFF, PLATE_T, Y_FACE, SCREW_IN,
-    TAG, TAG_T, CENTRE, ROT, EX, EY, N, D_MIN, D_END, LIFT, OFF, S_END, OUTLINE, FLAP, STUCK, TEAR, SPLIT, TRIS,
+    TAG, TAG_T, CENTRE, ROT, EX, EY, N, D_MIN, D_END, LIFT, OFF, S_END, OUTLINE, OLD_LABEL, FLAP, STUCK, TEAR, SPLIT, TRIS,
     SCRIBBLE, INK, RESIDUE, STUCK_EDGE, G_ADHESIVE, TAG_AREA, FLAP_AREA, SHARE_OFF,
     frontAt, sAtFront, slipAt, toDW, toUV, onFace, uvDir, camera, project, bandOf, stateAt, sheetOf, frameOf, inkOf, cutsOf,
     paintOf, stuckPaint, planeMatrix, pathOf, hull2, peeledArea, chordAt, forceAt, profileOf, profileAt, rng, smooth, clamp, mix, inside, areaOf,

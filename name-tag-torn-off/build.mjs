@@ -408,6 +408,9 @@ function offsetRing(ring, o) {
 }
 function residue() {
   const out = [];
+  // The ghost of an earlier label: a faint film of its adhesive and a dusty line along its edge.
+  // Someone half cleaned it: the film is patchy and its edge line broken.
+  out.push(`<path class="nt-oldfilm" d="${onPlate(PEEL.OLD_LABEL)}"/><path class="nt-tex nt-oldfuzz" d="${onPlate(PEEL.OLD_LABEL)}" fill="url(#nt-drift-img)"/><path class="nt-ooze nt-oldedge" d="${onPlate(PEEL.OLD_LABEL)}" style="stroke-dasharray:38 7 22 13 51 5 17 9"/>`);
   // Years on the wall: adhesive crept a hair past the die-cut edge and caught dust, most along the
   // top edge, where dust settles. It was there before the peel and stays after it.
   const ring = offsetRing(PEEL.OUTLINE, 0.7);
