@@ -479,14 +479,15 @@ export const PEEL = (() => {
   }
 
   // Strip boundaries in d for the flap: fine through the tight bend, coarser up the curl.
-  function cutsOf(st) {
+  // `coarse` > 1 widens every strip, for slow devices.
+  function cutsOf(st, coarse = 1) {
     const cuts = [];
     if (st.f <= D_MIN) return cuts;
     const bend = st.theta * st.rb;
     let sigma = 0;
     cuts.push(st.f);
     while (st.f - sigma > D_MIN) {
-      sigma += sigma < bend + 2 ? 0.7 : sigma < bend + 30 ? 1.3 : 2;
+      sigma += (sigma < bend + 2 ? 0.7 : sigma < bend + 30 ? 1.3 : 2) * coarse;
       cuts.push(Math.max(D_MIN, st.f - sigma));
     }
     // a cut on each crease and either side of it, so the fold is drawn where it is
@@ -497,7 +498,7 @@ export const PEEL = (() => {
     return all.filter((d, i) => i === 0 || all[i - 1] - d > 0.12 || extra.includes(d));
   }
 
-  function frameOf(st, P, { place = 0 } = {}) {
+  function frameOf(st, P, { place = 0, coarse = 1 } = {}) {
     const C = camera(P);
     const sheet = sheetOf(st, { place });
     const scr = (p) => project(C, p);
@@ -511,7 +512,7 @@ export const PEEL = (() => {
         out.flat = { pts, kind: poly.map(({ kind }) => kind), dw: poly.map(({ p }) => p) };
       }
     }
-    const cuts = cutsOf(st);
+    const cuts = cutsOf(st, coarse);
     out.cuts = cuts;
     const wMid = (W_MIN + W_MAX) / 2;
     for (let i = 0; i + 1 < cuts.length; i++) {
@@ -985,8 +986,8 @@ export const PEEL = (() => {
   }
 
   const CAST = [0.22, 0, -0.33]; // shadow offset per mm of height, as the plate's: 4 mm right, 6 mm down for 18 mm
-  function paintOf(st, P, { place = 0 } = {}) {
-    const frame = frameOf(st, P, { place });
+  function paintOf(st, P, { place = 0, coarse = 1 } = {}) {
+    const frame = frameOf(st, P, { place, coarse });
     const C = frame.C;
     const ink = inkOf(frame);
     const out = { halo: "", haloOpacity: 0, haloBlur: 3, contact: "", contactOpacity: 0, flat: null, strips: [] };

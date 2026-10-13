@@ -143,15 +143,16 @@ function say(st) {
   }
 }
 
-// On a slow device the curl is redrawn every other frame; motion stays time-based.
-let cost = 0, skip = false;
+// On a slow device the curl is cut into wider strips, and if that is still slow it is redrawn every
+// other frame; motion stays time-based.
+let cost = 0, skip = false, coarse = DATA.coarse ?? 1;
 function draw(force = false) {
   const key = `${state.s.toFixed(5)}|${state.place.toFixed(3)}`;
-  skip = !force && cost > 12 && !skip;
+  skip = !force && cost > 12 && coarse > 1 && !skip;
   if (key !== drawn && !skip) {
     const t0 = performance.now();
     drawn = key;
-    const paint = PEEL.paintOf(PEEL.stateAt(state.s), P, { place: state.place });
+    const paint = PEEL.paintOf(PEEL.stateAt(state.s), P, { place: state.place, coarse });
     // The curl's shadow lies on the label; a new label coming down casts its shadow under itself.
     const under = state.place > 0;
     if (under !== haloUnder) {
@@ -203,6 +204,10 @@ function draw(force = false) {
       put(slot.memo, "w", slot.ink, "style", `stroke-width:${(inkWidth * s.width).toFixed(2)}px`);
     }
     cost = cost * 0.9 + (performance.now() - t0) * 0.1;
+    if (DATA.coarse === null) {
+      if (coarse === 1 && cost > 10) coarse = 1.6;
+      else if (coarse > 1 && cost < 4) coarse = 1;
+    }
   }
   const alpha = state.alpha >= 0.999 ? "" : state.alpha.toFixed(3);
   if (tagG.style.opacity !== alpha) tagG.style.opacity = alpha;
