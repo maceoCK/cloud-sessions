@@ -97,5 +97,6 @@ for (const r of only || args.includes("--pages") ? rendered : []) {
 if (!only) {
   const html = sitePage({ figures: rendered, script: scriptOf(rendered) });
   writeFileSync(join(DIST, "index.html"), html);
+  writeFileSync(join(DIST, "fragment.html"), sitePage({ figures: rendered, script: scriptOf(rendered), fragment: true }));
   console.log(`index.html ${(html.length / 1024).toFixed(0)} KB`);
 }

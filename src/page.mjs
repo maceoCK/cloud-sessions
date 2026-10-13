@@ -128,20 +128,28 @@ const FONTS = `
 @font-face{font-family:"Geist Mono";src:${font("GeistMono-Regular.woff2")};font-weight:400;font-display:swap}
 `;
 
+// Theme tokens: light on bare :root, dark when the system prefers it and no
+// explicit choice says otherwise, and dark again for an explicit choice.
+const isoBlock = (selector) => ISO_CSS.slice(ISO_CSS.indexOf(selector + "{") + selector.length + 1, ISO_CSS.indexOf("}", ISO_CSS.indexOf(selector + "{"))).replace(/\s+/g, "");
+const DARK = isoBlock(".iso") + "--ink:#ecebe6;--rule:#2b2b2b;color-scheme:dark;";
+const LIGHT = isoBlock('.iso[data-theme="light"]') + "--anatomy-page:#edede9;--anatomy-card:#f8f8f5;--anatomy-paper:#f8f8f5;--ink:#141414;--rule:#cfcfc8;";
+const THEME = `:root{${isoBlock(".iso")}${LIGHT}--anatomy-mono:var(--mono)}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){${DARK}}}:root[data-theme="dark"]{${DARK}}`;
+
+// A figure's dark rules, written [data-theme="dark"] #fig-x{…}, also apply
+// when the system is dark and no explicit choice is set.
+const darkify = (css) =>
+  css.replace(/\[data-theme="dark"\]\s*([^{]+)\{([^}]*)\}/g, (_, sel, body) => `:root[data-theme="dark"] ${sel.trim()}{${body}}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) ${sel.trim()}{${body}}}`);
+
 const CSS = `
 :root{
   --serif:"Text","Iowan Old Style",Garamond,Georgia,serif;
   --mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
   --gutter:clamp(16px,4vw,56px);
   --wrap:min(1360px,100% - 2*var(--gutter));
-  --ink:#141414;--rule:#cfcfc8;--pink:#ff80eb;--cover:#070807;--cover-ink:#f4f0e8;
+  --pink:#ff80eb;--cover:#070807;--cover-ink:#f4f0e8;
 }
-html[data-theme="dark"]{--ink:#ecebe6;--rule:#2b2b2b}
-.iso{--anatomy-mono:var(--mono)}
-.iso[data-theme="light"]{--anatomy-page:#edede9;--anatomy-card:#f8f8f5;--anatomy-paper:#f8f8f5}
 *{box-sizing:border-box}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;color-scheme:light}
-html[data-theme="dark"]{color-scheme:dark}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:400 19px/1.5 var(--serif);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden;font-variant-numeric:oldstyle-nums proportional-nums}
 ::selection{background:var(--pink);color:#141414}
@@ -297,6 +305,9 @@ a:hover{text-decoration-color:var(--pink)}
 @media (max-width:1279px),(max-height:520px){.ruler{display:none}}
 `;
 
+// Restore an explicit theme choice before first paint; otherwise follow the system.
+const THEME_INIT = `(()=>{let t;try{t=localStorage.getItem("theme")}catch(e){}if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)})()`;
+
 const CONTENTS_SUBJECT = { ed1th: "Datost", datost: "Datost", traba: "Traba", simon: "SimonComputing", pravost: "pravost", h668: "h668-z37", conway: "conway", school: "Virginia Tech" };
 
 function entryHtml(rendered, index, flip, wide) {
@@ -310,7 +321,7 @@ function entryHtml(rendered, index, flip, wide) {
   return `<article class="entry${flip ? " flip" : ""}${wide ? " wide" : ""}" id="${fig.id}" aria-labelledby="h-${fig.id}">${text}${rendered.html}</article>`;
 }
 
-export function sitePage({ figures, script }) {
+export function sitePage({ figures, script, fragment = false }) {
   const byId = Object.fromEntries(figures.map((r) => [r.fig.id, r]));
   const order = GROUPS.flatMap((g) => g.figures).filter((id) => byId[id]);
   const numberOf = (id) => order.indexOf(id);
@@ -374,15 +385,16 @@ export function sitePage({ figures, script }) {
 (() => {
   const root = document.documentElement;
   const buttons = [...document.querySelectorAll(".theme button")];
-  const show = (theme) => {
-    root.setAttribute("data-theme", theme);
-    buttons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.theme === theme)));
-  };
-  show(root.getAttribute("data-theme"));
+  const system = matchMedia("(prefers-color-scheme: dark)");
+  const effective = () => root.getAttribute("data-theme") || (system.matches ? "dark" : "light");
+  const show = () => buttons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.set === effective())));
   buttons.forEach((b) => b.addEventListener("click", () => {
-    show(b.dataset.theme);
-    try { localStorage.setItem("theme", b.dataset.theme); } catch (error) {}
+    root.setAttribute("data-theme", b.dataset.set);
+    try { localStorage.setItem("theme", b.dataset.set); } catch (error) {}
+    show();
   }));
+  system.addEventListener?.("change", show);
+  show();
 
   // the lozenges drift like foil, and lean with the pointer
   const cover = document.querySelector(".cover");
@@ -443,9 +455,10 @@ export function sitePage({ figures, script }) {
 })();
 `;
 
+  const STYLE = `${FONTS}${ISO_CSS}${THEME}${CSS}${figures.map((f) => darkify(f.css)).join("")}`;
   const head = `<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(META.title)}</title><meta name="description" content="${esc(META.description)}"><link rel="canonical" href="${PERSON.url}"><meta property="og:type" content="website"><meta property="og:title" content="${esc(PERSON.name)}"><meta property="og:description" content="${esc(META.description)}"><meta property="og:url" content="${PERSON.url}"><meta name="theme-color" content="#070807"><link rel="icon" href="data:image/svg+xml,${encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#070807"/><g transform="translate(16 25.5) scale(.026) translate(${-(OUTLINES.lines["cover.M"].box[0] + OUTLINES.lines["cover.M"].box[2]) / 2} 0)"><path fill="#f4f0e8" d="${OUTLINES.lines["cover.M"].d}"/></g></svg>`,
-  )}"><script>(()=>{let t;try{t=localStorage.getItem("theme")}catch(e){}if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t)})()</script><script type="application/ld+json">${JSON.stringify(ld)}</script><style>${FONTS}${ISO_CSS}${CSS}${figures.map((f) => f.css).join("")}</style>`;
+  )}"><script>${THEME_INIT}</script><script type="application/ld+json">${JSON.stringify(ld)}</script><style>${STYLE}</style>`;
 
   const small = OUTLINES.lines;
   const smallWords = Object.keys(small).filter((k) => k.startsWith("cover.small.")).sort((a, b) => Number(a.split(".")[2]) - Number(b.split(".")[2]));
@@ -454,7 +467,7 @@ export function sitePage({ figures, script }) {
   const cover = `<header class="cover" id="top">
 ${lozenges()}
 <div class="grain" style="background-image:url(${grainPng()})"></div>
-<div class="cover-bar wrap"><a href="#top" aria-label="Maceo Cardinale Kwik, top of page">${seal("seal-mini")}</a><p class="where">New York City</p><nav aria-label="Sections"><a href="#figures">Figures</a><a href="#record">Record</a><a href="#contact">Contact</a></nav><div class="theme" role="group" aria-label="Theme"><button type="button" data-theme="light" aria-pressed="true">Paper</button><button type="button" data-theme="dark" aria-pressed="false">Carbon</button></div></div>
+<div class="cover-bar wrap"><a href="#top" aria-label="Maceo Cardinale Kwik, top of page">${seal("seal-mini")}</a><p class="where">New York City</p><nav aria-label="Sections"><a href="#figures">Figures</a><a href="#record">Record</a><a href="#contact">Contact</a></nav><div class="theme" role="group" aria-label="Theme"><button type="button" data-set="light" aria-pressed="false">Paper</button><button type="button" data-set="dark" aria-pressed="false">Carbon</button></div></div>
 <h1 class="cover-word"><span class="vh">${esc(PERSON.name)}</span>${line("cover.word")}</h1>
 <div class="cover-m" aria-hidden="true">${line("cover.M")}</div>
 <div class="cover-foot wrap"><p class="cover-big"><span class="vh">Engineer and founder.</span>${bigWords.map((k) => line(k)).join("")}</p><p class="cover-small"><span class="vh">Founder of Datost, backed by Y Combinator and OpenAI, in New York City.</span>${smallWords.map((k) => line(k)).join("")}</p></div>
@@ -462,5 +475,8 @@ ${lozenges()}
 
   const standfirst = `<section class="standfirst wrap" aria-label="Introduction"><p class="lead">${txt(LEDE[0])}</p><p>${txt(LEDE[1])}</p></section>`;
 
-  return `<!doctype html><html lang="en" class="iso" data-theme="light"><head>${head}</head><body><a class="skip" href="#figures">Skip to the figures</a>${cover}<main>${standfirst}<div class="wrap" id="figures">${contents}${groups}${record}${contact}${colophon}</div></main>${ruler}<script type="module">${script}\n${pageScript}</script></body></html>`;
+  const body = `<a class="skip" href="#figures">Skip to the figures</a>${cover}<main>${standfirst}<div class="wrap" id="figures">${contents}${groups}${record}${contact}${colophon}</div></main>${ruler}<script type="module">${script}\n${pageScript}</script>`;
+  // a fragment for hosts that supply their own document around the page
+  if (fragment) return `<title>${esc(META.title)}</title><style>${STYLE}</style><script>${THEME_INIT}</script>${body}`;
+  return `<!doctype html><html lang="en"><head>${head}</head><body>${body}</body></html>`;
 }

@@ -19,7 +19,7 @@ const page = await browser.newPage({ viewport: { width, height }, deviceScaleFac
 const problems = [];
 page.on("console", (m) => { if (m.type() === "error" || m.type() === "warning") problems.push(`${m.type()}: ${m.text()}`); });
 page.on("pageerror", (e) => problems.push(`pageerror: ${e.message}`));
-await page.addInitScript((t) => { try { localStorage.setItem("theme", t); } catch {} }, theme);
+if (!args.includes("--system")) await page.addInitScript((t) => { try { localStorage.setItem("theme", t); } catch {} }, theme);
 await page.goto("file://" + resolve("dist/index.html"));
 await page.waitForTimeout(Number(opt("--wait", 1500)));
 if (at) {
