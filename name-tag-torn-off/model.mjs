@@ -615,12 +615,13 @@ export const PEEL = (() => {
   const INK = splitAtTear(SCRIBBLE);
 
   // ---- The print: the classic HELLO / my name is badge ------------------------------------------------
-  // A red ground with a white panel for the name: a deep band across the top with HELLO knocked out
-  // in heavy capitals and "my name is" under it, a thin band along the bottom, and a narrow red edge
+  // Printed in black, to keep the figure monochrome: a dark ground with a white panel for the name, a
+  // deep band across the top with HELLO knocked out in heavy capitals and "my name is" under it, a
+  // thin band along the bottom, and a narrow dark edge
   // down each side. In (u, v): the band ends at v = PRINT_TOP, the bottom band starts at PRINT_BOT.
   const PRINT_TOP = -11, PRINT_BOT = 47, PRINT_SIDE = TAG.w / 2 - 5;
-  // The red is wherever one of these half-planes holds (a · (d, w) <= c, in peel coordinates).
-  const RED = (() => {
+  // The ground is wherever one of these half-planes holds (a · (d, w) <= c, in peel coordinates).
+  const GROUND = (() => {
     const U = [D2[0], W2[0]], V = [D2[1], W2[1]];
     return [
       { a: V, c: PRINT_TOP },
@@ -630,7 +631,7 @@ export const PEEL = (() => {
     ];
   })();
   // HELLO, as convex pieces (stems, bars and the segments of the O's ring), each in (d, w) with its
-  // span in d. Letters are knocked out of the red, so they are drawn in the paper's own colour.
+  // span in d. Letters are knocked out of the ground, so they are drawn in the paper's own colour.
   const HELLO = (() => {
     const cap = 21, top = -54, t = 6.4, t2 = 5.4, gap = 3.2;
     const widths = [18.5, 15.5, 14.5, 14.5, 20.5];
@@ -681,7 +682,7 @@ export const PEEL = (() => {
       { a: [-V[0], -V[1]], c: -Math.min(...vs) + 0.5 },
     ];
   })();
-  // "my name is" in a plain lowercase, as strokes knocked out of the red like the ink is laid on.
+  // "my name is" in a plain lowercase, as strokes knocked out of the ground like the ink is laid on.
   const NAME_IS = (() => {
     const X = 7.2, base = -16.5, gap = 1.9, sp = 4.2;
     const arc = (cx, cy, rx, ry, a0, a1, n = 10) => Array.from({ length: n + 1 }, (_, i) => {
@@ -743,7 +744,7 @@ export const PEEL = (() => {
     }
     return out;
   }
-  // The print on one piece of paper, a polygon of {p, kind} in (d, w): its red, and the letters
+  // The print on one piece of paper, a polygon of {p, kind} in (d, w): its ground, and the letters
   // knocked out of it. Pieces too thin to see are dropped.
   // The least and most of a · p over a polygon of {p}.
   const spanOf = (poly, a) => {
@@ -761,12 +762,12 @@ export const PEEL = (() => {
       if (q.p[0] < lo) lo = q.p[0];
       if (q.p[0] > hi) hi = q.p[0];
     }
-    const red = [], knock = [];
-    for (const h of RED) {
+    const ground = [], knock = [];
+    for (const h of GROUND) {
       const [mn, mx] = spanOf(poly, h.a);
       if (mn > h.c) continue;
       const r = mx <= h.c ? poly : clipHalf(poly, h.a, h.c, "print");
-      if (r.length >= 3 && Math.abs(areaOf(r.map((q) => q.p))) > 0.02) red.push(r);
+      if (r.length >= 3 && Math.abs(areaOf(r.map((q) => q.p))) > 0.02) ground.push(r);
     }
     // the letters: cut the paper to HELLO's box first, so each letter is cut from a small piece
     let near = null;
@@ -787,7 +788,7 @@ export const PEEL = (() => {
       const k = clipConvex(near, L.dw, "print");
       if (k.length >= 3 && Math.abs(areaOf(k.map((q) => q.p))) > 0.02) knock.push(k);
     }
-    return { red, knock };
+    return { ground, knock };
   }
   // The joints where one piece of print meets the next (edges of kind "cut") get a hairline of its own
   // colour, wider than the paper's seam, so the paper's never shows across it. The hairlines are
@@ -815,10 +816,10 @@ export const PEEL = (() => {
     }
     return out;
   }
-  // Is a point in (d, w) on the red?
-  const onRed = (p) => RED.some((h) => h.a[0] * p[0] + h.a[1] * p[1] <= h.c);
+  // Is a point in (d, w) on the printed ground?
+  const onGround = (p) => GROUND.some((h) => h.a[0] * p[0] + h.a[1] * p[1] <= h.c);
   const STUCK_DW = STUCK.map((p, i) => ({ p: toDW(p), kind: SPLIT.stuckKind[i] }));
-  const PRINT_HI = Infinity; // every strip may carry some red: the side edges run the label's height
+  const PRINT_HI = Infinity; // every strip may carry some ground: the side edges run the label's height
 
   // Where the label bridges a joint the paper dips a hair into it, so each joint edge shows through
   // as a faint line: dark where the paper turns away from the light (the top edge of a bed joint, the
@@ -1273,9 +1274,9 @@ export const PEEL = (() => {
       out.flat.ink = (ink.get(-1) || []).map((r) => pathOf(r)).join("");
       const flatPrint = printOn(dw.map((p, i) => ({ p, kind: kind[i] })));
       const toScr = (q) => project(C, frame.sheet.at(q.p[0], q.p[1]));
-      out.flat.red = flatPrint.red.map((r) => pathOf(r.map(toScr), true)).join("");
+      out.flat.ground = flatPrint.ground.map((r) => pathOf(r.map(toScr), true)).join("");
       const seams = (pieces) => pieces.flatMap((r) => trimRuns(edgeRuns(r.map(toScr), r.map((q) => q.kind), (k) => k === "cut"))).map((r) => pathOf(r)).join("");
-      out.flat.redSeam = seams(flatPrint.red);
+      out.flat.groundSeam = seams(flatPrint.ground);
       out.flat.knockSeam = seams(flatPrint.knock);
       out.flat.knock = flatPrint.knock.map((r) => pathOf(r.map(toScr), true)).join("");
       out.flat.nameIs = (runsOf(frame, [[NAME_IS.all, (key) => key === -1]]).get(-1) || []).map((r) => pathOf(r)).join("");
@@ -1290,7 +1291,7 @@ export const PEEL = (() => {
     const order = new Map(strips.map((s, i) => [s.index, i]));
     const slots = strips.map((s) => ({
       fill: pathOf(s.scr, true),
-      side: s.side, band: s.band, mix: s.mix, gloss: s.gloss, red: [], redSeam: [], knock: [], knockSeam: [], nameIs: [], edge: [], tear: [], seam: [], crease: [], ink: [], ghost: [], fuzz: [], fringe: [], spots: [], scars: [],
+      side: s.side, band: s.band, mix: s.mix, gloss: s.gloss, ground: [], groundSeam: [], knock: [], knockSeam: [], nameIs: [], edge: [], tear: [], seam: [], crease: [], ink: [], ghost: [], fuzz: [], fringe: [], spots: [], scars: [],
       width: clamp(s.facing / dot(N, C.V), 0.3, 1.3),
     }));
     strips.forEach((s, at) => {
@@ -1311,23 +1312,23 @@ export const PEEL = (() => {
       for (const run of edgeRuns(s.scr, kinds, (k) => k === "tear")) slot.tear.push(pathOf(run));
       for (const run of edgeRuns(s.scr, kinds, (k) => k === "crease")) slot.crease.push(pathOf(run));
       // The joints with the neighbours get a hairline of the strip's own paper, so no seam shows.
-      // the paper's seams skip the red, whose own seams cover its joints
-      const paperSeam = kinds.map((k, i) => (k === "cut" || k === "crease") && !onRed([(s.dw[i][0] + s.dw[(i + 1) % n][0]) / 2, (s.dw[i][1] + s.dw[(i + 1) % n][1]) / 2]));
+      // the paper's seams skip the printed ground, whose own seams cover its joints
+      const paperSeam = kinds.map((k, i) => (k === "cut" || k === "crease") && !onGround([(s.dw[i][0] + s.dw[(i + 1) % n][0]) / 2, (s.dw[i][1] + s.dw[(i + 1) % n][1]) / 2]));
       for (const run of edgeRuns(s.scr, paperSeam, (f) => f)) slots[at].seam.push(pathOf(run));
       // points of the strip's own outline are already on screen; anything new is projected
       const known = new Map();
       for (let i = 0; i < n; i++) known.set(s.dw[i], s.scr[i]);
       const toScrP = (p) => known.get(p) ?? project(C, frame.sheet.at(p[0], p[1]));
-      // The print on this strip, drawn with it: the red, a hairline of red over its joints with the
+      // The print on this strip, drawn with it: the ground, a hairline of it over its joints with the
       // neighbours (so the paper's own seam never shows across it), and the letters knocked out.
       if (s.lo < PRINT_HI) {
         const poly = s.dw.map((p, i) => ({ p, kind: s.kind[i] }));
         const pr = printOn(poly);
         const isCut = (k) => k === "cut";
-        for (const r of pr.red) {
+        for (const r of pr.ground) {
           const scr = r === poly ? s.scr : r.map((q) => toScrP(q.p));
-          slots[at].red.push(r === poly ? slots[at].fill : pathOf(scr, true));
-          for (const run of trimRuns(edgeRuns(scr, r.map((q) => q.kind), isCut))) slots[at].redSeam.push(pathOf(run));
+          slots[at].ground.push(r === poly ? slots[at].fill : pathOf(scr, true));
+          for (const run of trimRuns(edgeRuns(scr, r.map((q) => q.kind), isCut))) slots[at].groundSeam.push(pathOf(run));
         }
         for (const r of pr.knock) {
           const scr = r.map((q) => toScrP(q.p));
@@ -1405,7 +1406,7 @@ export const PEEL = (() => {
       const near = Math.max(at, order.get(lo - 1) ?? -1, order.get(lo + 1) ?? -1);
       slots[near][spot.kind].push(pathOf(spot.pts.map(([d, w]) => project(C, frame.sheet.at(d, w))), true));
     }
-    out.strips = slots.map((slot) => ({ ...slot, red: slot.red.join(""), redSeam: slot.redSeam.join(""), knock: slot.knock.join(""), knockSeam: slot.knockSeam.join(""), nameIs: slot.nameIs.join(""), spots: slot.spots.join(""), scars: slot.scars.join(""), edge: slot.edge.join(""), tear: slot.tear.join(""), seam: slot.seam.join(""), ink: slot.ink.join(""), ghost: slot.ghost.join(""), fuzz: slot.fuzz.join(""), crease: slot.crease.join(""), fringe: slot.fringe.join("") }));
+    out.strips = slots.map((slot) => ({ ...slot, ground: slot.ground.join(""), groundSeam: slot.groundSeam.join(""), knock: slot.knock.join(""), knockSeam: slot.knockSeam.join(""), nameIs: slot.nameIs.join(""), spots: slot.spots.join(""), scars: slot.scars.join(""), edge: slot.edge.join(""), tear: slot.tear.join(""), seam: slot.seam.join(""), ink: slot.ink.join(""), ghost: slot.ghost.join(""), fuzz: slot.fuzz.join(""), crease: slot.crease.join(""), fringe: slot.fringe.join("") }));
     return out;
   }
 
@@ -1418,7 +1419,7 @@ export const PEEL = (() => {
     const lines = (runs) => runs.map((r) => pathOf(r.map((p) => project(C, onFace(p, TAG_T))))).join("");
     const toScr = (q) => project(C, onFace(toUV(q.p), TAG_T));
     const pr = printOn(STUCK_DW);
-    paint.red = pr.red.map((r) => pathOf(r.map(toScr), true)).join("");
+    paint.ground = pr.ground.map((r) => pathOf(r.map(toScr), true)).join("");
     paint.knock = pr.knock.map((r) => pathOf(r.map(toScr), true)).join("");
     paint.nameIs = lines(NAME_IS.stuck);
     paint.embossDk = lines(EMBOSS.stuckDk);

@@ -26,8 +26,8 @@ const flat = {
   ink: flatG.querySelector(".nt-ink"),
   bleed: flatG.querySelector(".nt-bleed"),
   press: flatG.querySelector(".nt-press"),
-  red: flatG.querySelector(".nt-print"),
-  redSeam: flatG.querySelector(".nt-printseam"),
+  ground: flatG.querySelector(".nt-print"),
+  groundSeam: flatG.querySelector(".nt-printseam"),
   knock: flatG.querySelector(".nt-knock"),
   knockSeam: flatG.querySelector(".nt-knockseam"),
   nameIs: flatG.querySelector(".nt-nameis"),
@@ -39,8 +39,8 @@ const slots = [...svg.querySelectorAll(".nt-slot")].map((g) => ({
   g,
   fill: g.querySelector(".nt-strip"),
   seam: g.querySelector(".nt-seam"),
-  red: g.querySelector(".nt-print"),
-  redSeam: g.querySelector(".nt-printseam"),
+  ground: g.querySelector(".nt-print"),
+  groundSeam: g.querySelector(".nt-printseam"),
   knock: g.querySelector(".nt-knock"),
   knockSeam: g.querySelector(".nt-knockseam"),
   nameIs: g.querySelector(".nt-nameis"),
@@ -190,8 +190,8 @@ function draw(force = false) {
       put(memoFlat, "grain", flat.grain, "d", f.fill);
       put(memoFlat, "ink", flat.ink, "d", f.ink);
       put(memoFlat, "bleed", flat.bleed, "d", f.ink);
-      put(memoFlat, "red", flat.red, "d", f.red);
-      put(memoFlat, "redSeam", flat.redSeam, "d", f.redSeam);
+      put(memoFlat, "ground", flat.ground, "d", f.ground);
+      put(memoFlat, "groundSeam", flat.groundSeam, "d", f.groundSeam);
       put(memoFlat, "knock", flat.knock, "d", f.knock);
       put(memoFlat, "knockSeam", flat.knockSeam, "d", f.knockSeam);
       put(memoFlat, "nameIs", flat.nameIs, "d", f.nameIs);
@@ -217,8 +217,8 @@ function draw(force = false) {
       put(slot.memo, "side", slot.g, "data-side", s.side);
       put(slot.memo, "band", slot.g, "data-band", String(s.band));
       put(slot.memo, "mix", slot.g, "style", `--f:${s.mix}%;--g:${s.gloss}%;--w:${(Math.round(s.width * 20) / 20).toFixed(2)}`);
-      put(slot.memo, "red", slot.red, "d", s.red);
-      put(slot.memo, "redSeam", slot.redSeam, "d", s.redSeam);
+      put(slot.memo, "ground", slot.ground, "d", s.ground);
+      put(slot.memo, "groundSeam", slot.groundSeam, "d", s.groundSeam);
       put(slot.memo, "knock", slot.knock, "d", s.knock);
       put(slot.memo, "knockSeam", slot.knockSeam, "d", s.knockSeam);
       put(slot.memo, "nameIs", slot.nameIs, "d", s.nameIs);
