@@ -10,6 +10,7 @@
   --nt-face-0: #e0e0dd; --nt-face-1: #efefec; --nt-face-2: #ffffff; --nt-face-3: #ffffff; --nt-face-4: #ffffff;
   --nt-back-0: #cbcac6; --nt-back-1: #d7d6d2; --nt-back-2: #e1e0dc; --nt-back-3: #e8e7e4; --nt-back-4: #eeedea; --nt-gloss: #ffffff;
   --nt-ink: #17171b; --nt-ghost: 18%; --nt-edge: var(--anatomy-lit);
+  --nt-red-0: #a3242a; --nt-red-1: #bd282e; --nt-red-2: #d42d33; --nt-red-3: #da3238; --nt-red-4: #df383d; --nt-red-ghost: 14%;
   --nt-film: #f2f2ef; --nt-film-o: .62; --nt-island: #fbfbf9; --nt-speck: #55544f;
   --nt-delam: #f0efec; --nt-tear: #8a8986; --nt-fuzzfibre: #fbfbf9;
   --nt-emboss-dk: #8e8d89; --nt-emboss-lt: #ffffff;
@@ -28,6 +29,7 @@
   --nt-face-0: #8d8c88; --nt-face-1: #a5a4a0; --nt-face-2: #bcbbb7; --nt-face-3: #c7c6c2; --nt-face-4: #d0cfcb;
   --nt-back-0: #6a6966; --nt-back-1: #787774; --nt-back-2: #858481; --nt-back-3: #908f8c; --nt-back-4: #9a9996; --nt-gloss: #e3e2df;
   --nt-ink: #151517; --nt-ghost: 20%; --nt-edge: #0b0b0b;
+  --nt-red-0: #6a1d21; --nt-red-1: #7c2226; --nt-red-2: #8e272b; --nt-red-3: #962a2e; --nt-red-4: #9d2e32; --nt-red-ghost: 14%;
   --nt-film: #6a6a67; --nt-film-o: .45; --nt-island: #9a9995; --nt-speck: #0a0a0a;
   --nt-delam: #a8a7a3; --nt-tear: #555452; --nt-fuzzfibre: #c3c2be;
   --nt-emboss-dk: #4f4e4b; --nt-emboss-lt: #e6e5e1;
@@ -87,13 +89,24 @@
 .nt-specks circle { fill: var(--nt-speck); opacity: .55; }
 
 /* the label */
-.nt-flat, .nt-stuck { --nt-paper: var(--nt-face-2); }
+.nt-flat, .nt-stuck { --nt-paper: var(--nt-face-2); --nt-print: var(--nt-red-2); }
+:is(.nt-flat, .nt-stuck)[data-band="0"] { --nt-print: var(--nt-red-0); }
+:is(.nt-flat, .nt-stuck)[data-band="1"] { --nt-print: var(--nt-red-1); }
+:is(.nt-flat, .nt-stuck)[data-band="3"] { --nt-print: var(--nt-red-3); }
+:is(.nt-flat, .nt-stuck)[data-band="4"] { --nt-print: var(--nt-red-4); }
 :is(.nt-flat, .nt-stuck)[data-band="0"] { --nt-paper: var(--nt-face-0); }
 :is(.nt-flat, .nt-stuck)[data-band="1"] { --nt-paper: var(--nt-face-1); }
 :is(.nt-flat, .nt-stuck)[data-band="3"] { --nt-paper: var(--nt-face-3); }
 :is(.nt-flat, .nt-stuck)[data-band="4"] { --nt-paper: var(--nt-face-4); }
 /* the curl shades smoothly: each strip mixes the tone of its band with the next by --f */
-.nt-slot { --f: 0%; --g: 0%; --nt-paper: var(--nt-face-2); }
+.nt-slot { --f: 0%; --g: 0%; --nt-paper: var(--nt-face-2); --nt-print: var(--nt-red-2); }
+/* the print shades with the paper; from the back it shows through faintly */
+.nt-slot[data-side="face"][data-band="0"] { --nt-print: color-mix(in srgb, var(--nt-red-1) var(--f), var(--nt-red-0)); }
+.nt-slot[data-side="face"][data-band="1"] { --nt-print: color-mix(in srgb, var(--nt-red-2) var(--f), var(--nt-red-1)); }
+.nt-slot[data-side="face"][data-band="2"] { --nt-print: color-mix(in srgb, var(--nt-red-3) var(--f), var(--nt-red-2)); }
+.nt-slot[data-side="face"][data-band="3"] { --nt-print: color-mix(in srgb, var(--nt-red-4) var(--f), var(--nt-red-3)); }
+.nt-slot[data-side="face"][data-band="4"] { --nt-print: var(--nt-red-4); }
+.nt-slot[data-side="back"] { --nt-print: color-mix(in srgb, var(--nt-red-2) var(--nt-red-ghost), var(--nt-paper)); }
 .nt-slot[data-side="face"][data-band="0"] { --nt-paper: color-mix(in srgb, var(--nt-face-1) var(--f), var(--nt-face-0)); }
 .nt-slot[data-side="face"][data-band="1"] { --nt-paper: color-mix(in srgb, var(--nt-face-2) var(--f), var(--nt-face-1)); }
 .nt-slot[data-side="face"][data-band="2"] { --nt-paper: color-mix(in srgb, var(--nt-face-3) var(--f), var(--nt-face-2)); }
@@ -105,6 +118,12 @@
 .nt-slot[data-side="back"][data-band="3"] { --nt-paper: color-mix(in srgb, var(--nt-gloss) var(--g), color-mix(in srgb, var(--nt-back-4) var(--f), var(--nt-back-3))); }
 .nt-slot[data-side="back"][data-band="4"] { --nt-paper: color-mix(in srgb, var(--nt-gloss) var(--g), var(--nt-back-4)); }
 .nt-face, .nt-strip { fill: var(--nt-paper); stroke: none; }
+.nt-print { fill: var(--nt-print); stroke: none; }
+/* hairlines over the print's joints, wider than the paper's seam so none of it shows through */
+.nt-printseam { fill: none; stroke: var(--nt-print); stroke-width: 1.5px; stroke-linecap: butt; }
+.nt-knock { fill: var(--nt-paper); stroke: none; }
+.nt-knockseam { fill: none; stroke: var(--nt-paper); stroke-width: 2px; stroke-linecap: butt; }
+.nt-nameis { fill: none; stroke: var(--nt-paper); stroke-width: calc(var(--nt-name-w) * var(--w, 1)); stroke-linecap: round; stroke-linejoin: round; }
 .nt-seam { fill: none; stroke: var(--nt-paper); stroke-width: .8px; stroke-linecap: round; }
 .nt-seamgrain { fill: none; stroke-width: .8px; stroke-linecap: round; }
 .nt-under { fill: var(--anatomy-paper); stroke: none; }

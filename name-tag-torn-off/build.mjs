@@ -1,4 +1,4 @@
-// Fig 4A · Name tag, torn off. A blank name sticker with an illegible scribble, slapped straight on
+// Fig 4A · Name tag, torn off. A HELLO my name is sticker with an illegible scribble, slapped straight on
 // a brick wall across a mortar joint. A corner lifts, the label rolls up into one curl, tears
 // unevenly and comes away; a ragged piece and the residue stay on the bricks.
 // `node build.mjs` writes name-tag-torn-off.html, `--light` writes name-tag-torn-off-light.html.
@@ -314,30 +314,32 @@ function stuck() {
   const paint = PEEL.stuckPaint(P);
   const band = onPlate(STUCK_EDGE.band, PEEL.TAG_T);
   const fibres = STUCK_EDGE.fibres.map((f) => onPlate(f, PEEL.TAG_T * 0.5, false)).join("");
-  return `<g class="nt-stuck" data-band="${paint.band}"><path class="nt-under" d="${paint.under}"/>${paint.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${paint.fill}"/><path class="nt-tex" d="${paint.fill}" fill="url(#nt-paper-img)"/><path class="nt-tex nt-press" d="${paint.fill}" fill="url(#nt-clay-front)"/><path class="nt-emboss" data-tone="dk" d="${paint.embossDk}"/><path class="nt-emboss" data-tone="lt" d="${paint.embossLt}"/><path class="nt-bleed" d="${paint.ink}"/><path class="nt-ink" d="${paint.ink}" style="stroke-width:${INK_W}px"/><path class="nt-delam" d="${band}"/><path class="nt-tex" d="${band}" fill="url(#nt-fuzz-img)"/>${L(fibres, { tone: "lo", className: "nt-fibre" })}<path class="nt-tear" d="${paint.tear}"/><path class="nt-edge" d="${paint.edge}"/></g>`;
+  return `<g class="nt-stuck" data-band="${paint.band}"><path class="nt-under" d="${paint.under}"/>${paint.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${paint.fill}"/><path class="nt-print" d="${paint.red}"/><path class="nt-knock" d="${paint.knock}"/><path class="nt-nameis" d="${paint.nameIs}"/><path class="nt-tex" d="${paint.fill}" fill="url(#nt-paper-img)"/><path class="nt-tex nt-press" d="${paint.fill}" fill="url(#nt-clay-front)"/><path class="nt-emboss" data-tone="dk" d="${paint.embossDk}"/><path class="nt-emboss" data-tone="lt" d="${paint.embossLt}"/><path class="nt-bleed" d="${paint.ink}"/><path class="nt-ink" d="${paint.ink}" style="stroke-width:${INK_W}px"/><path class="nt-delam" d="${band}"/><path class="nt-tex" d="${band}" fill="url(#nt-fuzz-img)"/>${L(fibres, { tone: "lo", className: "nt-fibre" })}<path class="nt-tear" d="${paint.tear}"/><path class="nt-edge" d="${paint.edge}"/></g>`;
 }
 
 // ---- The label: a pool of paths the page rewrites every frame; the build fills it once --------------
 const POOL = 130; // slots for the curl's strips; the most a frame uses is 94
+// the stroke of "my name is", 0.65 mm, in screen px
+const NAME_W = 1.3 * Math.hypot(...[0, 1].map((i) => at([1, 0, 0])[i] - at([0, 0, 0])[i]));
 const INK_W = 1.7;
 function tagLayer(s) {
   const st = PEEL.stateAt(s);
   const paint = PEEL.paintOf(st, P);
-  const flat = paint.flat ?? { fill: "", under: "", sides: ["", "", "", ""], edge: "", ink: "", seam: "", embossDk: "", embossLt: "", band: 2 };
+  const flat = paint.flat ?? { fill: "", under: "", sides: ["", "", "", ""], edge: "", ink: "", seam: "", embossDk: "", embossLt: "", red: "", redSeam: "", knock: "", knockSeam: "", nameIs: "", band: 2 };
   const slots = [];
   for (let i = 0; i < POOL; i++) {
     const x = paint.strips[i];
     slots.push(
-      `<g class="nt-slot" data-side="${x?.side ?? "face"}" data-band="${x?.band ?? 2}" style="--f:${x?.mix ?? 0}%;--g:${x?.gloss ?? 0}%"${x ? "" : ' data-empty=""'}><path class="nt-strip" d="${x?.fill ?? ""}"/><path class="nt-seam" d="${x?.seam ?? ""}"/><path class="nt-backspot" d="${x?.spots ?? ""}"/><path class="nt-backscar" d="${x?.scars ?? ""}"/><path class="nt-ghost" d="${x?.ghost ?? ""}"/><path class="nt-backfuzz" d="${x?.fuzz ?? ""}"/><path class="nt-fringe" d="${x?.fringe ?? ""}"/><path class="nt-ink" d="${x?.ink ?? ""}" style="stroke-width:${(INK_W * (x?.width ?? 1)).toFixed(2)}px"/><path class="nt-crease" d="${x?.crease ?? ""}"/><path class="nt-tear" d="${x?.tear ?? ""}"/><path class="nt-edge" d="${x?.edge ?? ""}"/></g>`,
+      `<g class="nt-slot" data-side="${x?.side ?? "face"}" data-band="${x?.band ?? 2}" style="--f:${x?.mix ?? 0}%;--g:${x?.gloss ?? 0}%;--w:${(x?.width ?? 1).toFixed(2)}"${x ? "" : ' data-empty=""'}><path class="nt-strip" d="${x?.fill ?? ""}"/><path class="nt-seam" d="${x?.seam ?? ""}"/><path class="nt-print" d="${x?.red ?? ""}"/><path class="nt-printseam" d="${x?.redSeam ?? ""}"/><path class="nt-knock" d="${x?.knock ?? ""}"/><path class="nt-knockseam" d="${x?.knockSeam ?? ""}"/><path class="nt-backspot" d="${x?.spots ?? ""}"/><path class="nt-backscar" d="${x?.scars ?? ""}"/><path class="nt-ghost" d="${x?.ghost ?? ""}"/><path class="nt-backfuzz" d="${x?.fuzz ?? ""}"/><path class="nt-fringe" d="${x?.fringe ?? ""}"/><path class="nt-nameis" d="${x?.nameIs ?? ""}"/><path class="nt-ink" d="${x?.ink ?? ""}" style="stroke-width:${(INK_W * (x?.width ?? 1)).toFixed(2)}px"/><path class="nt-crease" d="${x?.crease ?? ""}"/><path class="nt-tear" d="${x?.tear ?? ""}"/><path class="nt-edge" d="${x?.edge ?? ""}"/></g>`,
     );
   }
-  return `<g class="nt-tag" data-part="tag"><g class="nt-flat" data-part="flat" data-band="${flat.band}"${paint.flat ? "" : ' style="display:none"'}><path class="nt-under" d="${flat.under}"/>${flat.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${flat.fill}"/><path class="nt-seam" d="${flat.seam}"/><path class="nt-tex nt-grainpaper" d="${flat.fill}" fill="url(#nt-paper-img)"/><path class="nt-seamgrain" d="${flat.seam}" style="stroke:url(#nt-paper-img)"/><path class="nt-tex nt-press" d="${flat.fill}" fill="url(#nt-clay-front)"/><path class="nt-emboss" data-tone="dk" d="${flat.embossDk}"/><path class="nt-emboss" data-tone="lt" d="${flat.embossLt}"/><path class="nt-bleed" d="${flat.ink}"/><path class="nt-ink" d="${flat.ink}" style="stroke-width:${INK_W}px"/><path class="nt-edge" d="${flat.edge}"/></g><path class="nt-halo" data-part="halo" d="${paint.halo || "M0 0"}" style="opacity:${paint.haloOpacity.toFixed(2)};filter:blur(${paint.haloBlur.toFixed(1)}px)"/><path class="nt-halo nt-contact" data-part="contact" d="${paint.contact || "M0 0"}" style="opacity:${paint.contactOpacity.toFixed(2)}"/><g class="nt-curl" data-part="curl">${slots.join("")}</g></g>`;
+  return `<g class="nt-tag" data-part="tag" style="--nt-name-w:${NAME_W.toFixed(2)}px"><g class="nt-flat" data-part="flat" data-band="${flat.band}"${paint.flat ? "" : ' style="display:none"'}><path class="nt-under" d="${flat.under}"/>${flat.sides.map((d, i) => `<path class="nt-side" data-shade="${i}" d="${d}"/>`).join("")}<path class="nt-face" d="${flat.fill}"/><path class="nt-seam" d="${flat.seam}"/><path class="nt-print" d="${flat.red}"/><path class="nt-printseam" d="${flat.redSeam}"/><path class="nt-knock" d="${flat.knock}"/><path class="nt-knockseam" d="${flat.knockSeam}"/><path class="nt-nameis" d="${flat.nameIs}"/><path class="nt-tex nt-grainpaper" d="${flat.fill}" fill="url(#nt-paper-img)"/><path class="nt-seamgrain" d="${flat.seam}" style="stroke:url(#nt-paper-img)"/><path class="nt-tex nt-press" d="${flat.fill}" fill="url(#nt-clay-front)"/><path class="nt-emboss" data-tone="dk" d="${flat.embossDk}"/><path class="nt-emboss" data-tone="lt" d="${flat.embossLt}"/><path class="nt-bleed" d="${flat.ink}"/><path class="nt-ink" d="${flat.ink}" style="stroke-width:${INK_W}px"/><path class="nt-edge" d="${flat.edge}"/></g><path class="nt-halo" data-part="halo" d="${paint.halo || "M0 0"}" style="opacity:${paint.haloOpacity.toFixed(2)};filter:blur(${paint.haloBlur.toFixed(1)}px)"/><path class="nt-halo nt-contact" data-part="contact" d="${paint.contact || "M0 0"}" style="opacity:${paint.contactOpacity.toFixed(2)}"/><g class="nt-curl" data-part="curl">${slots.join("")}</g></g>`;
 }
 
 const CSS = readFileSync(join(HERE, "name-tag.css"), "utf8");
 const STATIC = () => [DEFS, wall(), residue(), stuck()].join("");
 const LABEL_TEXT =
-  "A section of grey brick wall. Stuck straight onto the bricks, across a mortar joint, is a blank 86 by 59 millimetre name sticker with an illegible marker scribble. A corner lifts and the sticker rolls up into one curl, adhesive side out; it tears unevenly, so about three fifths come away and fall while a ragged piece with the end of the scribble stays stuck. Where it came off, the bricks hold a stain of adhesive and paper fibre with rows of bare spots, and the joints between them are clean.";
+  "A section of grey brick wall. Stuck straight onto the bricks, across a mortar joint, is a classic red HELLO my name is sticker, 86 by 59 millimetres, with an illegible marker scribble in its white panel. A corner lifts and the sticker rolls up into one curl, adhesive side out; it tears unevenly, so about three fifths come away and fall while a ragged piece with the end of the scribble stays stuck. Where it came off, the bricks hold a stain of adhesive and paper fibre with rows of bare spots, and the joints between them are clean.";
 
 const sheetArg = flag("sheet");
 if (sheetArg) {
@@ -371,10 +373,10 @@ const body = k.plateHtml({
   hint: "Drag across to peel",
   readout: "stuck · name on",
   keys: [
-    { mark: "lit", label: "The label: a blank name sticker, 86 × 59 mm" },
+    { mark: "lit", label: "The label: a HELLO my name is sticker, 86 × 59 mm" },
     { mark: "flat", label: "Residue: adhesive and paper fibre left on the brick" },
   ],
-  caption: `A blank name sticker slapped straight on a brick wall, bridging a mortar joint. Picked at one corner, it rolls up into a single curl with the printed face inside, then tears unevenly: ${Math.round(PEEL.SHARE_OFF * 100)}% comes away with most of the scribble and the rest stays, a ragged piece with a fibrous torn edge. Where it came off, the adhesive split and stained the brick with a fuzz of paper fibre, broken by rows of bare spots where the front stuck and slipped; the joints it bridged are clean. The force is Kendall's peel, F = G·b / (1 − cos θ), with G = ${PEEL.G_ADHESIVE} J/m² and b the length of the front.`,
+  caption: `A HELLO my name is sticker slapped straight on a brick wall, bridging a mortar joint. Picked at one corner, it rolls up into a single curl with the printed face inside, then tears unevenly: ${Math.round(PEEL.SHARE_OFF * 100)}% comes away with most of the scribble and the rest stays, a ragged piece with a fibrous torn edge. Where it came off, the adhesive split and stained the brick with a fuzz of paper fibre, broken by rows of bare spots where the front stuck and slipped; the joints it bridged are clean. The force is Kendall's peel, F = G·b / (1 − cos θ), with G = ${PEEL.G_ADHESIVE} J/m² and b the length of the front.`,
   body: `<div class="iso-stage nt-stage" tabindex="0" role="slider" aria-label="Name tag peel: drag across or use the arrow keys to peel the sticker; Space tears it off or lays a new one" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="Stuck down, the scribble on it">${svg}</div><p class="nt-live" aria-live="polite"></p>`,
 });
 if (ARTIFACT) {
