@@ -141,7 +141,7 @@ a:hover{text-decoration-color:var(--ink)}
 .cover-m .ol{height:min(38svh,420px,58vw);width:auto;fill:none;stroke:currentColor;stroke-width:1px}
 .cover-m .ol path{vector-effect:non-scaling-stroke}
 .cover-word{margin:clamp(36px,6vh,64px) 0 0}
-.cover-line{margin:clamp(14px,2vh,20px) 0 0;color:var(--anatomy-muted)}
+.cover-line{margin:clamp(16px,2.6vh,26px) 0 0;color:var(--anatomy-muted)}
 .cover-word .ol{height:clamp(22px,2.5vw,36px)}
 .cover-line .ol{height:clamp(6.5px,.6vw,8.5px)}
 @media (max-width:640px){
