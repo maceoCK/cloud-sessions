@@ -76,4 +76,3 @@ export const CONTACT = {
   links: [["github.com/maceoCK", "https://github.com/maceoCK"]],
 };
 
-export const COLOPHON = ["Drawn with the Anatomy kit by wheresryan22. Set in Michelangelus."];

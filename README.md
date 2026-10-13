@@ -35,7 +35,7 @@ The build needs only Node 20.10 or later; it has no dependencies. Deploy
 
 - `src/content.mjs`: every word outside the figures. Facts come only from the
   previous maceo.dev; no em dashes in visible copy.
-- `src/page.mjs`: the page shell (cover, contents, figures, contact, colophon) and
+- `src/page.mjs`: the page shell (cover, contents, figures, contact, seal) and
   its CSS. Colors are tokens: light on `:root`, dark for
   `prefers-color-scheme: dark` unless the reader chose Paper, and dark for an
   explicit Carbon choice.
@@ -54,7 +54,7 @@ The build needs only Node 20.10 or later; it has no dependencies. Deploy
 Display lines (the cover, section heads, names, Roman numerals, the email) are
 set in Michelangelus, the typeface studiogusto drew from Michelangelo's
 letters for the Fabbrica di San Pietro, and so is every other serif word: the
-standfirst, each entry's line and body, the contents and the colophon. Its
+standfirst, each entry's line and body and the contents. Its
 licence from Microsoft lets you install and use it but grants no right to
 distribute it ("This agreement does not grant you a license to distribute nor
 sublicense all or part of the software to any third party"), so this site

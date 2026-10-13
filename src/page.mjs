@@ -1,7 +1,7 @@
 // The page shell. A cover after the Michelangelus announcement poster, kept
 // to ink on paper (wordmark, one monumental capital drawn in outline, a
 // spaced line and a small line set edge to edge), then the folio: the
-// contents, the figures, contact and colophon.
+// contents, the figures, contact and the seal.
 //
 // Every serif word is Michelangelus, carried as outlines from
 // src/type/outlines.json (see scripts/outline.py): display lines as single
@@ -11,7 +11,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ISO_CSS } from "../kit/iso-kit.mjs";
 import { compactPath } from "../scripts/compact.mjs";
-import { COLOPHON, CONTACT, COVER, ENTRIES, GROUPS, LEDE, META, PERSON } from "./content.mjs";
+import { CONTACT, COVER, ENTRIES, GROUPS, LEDE, META, PERSON } from "./content.mjs";
 import { ROMAN } from "./type/display.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -235,11 +235,9 @@ a:hover{text-decoration-color:var(--ink)}
 .contact .mail:hover .ol{fill:var(--anatomy-muted)}
 .contact ul{display:flex;flex-wrap:wrap;gap:6px 22px;margin:22px 0 0;padding:0;list-style:none;font:13px/1.5 var(--mono)}
 
-/* colophon */
-.colophon{margin:clamp(56px,7vw,96px) 0 0;padding:28px 0 56px;border-top:1px solid var(--rule);display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(20px,3vw,48px);align-items:center;font-size:15px;line-height:1.55;color:var(--anatomy-muted)}
+/* the seal, to close */
+.colophon{margin:clamp(56px,7vw,96px) 0 0;padding:28px 0 56px;border-top:1px solid var(--rule)}
 .colophon .seal{width:112px;height:112px;color:var(--ink);display:block}
-.colophon p{margin:0 0 .6em;max-width:36em}
-@media (max-width:899px){.colophon{grid-template-columns:1fr}}
 
 `;
 
@@ -286,7 +284,7 @@ export function sitePage({ figures, script, fragment = false }) {
 
   const contact = `<section class="contact" id="contact" aria-labelledby="g-contact"><header class="group-head"><h2 id="g-contact" class="vh">Contact</h2></header><a class="mail" href="mailto:${PERSON.email}"><span class="vh">${esc(PERSON.email)}</span>${line("contact.mail")}</a><ul>${CONTACT.links.map((l) => `<li>${link(l).replace(' rel="noopener"', ' rel="me noopener"')}</li>`).join("")}</ul></section>`;
 
-  const colophon = `<footer class="colophon">${seal("seal")}<div>${COLOPHON.map((p, i) => `<p>${flow(`flow.colophon.${i}`, p)}</p>`).join("")}</div></footer>`;
+  const colophon = `<footer class="colophon">${seal("seal")}</footer>`;
 
   const ld = {
     "@context": "https://schema.org",

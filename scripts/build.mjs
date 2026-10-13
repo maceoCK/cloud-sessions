@@ -59,8 +59,11 @@ export function render(fig, label = fig.fig) {
   return { fig, html, boot, css: fig.css ?? "", bytes: svg.length };
 }
 
+// The Anatomy kit ships inside the page script, so its licence ships with it.
+const KIT_LICENSE = `/*! Anatomy kit (github.com/wheresryan22/anatomy)\n${readFileSync(join(ROOT, "kit", "LICENSE"), "utf8").trim()}\n*/`;
+
 export function scriptOf(rendered) {
-  const script = `${KIT}\n${LATHE}\n${TUBE}\n${RUNTIME}\nconst FIGS = [];\n${rendered.map((r) => r.boot).join("\n")}\n${BOOT}`;
+  const script = `${KIT_LICENSE}\n${KIT}\n${LATHE}\n${TUBE}\n${RUNTIME}\nconst FIGS = [];\n${rendered.map((r) => r.boot).join("\n")}\n${BOOT}`;
   return script.replace(/<\/(script)/gi, "<\\/$1");
 }
 
