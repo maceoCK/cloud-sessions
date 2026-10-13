@@ -1110,7 +1110,12 @@ const PEEL = (() => {
     const i = (n / 10) | 0, d = n - i * 10;
     return (neg ? "-" : "") + i + (d ? "." + d : "");
   };
-  const pathOf = (pts, closed = false) => (pts.length ? pts.map(([x, y], i) => `${i ? "L" : "M"}${fmt(x)} ${fmt(y)}`).join("") + (closed ? "Z" : "") : "");
+  const pathOf = (pts, closed = false) => {
+    if (!pts.length) return "";
+    let d = "M" + fmt(pts[0][0]) + " " + fmt(pts[0][1]);
+    for (let i = 1; i < pts.length; i++) d += "L" + fmt(pts[i][0]) + " " + fmt(pts[i][1]);
+    return closed ? d + "Z" : d;
+  };
   function hull2(points) {
     const p = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
     if (p.length < 3) return p;
