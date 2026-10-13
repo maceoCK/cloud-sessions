@@ -85,8 +85,8 @@ for (const id of ids) {
 
 // Standalone pages only for --only (or --pages): a full build never
 // overwrites a page someone is checking.
-mkdirSync(join(DIST, "fig"), { recursive: true });
 for (const r of only || args.includes("--pages") ? rendered : []) {
+  mkdirSync(join(DIST, "fig"), { recursive: true });
   for (const theme of ["light", "dark"]) {
     let page = k.pageHtml({ title: `${r.fig.fig} · ${r.fig.title}`, theme, body: r.html, script: "", width: 760 });
     page = page.replace("</head>", `<style>${r.css}</style></head>`).replace("</body>", `<script type="module">${scriptOf([r])}</script></body>`);
@@ -96,6 +96,7 @@ for (const r of only || args.includes("--pages") ? rendered : []) {
 }
 
 if (!only) {
+  mkdirSync(DIST, { recursive: true });
   const html = sitePage({ figures: rendered, script: scriptOf(rendered) });
   writeFileSync(join(DIST, "index.html"), html);
   // a bare fragment for previews in hosts that supply their own document; kept out of dist
