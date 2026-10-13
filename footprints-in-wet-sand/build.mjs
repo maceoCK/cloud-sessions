@@ -37,13 +37,6 @@ const poly = (points, closed = false) => k.pathOf(points.map(at), closed);
 const { sinA, cosA } = k.cameraOf(P);
 const shadeOf = ([nx, ny]) => Math.min(3, Math.max(0, Math.floor(((nx * -sinA + ny * cosA + 1) / 2) * 4)));
 
-const range = (from, to, step) => {
-  const out = [];
-  const count = Math.max(1, Math.round((to - from) / step));
-  for (let i = 0; i <= count; i++) out.push(from + ((to - from) * i) / count);
-  return out;
-};
-
 const MODERN = Array.from({ length: 12 }, (_, k) => ({ depth: 1.15 + 1.45 * k + 0.25 * Math.sin(k * 2.7), wave: 0.22 + 0.025 * k, band: k === 2 ? 0.75 : k === 6 ? 0.95 : k === 9 ? 0.6 : 0 }));
 const sheetAt = (layer, k, x, y) => M.surfaceAt(y) - layer.depth - layer.wave * (Math.sin(x / 23 + k * 1.7) * 0.6 + Math.sin(y / 17 + k * 2.3) * 0.4);
 const scourAt = (x, y) => 10.6 + 0.055 * y + 1.3 * Math.sin(x / 41 + 0.6) + 0.7 * Math.sin(x / 13 + 2.1) + 0.9 * Math.sin(y / 29 + 1.4);
