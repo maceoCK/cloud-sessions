@@ -3578,7 +3578,7 @@ void main(){
 }`;
 
 const LIGHT_GLSL = `${COMMON_GLSL}
-uniform float uRoad;uniform float uPortalX;uniform vec4 uCarA;uniform vec4 uCarB;uniform vec3 uStud[24];
+uniform float uRoad;uniform float uPortalX;uniform vec4 uCarA;uniform vec4 uCarB;uniform vec3 uStud[24];uniform vec4 uTrail[24];
 float heightOf(vec2 p){return coastTex(p).b*512.;}
 // does anything of the mountain stand between this point and the eye?
 float clearOf(vec3 q){
@@ -3614,15 +3614,45 @@ float tailAt(vec3 q){
   float r=length(v);
   return behind*exp(-r/4.5)*(.35+1.4*uCarB.x)*uCarA.w;
 }
+// the tail lamps' streaks, as a long exposure would catch them: two thin lines that fade over a second
+float streakOf(vec2 vb,out vec3 near){
+  float sum=0.;float best=0.;near=vec3(0.);
+  for(int lamp=0;lamp<2;lamp++){
+    for(int k=0;k<11;k++){
+      vec4 a=uTrail[lamp*12+k];vec4 b=uTrail[lamp*12+k+1];
+      if(a.w>1.3||b.w>1.3)continue;
+      vec2 pa=project(a.xyz);vec2 pb=project(b.xyz);
+      vec2 ab=pb-pa;
+      float t=clamp(dot(vb-pa,ab)/max(dot(ab,ab),1e-4),0.,1.);
+      vec2 e=vb-pa-ab*t;
+      float d2=dot(e,e);
+      float age=mix(a.w,b.w,t);
+      float g=(exp(-d2/.55)+.18*exp(-d2/5.))*pow(max(0.,1.-age/1.3),2.);
+      if(g>best){best=g;near=mix(a.xyz,b.xyz,t);}
+      sum+=g;
+    }
+  }
+  return min(sum,1.4);
+}
 void main(){
   vec2 vb=viewOf(gl_FragCoord.xy);
   float px=pixelOf()/uCam.z;
+  vec4 streak=vec4(0.);
+  if(uPale<.5){
+    vec3 near;
+    float s=streakOf(vb,near);
+    if(s>.004){
+      s*=clearOf(near);
+      vec3 c=tonemap(vec3(1.,.13,.06)*s*1.6,1.)*.95;
+      streak=vec4(c,max(c.r,max(c.g,c.b)));
+    }
+  }
   vec3 q=onFloor(vb,uRoad);
   // only the ground at the car's own height catches the pool: the road, its bench, the hairpin's floor
   float land=1.-smoothstep(1.5,4.5,abs(heightOf(q.xy)-uRoad));
   land*=smoothstep(uPortalX-.5*px,uPortalX+.5*px,q.x);
   land*=window(q.x,uBox.x,uBox.z,.7*px)*window(q.y,uBox.y,uBox.w,.7*px);
-  if(land<.001){gl_FragColor=vec4(0.);return;}
+  if(land<.001){gl_FragColor=dithered(streak*uFade);return;}
   float e=headAt(q)*30000.;
   float t=tailAt(q)*.5;
   float stud=0.;
@@ -3648,7 +3678,7 @@ void main(){
     vec4 st=vec4(vec3(.98,.62,.08)*sa,sa);
     col=over(st,over(tail,head));
   }
-  gl_FragColor=dithered(col*land*uFade);
+  gl_FragColor=dithered((col*land+streak*(1.-col.a*land))*uFade);
 }`;
 
 const fxGlsl = (NS, NP) => `${COMMON_GLSL}
@@ -3850,7 +3880,7 @@ function gpuOf(D, stage, pale) {
     return [Math.cos(az) * Math.cos(el), Math.sin(az) * Math.cos(el), Math.sin(el)];
   })();
   const sea = glLayer({ canvas: seaCanvas, fragment: SEA_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade"], fixed: { ...common, uSea: D.sea, uSwell: [SWELL_W, SWELL_K, SWELL_TIP, SWELL_SLANT], uMoon: moon, uX0: D.x0 } });
-  const light = sea ? glLayer({ canvas: lightCanvas, fragment: LIGHT_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade", "uCarA", "uCarB", "uRoad", "uStud"], fixed: { ...common, uPortalX: D.portal } }) : null;
+  const light = sea ? glLayer({ canvas: lightCanvas, fragment: LIGHT_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade", "uCarA", "uCarB", "uRoad", "uStud", "uTrail"], fixed: { ...common, uPortalX: D.portal } }) : null;
   // particle counts sized to the GPU's uniform budget: older phones get fewer, not none
   const budget = (() => {
     try {
@@ -4013,6 +4043,10 @@ function gpuOf(D, stage, pale) {
   }
   // the 24 road studs nearest the car, which are the only ones its lamps can reach
   const studs = new Float32Array(72).fill(-9999);
+  // the tail lamps' last second and a bit, for the streaks (dark only)
+  const marks = [[], []];
+  let markAt = 0;
+  const trail = new Float32Array(96);
   function drawAll(fade, clock, car, time) {
     const pose = car.dark > 0 ? [0, 0, 0, 0] : [car.x, car.y, car.psi + car.beta, 1];
     const carB = [car.brake || 0, car.v, 0, 0];
@@ -4023,8 +4057,22 @@ function gpuOf(D, stage, pale) {
     const c = Math.cos(car.psi + car.beta);
     const s = Math.sin(car.psi + car.beta);
     const beams = pale || car.dark > 0 ? 0 : 0.5 * seen(car.x + c * 9, car.y + s * 9, car.z + 4.8) + 0.5 * seen(car.x + c * 30, car.y + s * 30, car.z + 6);
+    if (car.dark <= 0 && clock - markAt > 0.07) {
+      markAt = clock;
+      [1, -1].forEach((side, n) => {
+        marks[n].push([car.x - c * 10.6 - s * side * 3.4, car.y - s * 10.6 + c * side * 3.4, car.z + 3.1, clock]);
+        if (marks[n].length > 12) marks[n].shift();
+      });
+    }
+    trail.fill(0);
+    for (let n = 0; n < 2; n++) for (let k = 0; k < 12; k++) {
+      const m = marks[n][marks[n].length - 1 - k];
+      // newest first; the live end follows the car itself
+      const p = k === 0 && car.dark <= 0 ? [car.x - c * 10.6 - s * (n ? -1 : 1) * 3.4, car.y - s * 10.6 + c * (n ? -1 : 1) * 3.4, car.z + 3.1, clock] : m;
+      trail.set(p ? [p[0], p[1], p[2], clock - p[3]] : [0, 0, 0, 9], (n * 12 + k) * 4);
+    }
     sea.draw({ uFade: fade }, time);
-    light.draw({ uFade: fade, uCarA: pose, uCarB: carB, uRoad: car.z, uStud: studs }, time);
+    light.draw({ uFade: fade, uCarA: pose, uCarB: carB, uRoad: car.z, uStud: studs, uTrail: trail }, time);
     fx.draw({ uFade: fade, uCarA: pose, uCarB: carB, uSmk: smk, uSmkB: smkB, uSpr: spr, uSprB: sprB, uWind: WIND, uRoad: car.z, uBeams: beams }, time);
   }
   // the smoke as it stands, for the detail view
