@@ -205,7 +205,6 @@ export function delineator({ P, x, y, z, toward }) {
   return { svg: parts.join(""), at: [x, y, z] };
 }
 
-
 // a boulder: two stacked irregular prisms, the upper one smaller and offset
 export function boulder({ P, x, y, z, r = 4, seed = 1, h = 0 }) {
   const ring = (rad, s) => Array.from({ length: 9 }, (_, i) => {
@@ -217,13 +216,6 @@ export function boulder({ P, x, y, z, r = 4, seed = 1, h = 0 }) {
   return S(k.extrude(ring(r, 1), z, hh * 0.6, P, { bevel: 0.4 }), { tone: "mid" }) + S(k.extrude(ring(r * 0.7, 7).map(([px, py]) => [px - r * 0.12, py + r * 0.05]), z + hh * 0.6, hh * 0.4, P, { bevel: 0.3 }), { tone: "mid" });
 }
 
-
-
-
-
-
-
-
 // an Ordnance Survey trig pillar: a tapered square concrete column, 1.2 m, with a brass spider on top
 export function trig({ P, x, y, z }) {
   const F = G.frameAlong([x, y, z], [0, 0, 1]);
@@ -232,7 +224,6 @@ export function trig({ P, x, y, z }) {
   parts.push(k.dotsSvg([k.iso([x, y, z + 6.05], P)], { tone: "lo", size: 0.55 }));
   return { svg: parts.join(""), at: [x, y, z] };
 }
-
 
 // a curve mirror on an orange pole: a convex disc tilted down the road, so a driver sees round the bend
 export function mirror({ P, x, y, z, facing, height = 15 }) {
