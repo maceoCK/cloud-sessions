@@ -454,7 +454,7 @@ function watchPace(dt) {
 }
 if (layer) stage.setAttribute("data-gl", "");
 
-const state = { clock: 0, prints: [], wave: null, prev: null, waves: 0, cycle: 0, plan: [], next: 0, side: 1, steps: 0, lastStep: -10, lastWord: "" };
+const state = { clock: 0, prints: [], wave: null, prev: null, waves: 0, cycle: 0, plan: [], next: 0, side: 1, lastStep: -10, lastWord: "" };
 let touring = !still.matches;
 let idleTimer = 0;
 let visible = false;
@@ -476,7 +476,6 @@ function press(foot, at = state.clock) {
   state.prints.push({ ...foot, born: at });
   while (state.prints.length > MAXP) state.prints.shift();
   state.side = -foot.side;
-  state.steps += 1;
   state.lastStep = at;
   dirty = true;
 }
@@ -751,7 +750,7 @@ stage.addEventListener("keydown", (event) => {
     const lastPrint = state.prints[state.prints.length - 1];
     let x = lastPrint ? lastPrint.x + GAIT.step + FOOT.length / 2 : 40;
     if (x > STRIP.length - FOOT.length / 2 - 4) x = 40;
-    stepAt(x, GAIT.line + state.side * GAIT.width * 0);
+    stepAt(x, GAIT.line);
     run();
   }
 });
@@ -788,7 +787,7 @@ if (matchMedia("(hover: none)").matches) {
 }
 
 window.__fpSeek = (t, hold = true) => {
-  Object.assign(state, { clock: 0, prints: [], wave: null, prev: null, waves: 0, cycle: 0, steps: 0, lastStep: -10, side: 1 });
+  Object.assign(state, { clock: 0, prints: [], wave: null, prev: null, waves: 0, cycle: 0, lastStep: -10, side: 1 });
   touring = true;
   planCycle(0);
   while (state.clock < t - 1e-9) advance(Math.min(1 / 60, t - state.clock));
