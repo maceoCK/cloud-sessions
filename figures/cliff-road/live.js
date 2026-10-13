@@ -512,8 +512,8 @@ function drawDetail(pose, hidden) {
       const tx = (-dy / len) * 3;
       const ty = (dx / len) * 3;
       notes.push(clippedLine([a, b], { tone: "red" }));
-      notes.push(clippedLine([[a[0] - tx, a[1] - ty], [a[0] + tx, a[1] + ty]], { tone: "red" }));
-      notes.push(clippedLine([[b[0] - tx, b[1] - ty], [b[0] + tx, b[1] + ty]], { tone: "red" }));
+      // end ticks, each drawn out from the dimension line's end so it stands on it
+      for (const [ex, ey] of [a, b]) for (const sgn of [1, -1]) notes.push(clippedLine([[ex, ey], [ex + sgn * tx, ey + sgn * ty]], { tone: "red" }));
       const [mx, my] = [(a[0] + b[0]) / 2 + tx * 2.6, (a[1] + b[1]) / 2 + ty * 2.6 + 3];
       if ((mx - DT.cx) ** 2 + (my - DT.cy) ** 2 < (DT.r - 10) ** 2) notes.push(`<text class="iso-face-text cr-d-red" font-size="8.5" text-anchor="middle" x="${mx.toFixed(1)}" y="${my.toFixed(1)}">${Math.max(0, best.m).toFixed(1)} m</text>`);
     }
@@ -603,10 +603,11 @@ function readoutOf() {
   return M.readoutOf(car);
 }
 
+// the slider reports the setting the reader chose, not the eased value on its way there
 function describe() {
-  const words = M.wordsOf(car, ease.x);
-  stage.setAttribute("aria-valuenow", String(Math.round(ease.x * 100)));
-  stage.setAttribute("aria-valuetext", `Pace ${Math.round(ease.x * 100)} percent of the way from grip to the limit`);
+  const words = M.wordsOf(car, state.target);
+  stage.setAttribute("aria-valuenow", String(Math.round(state.target * 100)));
+  stage.setAttribute("aria-valuetext", `Pace ${Math.round(state.target * 100)} percent of the way from grip to the limit`);
   return words;
 }
 
@@ -655,6 +656,7 @@ function tick(now) {
   if (car.laps !== lapBefore && touring) {
     state.tourLap = (state.tourLap + 1) % TOUR.length;
     state.target = TOUR[state.tourLap];
+    describe();
   }
   springTo(brake, car.brake, dt, 0.06);
   brake.x = clampTo(brake.x, 0, 1);

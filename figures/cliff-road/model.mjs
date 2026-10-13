@@ -341,6 +341,7 @@ export function readoutOf(s) {
 }
 
 export function wordsOf(s, share) {
-  const where = s.dark > 0 ? "In the tunnel." : `${Math.round(s.v * 3.6)} kilometres an hour, drifting ${Math.round((Math.abs(s.beta) * 180) / Math.PI)} degrees, ${s.margin.toFixed(1)} metres from the edge.`;
+  const deg = Math.round((Math.abs(s.beta) * 180) / Math.PI);
+  const where = s.dark > 0 ? "In the tunnel." : `${Math.round(s.v * 3.6)} kilometres an hour, drifting ${deg} ${deg === 1 ? "degree" : "degrees"}, ${s.margin.toFixed(1)} metres from the edge.`;
   return `Pace ${Math.round(share * 100)} percent of the way from grip to the limit. ${where}`;
 }
