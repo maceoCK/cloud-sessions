@@ -1,0 +1,47 @@
+/* Fig 9 · chain handcuffs. Every colour is a kit token or a figure token defined here for both themes. */
+.hc-stage{position:relative;touch-action:pan-y}
+.hc-stage:focus{outline:none}
+.hc-stage:focus-visible{outline:1px solid var(--anatomy-muted);outline-offset:6px}
+.hc-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* line weight: kit paths are non-scaling strokes, so a zoomed viewBox keeps them at --hc-w css px (B.5); --hc-k is written by live.js */
+.hc-svg{--anatomy-weight:var(--hc-w, .6px)}
+[data-part="jawA"]{cursor:grab}
+.hc-stage[data-dragging],.hc-stage[data-dragging] [data-part="jawA"]{cursor:grabbing}
+/* edge feather when zoomed (B.5): a crop reads as a camera crop, no line ends on a hard edge */
+.hc-svg[data-zoomed]{-webkit-mask-image:linear-gradient(to right,transparent,#000 24px,#000 calc(100% - 24px),transparent),linear-gradient(to bottom,transparent,#000 24px,#000 calc(100% - 24px),transparent);-webkit-mask-composite:source-in;mask-image:linear-gradient(to right,transparent,#000 24px,#000 calc(100% - 24px),transparent),linear-gradient(to bottom,transparent,#000 24px,#000 calc(100% - 24px),transparent);mask-composite:intersect}
+
+/* cavity (C2 #43, craft §7): the rear cheek's top, the floor rings and the cavity-facing frame walls, darker for depth */
+.hc-svg{--hc-cav-paper:#0d0d0d;--hc-cav-top:#101010;--hc-cav-s0:#0a0a0a;--hc-cav-s1:#0c0c0c;--hc-cav-s2:#0e0e0e;--hc-cav-s3:#111111;--hc-cav-lo:#343434;--hc-cav-faint:#222222;--hc-cav-mid:#565656;
+  --hc-cut-top:#252525;--hc-cut-s0:#191919;--hc-cut-s1:#1c1c1c;--hc-cut-s2:#202020;--hc-cut-s3:#242424}
+.iso[data-theme="light"] .hc-svg{--hc-cav-paper:#e6e6e3;--hc-cav-top:#e3e3e0;--hc-cav-s0:#cdcdca;--hc-cav-s1:#d4d4d1;--hc-cav-s2:#dadad7;--hc-cav-s3:#dfdfdc;--hc-cav-lo:#a3a3a7;--hc-cav-faint:#c6c6c9;--hc-cav-mid:#7d7d82;
+  --hc-cut-top:#ffffff;--hc-cut-s0:#e7e7e4;--hc-cut-s1:#eeeeeb;--hc-cut-s2:#f3f3f1;--hc-cut-s3:#f8f8f6}
+.hc-cavity{--anatomy-paper:var(--hc-cav-paper);--anatomy-top:var(--hc-cav-top);--anatomy-shade-0:var(--hc-cav-s0);--anatomy-shade-1:var(--hc-cav-s1);--anatomy-shade-2:var(--hc-cav-s2);--anatomy-shade-3:var(--hc-cav-s3);--anatomy-lo:var(--hc-cav-lo);--anatomy-faint:var(--hc-cav-faint);--anatomy-mid:var(--hc-cav-mid)}
+/* milled section faces (window walls, keyhole and slot walls, the stud's milled top): a touch lighter than structure */
+.hc-cut{--anatomy-top:var(--hc-cut-top);--anatomy-shade-0:var(--hc-cut-s0);--anatomy-shade-1:var(--hc-cut-s1);--anatomy-shade-2:var(--hc-cut-s2);--anatomy-shade-3:var(--hc-cut-s3)}
+
+/* lit (E.5): pawl, spring and tab always carry data-lit; --l (0…1) mixes the lit and hi token pairs; --hc-burst widens the edge */
+.hc-litable .iso-solid[data-lit]>.iso-top{fill:color-mix(in srgb,var(--anatomy-lit-top) calc(var(--l,0)*100%),var(--anatomy-top))}
+.hc-litable .iso-solid[data-lit]>.iso-shade[data-shade="0"]{fill:color-mix(in srgb,var(--anatomy-lit-shade) calc(var(--l,0)*100%),var(--anatomy-shade-0))}
+.hc-litable .iso-solid[data-lit]>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-lit-shade) calc(var(--l,0)*100%),var(--anatomy-shade-1))}
+.hc-litable .iso-solid[data-lit]>.iso-shade[data-shade="2"]{fill:color-mix(in srgb,var(--anatomy-lit-shade) calc(var(--l,0)*100%),var(--anatomy-shade-2))}
+.hc-litable .iso-solid[data-lit]>.iso-shade[data-shade="3"]{fill:color-mix(in srgb,var(--anatomy-lit-shade) calc(var(--l,0)*100%),var(--anatomy-shade-3))}
+.hc-litable .iso-solid[data-lit]>.iso-fill{fill:color-mix(in srgb,var(--anatomy-face) calc(var(--l,0)*100%),var(--anatomy-paper))}
+.hc-litable .iso-solid[data-lit]>.iso-edge{stroke:color-mix(in srgb,var(--anatomy-lit) calc(var(--l,0)*100%),var(--anatomy-hi));stroke-width:calc(var(--anatomy-weight) * (1 + var(--hc-burst, 0) * .8))}
+
+.hc-chapters{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 10px}
+.hc-chapter{display:inline-flex;align-items:baseline;gap:7px;padding:5px 10px;border:0;border-radius:999px;background:transparent;color:var(--anatomy-muted);font:12.5px/1.3 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer;box-shadow:inset 0 0 0 1px var(--anatomy-faint);transition:color 160ms var(--anatomy-ease),box-shadow 160ms var(--anatomy-ease)}
+.hc-chapter:hover,.hc-chapter:focus-visible,.hc-chapter[data-on]{color:var(--anatomy-strong);box-shadow:inset 0 0 0 1px var(--anatomy-lo);outline:none}
+.hc-num{font-family:var(--anatomy-mono);font-size:10px;color:var(--anatomy-muted)}
+
+/* the key (C5): the bow ring's hole stays open (evenodd on the lathe's fill and top) */
+.hc-key .iso-fill,.hc-key .iso-top{fill-rule:evenodd}
+[data-part="keyOuter"],[data-part="keyInner"]{cursor:grab}
+/* halos on the undrawn surface under the cuffs, the chain, cuff A's strand and the key lying flat (C1 #36–41): the only sign of
+   the surface (no board). Blur and offset are in user units: wider than the board-era 4 px / 1.5 px (at 2.69 px/mm), so that at
+   3.39 px/mm a soft fringe shows past each item's outline and reads as a contact shadow (the kit's own halo is 9 px / 3 px).
+   The key's fades (--hc-kh, written by live.js) as the key leaves the surface */
+.hc-svg .hc-halo{filter:blur(7px);transform:translateY(3px)}
+.hc-svg [data-part="keyHalo"]{opacity:calc(var(--anatomy-halo-opacity) * var(--hc-kh, 1))}
+/* cuff B (C8): static, so its lines step down one tone (hi → mid, mid → lo); fills are unchanged */
+.hc-svg .hc-dim [data-tone="hi"]{stroke:var(--anatomy-mid)}
+.hc-svg .hc-dim [data-tone="mid"]{stroke:var(--anatomy-lo)}
