@@ -1,0 +1,494 @@
+.cr .iso-plate {
+  overflow: hidden;
+}
+
+.cr {
+  --cr-asphalt: #0c0c0d;
+  --cr-paint: #4a4a4a;
+  --cr-water: #0d1418;
+  --cr-water-opacity: 0.85;
+  --cr-cut: #101010;
+}
+
+.iso[data-theme="light"] .cr,
+.cr[data-theme="light"] {
+  --cr-asphalt: #c9c9c6;
+  --cr-paint: #ffffff;
+  --cr-water: #c9d6dc;
+  --cr-water-opacity: 0.7;
+  --cr-cut: #e9e9e5;
+}
+
+.cr-stage {
+  position: relative;
+}
+
+.cr-stage > svg,
+.cr-stage > canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cr-stage > .cr-layer {
+  position: absolute;
+  inset: 0;
+  height: 100% !important;
+  pointer-events: none;
+}
+
+.cr-asphalt {
+  fill: var(--cr-asphalt);
+  stroke: none;
+}
+
+.cr-paint {
+  fill: var(--cr-paint);
+  stroke: none;
+}
+
+.cr-water-face path {
+  fill: var(--cr-water);
+  opacity: var(--cr-water-opacity);
+  stroke: none;
+}
+
+.cr-cut {
+  fill: var(--cr-cut) !important;
+}
+
+.cr {
+  --cr-bore-dark: #000000;
+  --cr-bore-floor: #0a0a0a;
+  --cr-lamp: #ffb347;
+  --cr-paint-bore: #262626;
+  --cr-sign-mark: #8a8a8a;
+  --cr-skid: #000000;
+}
+
+.iso[data-theme="light"] .cr,
+.cr[data-theme="light"] {
+  --cr-bore-dark: #24221f;
+  --cr-bore-floor: #6d6a64;
+  --cr-lamp: #e8890c;
+  --cr-paint-bore: #8f8b84;
+  --cr-sign-mark: #26262a;
+  --cr-skid: #7d7d7a;
+}
+
+/* the bore is a cavity: its own darker token set, so its walls keep their form */
+.cr-bore,
+.cr-bore-line {
+  --anatomy-paper: #0b0b0b;
+  --anatomy-shade-0: #0a0a0a;
+  --anatomy-shade-1: #0c0c0c;
+  --anatomy-shade-2: #0e0e0e;
+  --anatomy-shade-3: #101010;
+  --anatomy-faint: #1a1a1a;
+}
+
+.iso[data-theme="light"] .cr-bore,
+.iso[data-theme="light"] .cr-bore-line {
+  --anatomy-paper: #5b5853;
+  --anatomy-shade-0: #504d48;
+  --anatomy-shade-1: #57544f;
+  --anatomy-shade-2: #5e5b56;
+  --anatomy-shade-3: #66635d;
+  --anatomy-faint: #75716a;
+}
+
+.cr-bore-void {
+  fill: var(--cr-bore-dark);
+}
+
+.cr-bore-floor {
+  fill: var(--cr-bore-floor);
+}
+
+.cr-bore-paint,
+.cr-bore-kerb {
+  fill: var(--cr-paint-bore);
+}
+
+.cr-lamp circle {
+  fill: var(--cr-lamp);
+  opacity: 1;
+}
+
+.cr-sign-mark {
+  fill: var(--cr-sign-mark);
+  stroke: none;
+}
+
+.cr-reflector {
+  fill: none;
+  stroke: var(--anatomy-hi);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+.cr-cap > .iso-top,
+.cr-cap > .iso-shade {
+  fill: var(--anatomy-red);
+  opacity: 0.55;
+}
+
+.cr-skid .iso-line {
+  stroke-width: 0.9;
+}
+
+.cr-skids {
+  opacity: 0.8;
+}
+
+.cr {
+  --cr-glass: #050607;
+  --cr-lens: #fff6dc;
+  --cr-tail: #ff3b30;
+  --cr-tail-dim: #8a1c17;
+  --cr-tyre: #070707;
+  --cr-rim: #3a3a3a;
+}
+
+.iso[data-theme="light"] .cr,
+.cr[data-theme="light"] {
+  --cr-glass: #3b3f44;
+  --cr-lens: #ffd36b;
+  --cr-tail: #e5302a;
+  --cr-tail-dim: #b8443f;
+  --cr-tyre: #3a3a3c;
+  --cr-rim: #c4c4c6;
+}
+
+.cr-tyre > .iso-fill,
+.cr-tyre > .iso-shade,
+.cr-tyre > .iso-top {
+  fill: var(--cr-tyre);
+}
+
+.cr-rim {
+  fill: var(--cr-rim);
+  stroke: none;
+}
+
+.cr-tub > .iso-fill,
+.cr-tub > .iso-shade,
+.cr-tub > .iso-top {
+  fill: var(--cr-tyre);
+}
+
+.cr-glass-pane {
+  fill: var(--cr-glass);
+  stroke: none;
+  opacity: 0.92;
+}
+
+.cr-lens {
+  fill: var(--cr-lens);
+  stroke: none;
+}
+
+.cr-fog {
+  opacity: 0.7;
+}
+
+.cr-tail {
+  fill: var(--cr-tail-dim);
+  stroke: none;
+}
+
+.cr-tail.cr-brake {
+  fill: var(--cr-tail);
+}
+
+.cr-plate {
+  fill: var(--anatomy-face);
+  stroke: var(--anatomy-lo);
+  stroke-width: 0.4;
+}
+
+.cr-car-halo {
+  filter: blur(2.5px);
+  transform: none;
+}
+
+.cr-water-top {
+  fill: var(--cr-water);
+  opacity: 0.8;
+  stroke: none;
+}
+
+.cr-stage[data-gl] .cr-water-top {
+  display: none;
+}
+
+.iso:not([data-theme="light"]) .cr-light-gl,
+.iso:not([data-theme="light"]) .cr-fx-gl {
+  mix-blend-mode: screen;
+}
+
+/* night: the dark plate takes a cool, moonlit cast */
+.iso:not([data-theme="light"]) .cr {
+  --anatomy-card: #0d1013;
+  --anatomy-paper: #0d1013;
+  --anatomy-face: #19212a;
+  --anatomy-top: #222b35;
+  --anatomy-shade-0: #0b0f14;
+  --anatomy-shade-1: #121920;
+  --anatomy-shade-2: #1a232d;
+  --anatomy-shade-3: #26313d;
+  --anatomy-lit-top: #2a3036;
+  --anatomy-lit-shade: #1e2429;
+  --anatomy-hi: #cfd6dd;
+  --anatomy-mid: #66707b;
+  --anatomy-lo: #3c4550;
+  --anatomy-faint: #242b33;
+  --anatomy-dot: #dfe6ee;
+  --cr-asphalt: #08090b;
+  --cr-paint: #3d444b;
+  --cr-water: #0a1216;
+  --cr-cut: #0f1317;
+}
+
+.iso:not([data-theme="light"]) .cr .iso-plate {
+  --anatomy-paper: #0d1013;
+}
+
+.cr-cave {
+  fill: var(--cr-cave) !important;
+}
+
+.cr {
+  --cr-cave: #050607;
+}
+
+.iso[data-theme="light"] .cr,
+.cr[data-theme="light"] {
+  --cr-cave: #8f8b83;
+}
+
+/* inside the cliff, joints and bedding planes sit back; the cliff edge and the road keep the strong line */
+.iso:not([data-theme="light"]) .cr-strata .iso-line[data-tone="faint"] {
+  stroke: #1b2128;
+}
+
+@media (max-width: 560px) {
+  .cr-stage > .cr-detail {
+    display: none;
+  }
+
+  .cr .iso-plate {
+    padding: 48px 6px 70px;
+  }
+
+  .cr-stage {
+    width: 112%;
+    margin: -4% -6% -2%;
+  }
+}
+
+.cr {
+  --cr-sock: #b8442f;
+}
+
+.iso[data-theme="light"] .cr,
+.cr[data-theme="light"] {
+  --cr-sock: #e0573c;
+}
+
+/* what the headlights fall on: the item's own tones pulled toward lamp light */
+.cr {
+  --cr-warm: #ffd49a;
+}
+
+.iso[data-theme="light"] .cr,
+.cr[data-theme="light"] {
+  --cr-warm: #ffd77a;
+}
+
+.cr-items {
+  --cr-top0: var(--anatomy-top);
+  --cr-paper0: var(--anatomy-paper);
+  --cr-s0: var(--anatomy-shade-0);
+  --cr-s1: var(--anatomy-shade-1);
+  --cr-s2: var(--anatomy-shade-2);
+  --cr-s3: var(--anatomy-shade-3);
+  --cr-hi0: var(--anatomy-hi);
+  --cr-mid0: var(--anatomy-mid);
+}
+
+.cr-items > g[data-lit-by] {
+  --anatomy-top: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 100%), var(--cr-top0));
+  --anatomy-paper: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 60%), var(--cr-paper0));
+  --anatomy-shade-0: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 45%), var(--cr-s0));
+  --anatomy-shade-1: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 55%), var(--cr-s1));
+  --anatomy-shade-2: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 65%), var(--cr-s2));
+  --anatomy-shade-3: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 75%), var(--cr-s3));
+  --anatomy-mid: color-mix(in srgb, var(--cr-warm) calc(var(--lit) * 70%), var(--cr-mid0));
+}
+
+/* Detail A: the car at 3:1 in the card's top-right, redrawn each frame */
+.cr {
+  --cr-void: #c3d0d6;
+  --cr-glint: #e3ebee;
+  --cr-beam: #ffc94d;
+  --cr-puff: #fbfbfa;
+  --cr-trail: #6f6f6c;
+}
+
+.iso:not([data-theme="light"]) .cr {
+  --cr-void: #0b151b;
+  --cr-glint: #2b3a44;
+  --cr-beam: #ffe7b8;
+  --cr-puff: #a4adb6;
+  --cr-trail: #000000;
+}
+
+.cr-detail-ground {
+  stroke: none;
+}
+
+.cr-far-sea {
+  fill: var(--cr-void);
+}
+
+.cr-far-glint {
+  fill: none;
+  stroke: var(--cr-glint);
+  stroke-width: 0.7;
+  stroke-linecap: round;
+}
+
+.cr-d-land {
+  fill: var(--anatomy-top);
+  stroke: none;
+}
+
+.cr-d-face[data-shade="1"] {
+  fill: var(--anatomy-shade-1);
+}
+
+.cr-d-face[data-shade="2"] {
+  fill: var(--anatomy-shade-2);
+}
+
+.cr-d-face[data-shade="3"] {
+  fill: var(--anatomy-shade-3);
+}
+
+.cr-d-face,
+.cr-d-wall,
+.cr-d-bore,
+.cr-d-trail,
+.cr-d-beam,
+.cr-d-arrow,
+.cr-d-pivot {
+  stroke: none;
+}
+
+.cr-d-wall {
+  fill: var(--anatomy-face);
+}
+
+.cr-d-wall[data-shade="1"] {
+  fill: var(--anatomy-shade-1);
+}
+
+.cr-d-wall[data-shade="3"] {
+  fill: var(--anatomy-top);
+}
+
+.cr-d-bore {
+  fill: var(--cr-bore-dark);
+}
+
+.cr-d-trail {
+  fill: var(--cr-trail);
+}
+
+.cr-beam-stop {
+  stop-color: var(--cr-beam);
+}
+
+.cr-puff-stop {
+  stop-color: var(--cr-puff);
+}
+
+.iso:not([data-theme="light"]) .cr-d-beams {
+  mix-blend-mode: screen;
+}
+
+.cr-d-arrow,
+.cr-d-pivot {
+  fill: var(--anatomy-hi);
+}
+
+.cr-d-red {
+  fill: var(--anatomy-red);
+}
+
+.cr .cr-d-red.iso-line {
+  stroke: var(--anatomy-red);
+}
+
+.cr-detail-view.is-idle,
+.cr-detail-notes.is-idle {
+  opacity: 0.45;
+}
+
+.cr .cr-detail-mark.iso-line {
+  stroke-width: 0.9;
+}
+
+
+.cr-d-edge {
+  fill: var(--anatomy-mid);
+  stroke: none;
+}
+
+.cr-bench {
+  fill: var(--anatomy-top);
+}
+
+/* two-tone paint: pale above the beltline, dark below */
+.cr {
+  --cr-lower: #34363b;
+  --cr-lower-shade: #26282c;
+}
+
+.iso:not([data-theme="light"]) .cr {
+  --cr-lower: #07080a;
+  --cr-lower-shade: #050607;
+}
+
+.cr .iso-solid.cr-lower > .iso-fill,
+.cr .iso-solid.cr-lower > .iso-top,
+.cr .iso-solid.cr-lower[data-lit] > .iso-top {
+  fill: var(--cr-lower);
+}
+
+.cr .iso-solid.cr-lower > .iso-shade,
+.cr .iso-solid.cr-lower[data-lit] > .iso-shade {
+  fill: var(--cr-lower-shade);
+}
+
+/* curve mirrors: orange poles and backs, a pale convex face */
+.cr {
+  --cr-mirror: #dbe4ea;
+}
+
+.iso:not([data-theme="light"]) .cr {
+  --cr-mirror: #45525e;
+}
+
+.cr .iso-solid.cr-mirror-pole > .iso-fill,
+.cr .iso-solid.cr-mirror-pole > .iso-shade,
+.cr .iso-solid.cr-mirror-pole > .iso-top {
+  fill: var(--cr-sock);
+}
+
+.cr-mirror-glass {
+  fill: var(--cr-mirror);
+  stroke: var(--anatomy-lo);
+  stroke-width: 0.4;
+}

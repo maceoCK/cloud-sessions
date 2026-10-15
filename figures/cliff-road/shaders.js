@@ -1,0 +1,765 @@
+// Three WebGL layers in the figure's own isometric camera.
+//  sea:   the water plane at sea level — wind chop, the swell wrapping round the headland, whitewater where
+//         each crest breaks, moon glints, and the waves seen through the glass sections.
+//  light: light falling on the road plane — the headlight pools, the tail lights, the road studs.
+//  fx:    what hangs in the air over everything — tyre smoke, spray thrown up the cliff, the beams in the
+//         sea mist (dark only), light on the portal walls and inside the bores.
+// Every term is in world units; every envelope fades in and out.
+
+const SWELL_W = (Math.PI * 2) / M.SWELL.period;
+const SWELL_K = (Math.PI * 2) / (M.swellOf(6).lambda * M.U);
+const SWELL_SLANT = 0.35;
+const SWELL_TIP = 236;
+
+const COMMON_GLSL = `
+uniform sampler2D uCoast;uniform vec4 uTexA;uniform vec2 uTexB;uniform vec4 uBox;uniform float uPale;uniform float uFade;
+vec4 coastTex(vec2 p){vec2 uv=((p-uTexA.xy)/uTexA.z+.5)/uTexB;return texture2D(uCoast,uv);}
+float dWater(vec2 p){return coastTex(p).r*128.-32.;}
+// the road's height near it (from the build), or -1 where there's no road
+float roadZ(vec2 p){float g=coastTex(p).g*255.;return g<.5?-1.:100.+(g-1.)/254.*200.;}
+float dSwell(vec2 p){return coastTex(p).a*256.-16.;}
+vec4 inkFor(vec3 seen,float cover){vec3 ab=1.-clamp(seen,0.,1.);float a=max(max(ab.r,max(ab.g,ab.b)),cover);return vec4(vec3(a)-ab,a);}
+vec4 over(vec4 top,vec4 under){return top+under*(1.-top.a);}
+vec4 dithered(vec4 c){float n=(hash12(gl_FragCoord.xy+fract(uTime*.61)*91.)+hash12(gl_FragCoord.yx*1.37+fract(uTime*.37)*57.)-1.)/255.;return max(c+n*smoothstep(0.,1.5/255.,c.a),0.);}
+`;
+
+const SEA_GLSL = `${COMMON_GLSL}
+uniform float uSea;uniform vec4 uSwell;uniform vec3 uMoon;uniform float uX0;uniform vec4 uSplash;
+const float G=49.05;
+float hashN(float n){return fract(sin(n*12.9898)*43758.5453);}
+void train(vec2 p,float t,vec2 dir,float lambda,float amp,float ph,inout float h,inout vec2 g){
+  float k=6.2832/lambda;float w=sqrt(G*k);float th=k*dot(dir,p)-w*t+ph;
+  h+=amp*sin(th);g+=amp*k*cos(th)*dir;
+}
+// the swell: phase from the distance to the coast (refraction wraps the crests round the headland)
+// plus a slant, so each crest comes in from the open sea, reaches the tip first and runs back along both cliffs
+float swellPhase(vec2 p,float d){return uSwell.x*uTime+uSwell.y*(d-uSwell.w*(uSwell.z-p.x));}
+float crest;float face;
+void surface(vec2 p,out float h,out vec2 g,out float foam,out float d){
+  d=dWater(p);
+  float t=uTime;
+  h=0.;g=vec2(0.);
+  float calm=smoothstep(1.,22.,d);
+  train(p,t,vec2(-.96,-.28),118.,1.1*calm,0.,h,g);
+  train(p,t,vec2(-.88,.47),76.,.62*calm,1.7,h,g);
+  train(p,t,vec2(-.99,.12),52.,.38*calm,4.1,h,g);
+  train(p,t,vec2(-.71,-.70),33.,.22*calm,2.3,h,g);
+  train(p,t,vec2(-.6,.8),21.,.12*calm,5.2,h,g);
+  // swell with shoaling near the cliffs: a peaked crest over a long flat trough, sharper as it shoals,
+  // 2.4 m from trough to crest at the rock
+  float e=1.5;
+  vec2 gd=vec2(dWater(p+vec2(e,0.))-dWater(p-vec2(e,0.)),dWater(p+vec2(0.,e))-dWater(p-vec2(0.,e)))/(2.*e);
+  float ds=dSwell(p);
+  vec2 gs=vec2(dSwell(p+vec2(e,0.))-dSwell(p-vec2(e,0.)),dSwell(p+vec2(0.,e))-dSwell(p-vec2(0.,e)))/(2.*e);
+  float th=swellPhase(p,ds);
+  float c=(th-1.5708)/6.2832;
+  float n=floor(c);
+  float psi=c-n;
+  float an=.55+.45*hashN(n);
+  float grow=1.+1.4*smoothstep(60.,4.,ds);
+  float amp=2.5*grow*(.75+.25*an);
+  float pk=1.6+2.2*smoothstep(90.,6.,ds);
+  float s1=max(.5+.5*sin(th),1e-4);
+  h+=amp*2.*(pow(s1,pk)-.3);
+  g+=amp*pk*pow(s1,pk-1.)*cos(th)*uSwell.y*(gs+vec2(uSwell.w,0.));
+  // after each crest slams into the rock, a weaker one goes back out: the cliff reflects the swell
+  float thr=uSwell.x*uTime-uSwell.y*(ds+uSwell.w*(uSwell.z-p.x));
+  float cr=(thr-1.5708)/6.2832;
+  float nr=floor(cr);
+  float psr=cr-nr;
+  float back=.32*smoothstep(110.,0.,ds)*(.55+.45*hashN(nr));
+  h+=back*amp*sin(thr);
+  // whitewater: where a crest breaks (inside ~30 units of the rock) and behind it as it runs in
+  float lam=6.2832/uSwell.y;
+  // how big the nearest rock is: a boulder breaks a small wave, the cliff and the stacks a big one
+  float big=smoothstep(50.,110.,coastTex(p-gd*(d+3.)).b*256.);
+  float zone=smoothstep(mix(14.,36.,big),mix(2.,6.,big),d)*smoothstep(-1.,1.5,d)*mix(.45,1.,big);
+  // the broken crest runs in with the swell: a band just behind the crest line, then its trail
+  float fresh=exp(-psi*9.)+.28*exp(-psi*2.6);
+  vec2 streak=vec2(gd.y,-gd.x);
+  float lace=noise2(p*.16+streak*psi*3.+vec2(t*.4,t*.1))*.6+noise2(p*.37-vec2(t*.2,0.))*.4;
+  float wash=smoothstep(5.,.3,d)*(.45+.55*an)*(.35+.65*exp(-psi*2.5))*mix(.5,1.,big);
+  foam=zone*an*(1.2*exp(-psi*7.)+.35*exp(-psi*2.))*smoothstep(.4,.78,lace+.28*fresh);
+  foam+=wash*(.55+.45*smoothstep(.3,.7,lace+.25));
+  float trails=noise2(p*.06+streak*.3+vec2(.02*t,-.03*t));
+  foam+=.22*smoothstep(.7,.86,trails)*smoothstep(48.,10.,d)*smoothstep(.5,.9,noise2(p*.21+vec2(t*.05,0.)));
+  foam=clamp(foam,0.,1.);
+  // the swell's crest line, a few units wide, and the steep face just ahead of it (toward the rock)
+  float behind=psi*lam;float ahead=(1.-psi)*lam;
+  crest=exp(-pow(min(behind,ahead)/(2.5+3.*smoothstep(10.,80.,d)),2.))*(.45+.55*an)*smoothstep(-1.,4.,d);
+  face=exp(-ahead/(4.+6.*smoothstep(10.,80.,d)))*smoothstep(-1.,4.,d)*(.45+.55*an);
+  // wind whitecaps tear off the crest, then the reflected crest's backwash line heads out to sea
+  float caps=smoothstep(.55,.8,noise2(p*vec2(.09,.05)+vec2(n*3.7,t*.3)));
+  foam+=.75*caps*exp(-behind/6.)*(.3+.7*smoothstep(90.,15.,d))*an;
+  // whitecaps across the open water: short streaks along the wind that flare, drift downwind and fade
+  {
+    vec2 wd=vec2(-.987,-.159);
+    vec2 q=vec2(dot(p,wd),dot(p,vec2(-wd.y,wd.x)));
+    q.x+=t*6.;
+    vec2 cell=vec2(28.,13.);
+    vec2 id=floor(q/cell);
+    float h1=hash12(id);float h2=hash12(id+17.3);
+    vec2 dq=(fract(q/cell)-.5-(vec2(h1,h2)-.5)*.45)*cell;
+    float life=fract(t*.31+h1*7.);
+    float on=smoothstep(0.,.06,life)*(1.-smoothstep(.12,.45,life))*step(.5,h2);
+    float streak=exp(-pow(dq.x/(3.+4.*life),2.)-pow(dq.y/(.9+.6*life),2.));
+    float tear=smoothstep(.35,.7,noise2(p*.45+vec2(t*.8,0.)));
+    foam+=.85*on*streak*(.5+.5*tear)*smoothstep(10.,35.,d);
+  }
+  // where the car went in: a white boil, then a ring of broken water running out from it
+  if(uSplash.w>0.){
+    float sd=length(p-uSplash.xy);
+    float age=uSplash.z;
+    float ring=exp(-pow((sd-(5.+age*15.))/(2.5+age*1.6),2.))*exp(-age*.45);
+    float boil=exp(-sd*sd/(28.+age*70.))*exp(-age*.28);
+    foam=max(foam,clamp((ring*.85+boil*1.3)*uSplash.w*(.75+.25*noise2(p*.3+vec2(t,0.))),0.,1.));
+    h+=ring*1.8*exp(-age*.6)*uSplash.w;
+  }
+  float rb=min(psr,1.-psr)*lam;
+  foam+=.35*exp(-pow(rb/4.,2.))*smoothstep(80.,6.,d)*smoothstep(.4,.75,noise2(p*.12+vec2(0.,t*.2)))*(back/.32);
+  foam=clamp(foam,0.,1.);
+}
+vec3 skyOf(vec3 r){
+  float up=smoothstep(-.15,.9,r.z);
+  vec3 sky=mix(vec3(.05,.07,.1),vec3(.012,.018,.03),up);
+  float m=max(dot(r,uMoon),0.);
+  sky+=vec3(.55,.62,.75)*(.04*pow(m,8.)+.28*pow(m,90.));
+  return sky;
+}
+float glintOf(vec3 r){float m=max(dot(r,uMoon),0.);return pow(m,2400.)*9.;}
+// capillary ripples: a fine slope field that only the glints see, so the moon breaks into sparkles
+vec2 rippleOf(vec2 p,float t){
+  vec2 g=vec2(0.);
+  g+=.16*cos(dot(p,vec2(1.13,.31))-t*5.3)*vec2(1.13,.31);
+  g+=.12*cos(dot(p,vec2(-.42,1.27))-t*6.1+1.3)*vec2(-.42,1.27);
+  g+=.1*cos(dot(p,vec2(.88,-.97))-t*7.2+4.1)*vec2(.88,-.97);
+  g+=.08*cos(dot(p,vec2(1.71,.55))-t*8.3+2.2)*vec2(1.71,.55);
+  return g;
+}
+vec4 waterAt(vec2 p,float hgt,vec2 g,float foam,float d){
+  vec3 n=normalize(vec3(-g,1.));
+  vec3 v=towardViewer();
+  vec3 r=reflect(-v,n);
+  vec3 rf=reflect(-v,normalize(vec3(-g-rippleOf(p,uTime)*smoothstep(2.,14.,d),1.)));
+  float spark=glintOf(rf)*(1.-foam);
+  float f=.02+.98*pow(1.-max(dot(n,v),0.),5.);
+  float deep=smoothstep(0.,45.,d);
+  if(uPale<.5){
+    vec3 body=mix(vec3(.018,.04,.05),vec3(.006,.012,.018),deep);
+    vec3 col=mix(body,skyOf(r),f)+vec3(.85,.9,1.)*spark;
+    col+=vec3(.05,.07,.08)*smoothstep(.5,2.6,hgt)*(1.-deep*.5);
+    // the crest catches the moon; the face beyond it, toward the rock, turns away from us
+    col*=1.-.45*face*(1.-crest);
+    col+=vec3(.15,.19,.23)*crest;
+    col=mix(col,vec3(.55,.6,.65),foam);
+    col=tonemap(col,1.25);
+    float a=mix(.62,.95,deep);
+    a=max(a,foam);
+    return vec4(col*a,a);
+  }
+  vec3 shallow=vec3(.80,.865,.885);
+  vec3 deepC=vec3(.64,.725,.77);
+  vec3 seen=mix(shallow,deepC,deep);
+  seen*=1.-.045*smoothstep(-2.,-.2,-hgt*.6);
+  seen=mix(seen,vec3(.52,.62,.68),face*.42*(1.-crest));
+  seen=mix(seen,vec3(.93,.96,.97),crest*.6);
+  seen=mix(seen,vec3(.95,.97,.98),f*.55);
+  seen=mix(seen,vec3(1.),min(1.,spark*.6));
+  float cover=mix(.5,.86,deep);
+  vec4 water=inkFor(seen,cover);
+  // foam is paper showing through, edged with a little cool ink
+  vec4 foamInk=inkFor(vec3(.985,.99,.995),0.);
+  return mix(water,foamInk,foam);
+}
+void main(){
+  vec2 vb=viewOf(gl_FragCoord.xy);
+  float px=pixelOf();
+  vec3 q=onFloor(vb,uSea);
+  float inBox=window(q.x,uBox.x,uBox.z,.7*px/uCam.z)*window(q.y,uBox.y,uBox.w,.7*px/uCam.z);
+  vec4 col=vec4(0.);
+  if(inBox>.001&&dWater(q.xy)>-6.){
+    float hgt;vec2 g;float foam;float d;
+    surface(q.xy,hgt,g,foam,d);
+    col=waterAt(q.xy,hgt,g,foam,d)*inBox;
+  }
+  // the water seen through the two glass sections: from 37 up to the moving surface
+  float pz=px/uCam.w;
+  vec3 fy=onWallY(vb,uBox.w-.8);
+  vec3 fx=onWallX(vb,uBox.z-.8);
+  for(int k=0;k<2;k++){
+    vec3 w=k==0?fy:fx;
+    if(abs(w.z-uSea)>9.)continue;
+    float along=k==0?window(w.x,uX0,uBox.z,.7*px/uCam.x):window(w.y,uBox.y,uBox.w,.7*px/uCam.y);
+    if(along<.001)continue;
+    float hgt;vec2 g;float foam;float d;
+    surface(w.xy,hgt,g,foam,d);
+    float top=uSea+hgt*.85;
+    float band=window(w.z,uSea-3.2,top,.7*pz)*along;
+    float lip=exp(-pow((w.z-top)/max(.5,.9*pz),2.))*along;
+    if(uPale<.5){
+      vec3 c=mix(vec3(.02,.045,.055),vec3(.6,.66,.7),max(foam,.0)*.6)+vec3(.25,.3,.34)*lip;
+      vec4 b=vec4(c*.88,.88)*band+vec4(vec3(.3,.36,.4)*lip*.6,lip*.6)*(1.-band);
+      col=over(b,col);
+    }else{
+      vec4 b=inkFor(mix(vec3(.74,.81,.84),vec3(.97),foam*.7),.0)*band;
+      b=over(inkFor(vec3(.55,.63,.68),0.)*lip*.7,b);
+      col=over(b,col);
+    }
+  }
+  gl_FragColor=dithered(col*uFade);
+}`;
+
+const LIGHT_GLSL = `${COMMON_GLSL}
+uniform float uRoad;uniform float uPortalX;uniform vec4 uCarA;uniform vec4 uCarB;uniform vec3 uStud[24];uniform vec4 uTrail[24];
+float heightOf(vec2 p){return coastTex(p).b*512.;}
+// does anything of the mountain stand between this point and the eye?
+float clearOf(vec3 q){
+  vec3 v=towardViewer();
+  float open=1.;
+  for(int i=1;i<=30;i++){
+    vec3 p=q+v*(float(i)*7.);
+    open*=smoothstep(-1.,1.,p.z-heightOf(p.xy)+.5);
+  }
+  return open;
+}
+vec3 lampAt(float side,out vec3 dir){
+  float c=cos(uCarA.z);float s=sin(uCarA.z);
+  dir=normalize(vec3(c,s,-.022));
+  return vec3(uCarA.x+c*9.3-s*side*2.55,uCarA.y+s*9.3+c*side*2.55,uRoad+4.8);
+}
+// a low-beam lamp: a wide fan with a hot centre, falling off as h/r^3 on the ground
+float headOn(vec3 q,vec3 L,vec3 dir){
+  vec3 v=q-L;float r=length(v);
+  vec2 hv=normalize(v.xy);
+  float ca=dot(hv,normalize(dir.xy));
+  float ah=acos(clamp(ca,-1.,1.));
+  float pattern=exp(-pow(ah/.4,2.))*(1.+2.2*exp(-pow(ah/.12,2.)));
+  float h=max(L.z-q.z,.01);
+  return pattern*h/(r*r*r)*smoothstep(1.,6.,r);
+}
+float headAt(vec3 q){vec3 d0;vec3 d1;vec3 a=lampAt(1.,d0);vec3 b=lampAt(-1.,d1);return (headOn(q,a,d0)+headOn(q,b,d1))*uCarA.w;}
+float tailAt(vec3 q){
+  float c=cos(uCarA.z);float s=sin(uCarA.z);
+  vec2 back=vec2(uCarA.x-c*10.8,uCarA.y-s*10.8);
+  vec2 v=q.xy-back;
+  float behind=smoothstep(-2.,4.,-dot(v,vec2(c,s)));
+  float r=length(v);
+  return behind*exp(-r/4.5)*(.35+1.4*uCarB.x)*uCarA.w;
+}
+// the tail lamps' streaks, as a long exposure would catch them: two thin lines that fade over a second
+float streakOf(vec2 vb,out vec3 near){
+  float sum=0.;float best=0.;near=vec3(0.);
+  for(int lamp=0;lamp<2;lamp++){
+    for(int k=0;k<11;k++){
+      vec4 a=uTrail[lamp*12+k];vec4 b=uTrail[lamp*12+k+1];
+      if(a.w>1.3||b.w>1.3)continue;
+      vec2 pa=project(a.xyz);vec2 pb=project(b.xyz);
+      vec2 ab=pb-pa;
+      float t=clamp(dot(vb-pa,ab)/max(dot(ab,ab),1e-4),0.,1.);
+      vec2 e=vb-pa-ab*t;
+      float d2=dot(e,e);
+      float age=mix(a.w,b.w,t);
+      float g=(exp(-d2/.55)+.18*exp(-d2/5.))*pow(max(0.,1.-age/1.3),2.);
+      if(g>best){best=g;near=mix(a.xyz,b.xyz,t);}
+      sum+=g;
+    }
+  }
+  return min(sum,1.4);
+}
+void main(){
+  vec2 vb=viewOf(gl_FragCoord.xy);
+  float px=pixelOf()/uCam.z;
+  vec4 streak=vec4(0.);
+  if(uPale<.5){
+    vec3 near;
+    float s=streakOf(vb,near);
+    if(s>.004){
+      s*=clearOf(near);
+      vec3 c=tonemap(vec3(1.,.13,.06)*s*1.6,1.)*.95;
+      streak=vec4(c,max(c.r,max(c.g,c.b)));
+    }
+  }
+  // find the road under this pixel: start at the car's height, then settle onto the road's own height,
+  // which falls ahead of the car down the grade (and up behind it)
+  vec3 q=onFloor(vb,uRoad);
+  float zr=roadZ(q.xy);
+  if(zr>0.){q=onFloor(vb,zr);zr=roadZ(q.xy);if(zr>0.)q=onFloor(vb,zr);}
+  // only the road's bench and the ground level with it catch the pool: the terraces under a road sit up to
+  // a layer (7 units) below it; anything lower is the drop, anything higher the bank
+  float hq=heightOf(q.xy)-q.z;
+  float land=smoothstep(-10.,-8.,hq)*(1.-smoothstep(1.,3.,hq));
+  land*=smoothstep(uPortalX-.5*px,uPortalX+.5*px,q.x);
+  land*=window(q.x,uBox.x,uBox.z,.7*px)*window(q.y,uBox.y,uBox.w,.7*px);
+  if(land<.001){gl_FragColor=dithered(streak*uFade);return;}
+  float e=headAt(q)*30000.;
+  float t=tailAt(q)*.5;
+  float stud=0.;
+  for(int i=0;i<24;i++){
+    vec3 s=uStud[i];
+    vec3 qs=onFloor(vb,s.z);
+    float d2=dot(qs.xy-s.xy,qs.xy-s.xy);
+    if(d2<4.)stud+=exp(-d2/.36)*min(headAt(s)*60000.,6.);
+  }
+  // the spur or knoll in front hides the pool
+  if(e+t+stud>.002)land*=clearOf(q);
+  vec4 col;
+  if(uPale<.5){
+    vec3 c=vec3(1.,.9,.74)*e+vec3(1.,.1,.05)*t+vec3(1.,.95,.82)*stud;
+    c=tonemap(c,.62)*.82;
+    col=vec4(c,max(c.r,max(c.g,c.b)));
+  }else{
+    float a=.62*(1.-exp(-1.1*e));
+    vec4 head=vec4(vec3(1.,.8,.36)*a,a);
+    float ta=.45*(1.-exp(-2.*t));
+    vec4 tail=vec4(vec3(.9,.18,.12)*ta,ta);
+    float sa=.92*(1.-exp(-1.5*stud));
+    vec4 st=vec4(vec3(.98,.62,.08)*sa,sa);
+    col=over(st,over(tail,head));
+  }
+  gl_FragColor=dithered((col*land+streak*(1.-col.a*land))*uFade);
+}`;
+
+const fxGlsl = (NS, NP) => `${COMMON_GLSL}
+uniform float uRoad;uniform float uPortalX;uniform vec4 uCarA;uniform vec4 uCarB;
+uniform vec4 uSmk[${NS}];uniform vec4 uSmkB[${NS}];uniform vec4 uSpr[${NP}];uniform vec4 uSprB[${NP}];
+uniform vec4 uPortA;uniform vec4 uPortB;uniform vec4 uPortC;uniform float uPortCx;uniform float uBeams;uniform vec2 uWind;uniform float uSea;
+float landAt(vec2 p){return coastTex(p).b*512.;}
+// does anything of the mountain stand between this point and the eye?
+float seenFx(vec3 q){
+  vec3 v=towardViewer();
+  float open=1.;
+  for(int i=1;i<=24;i++){
+    vec3 p=q+v*(float(i)*8.);
+    open*=smoothstep(-1.,1.,p.z-landAt(p.xy)+.5);
+  }
+  return open;
+}
+// sea mist: a slab from the water to ~6 m up, in drifting wisps; marched from the top down, it stops at the
+// first sample inside the land, so the cliff hides whatever mist lies behind it
+float mistAt(vec2 vb){
+  float sum=0.;
+  float j=hash12(gl_FragCoord.xy)*.8;
+  for(int i=0;i<6;i++){
+    float z=uSea+30.-(float(i)+j)*5.;
+    vec3 p=onFloor(vb,z);
+    if(landAt(p.xy)>z)break;
+    float inBox=window(p.x,uBox.x,uBox.z,8.)*window(p.y,uBox.y,uBox.w,8.);
+    float wisp=fbm2(p.xy*.018-uWind*uTime*.018+vec2(z*.03,0.));
+    float thin=smoothstep(.45,.85,wisp)*(1.-smoothstep(uSea,uSea+30.,z));
+    sum+=thin*inBox;
+  }
+  return sum/6.;
+}
+// the car as an oriented box: returns where the pixel's ray enters it (larger t is nearer), or -1e9
+float carHit(vec3 p0,vec3 v){
+  float c=cos(uCarA.z);float s=sin(uCarA.z);
+  vec3 o=p0-vec3(uCarA.x,uCarA.y,uRoad+3.2);
+  vec3 lo=vec3(c*o.x+s*o.y,-s*o.x+c*o.y,o.z);
+  vec3 lv=vec3(c*v.x+s*v.y,-s*v.x+c*v.y,v.z);
+  vec3 hb=vec3(10.9,4.4,3.3);
+  vec3 inv=1./lv;
+  vec3 t0=(-hb-lo)*inv;vec3 t1=(hb-lo)*inv;
+  vec3 tmin=min(t0,t1);vec3 tmax=max(t0,t1);
+  float ta=max(max(tmin.x,tmin.y),tmin.z);float tb=min(min(tmax.x,tmax.y),tmax.z);
+  return (tb>=ta&&uCarA.w>.5)?tb:-1e9;
+}
+vec3 lampAt(float side,out vec3 dir){
+  float c=cos(uCarA.z);float s=sin(uCarA.z);
+  dir=normalize(vec3(c,s,-.022));
+  return vec3(uCarA.x+c*9.3-s*side*2.55,uCarA.y+s*9.3+c*side*2.55,uRoad+4.8);
+}
+float headOn(vec3 q,vec3 n,vec3 L,vec3 dir){
+  vec3 v=q-L;float r=length(v);
+  float ca=dot(normalize(v.xy),normalize(dir.xy));
+  float ah=acos(clamp(ca,-1.,1.));
+  float pattern=exp(-pow(ah/.4,2.))*(1.+2.2*exp(-pow(ah/.12,2.)));
+  float inc=max(dot(n,-v/r),0.);
+  return pattern*inc/(r*r)*smoothstep(1.,6.,r);
+}
+float blob(vec3 p0,vec3 v,vec3 c,float r,float tCar){
+  vec3 w=c-p0;float tc=dot(w,v);float d2=dot(w,w)-tc*tc;
+  float hidden=tCar>-1e8?smoothstep(-2.,2.,tCar-tc):0.;
+  return exp(-d2/(r*r))*(1.-hidden);
+}
+// a gaussian stretched k times taller than it is wide: a sheet of spray climbing the rock
+float sheet(vec3 p0,vec3 v,vec3 c,float r,float k){
+  vec3 w=c-p0;
+  vec3 ws=vec3(w.xy,w.z/k);vec3 vs=vec3(v.xy,v.z/k);
+  float vv=dot(vs,vs);float t=dot(ws,vs);
+  float d2=dot(ws,ws)-t*t/vv;
+  return exp(-d2/(r*r))*inversesqrt(vv);
+}
+void main(){
+  vec2 vb=viewOf(gl_FragCoord.xy);
+  float px=pixelOf();
+  vec3 v=towardViewer();
+  vec3 p0=rayOf(vb);
+  float tCar=carHit(p0,v);
+  vec4 col=vec4(0.);
+  // spray thrown up the cliff, then tyre smoke, both as soft volumes
+  float spray=0.;float under=0.;
+  for(int i=0;i<${NP};i++){
+    vec4 s=uSpr[i];vec4 sb=uSprB[i];
+    if(sb.x<.002)continue;
+    float b=sheet(p0,v,s.xyz,s.w,sb.z)*sb.x*sb.y;
+    spray+=b;
+    under+=b*smoothstep(s.z+s.w*.2,s.z-s.w*.8,p0.z+v.z*dot(s.xyz-p0,v));
+  }
+  // spray is threads of water flung upward: streaks that climb; smoke billows
+  float threads=.5+.5*noise2(vec2(vb.x*.42,vb.y*.045+uTime*1.4))*(.7+.3*noise2(vec2(vb.x*1.3,vb.y*.12+uTime*2.1)));
+  spray*=threads*1.25;under*=threads*1.25;
+  // droplets flung out round the edge of the spray, drifting up
+  vec2 dq=(vb+vec2(0.,uTime*30.))/1.5;
+  float drops=step(.965,hash12(floor(dq)))*smoothstep(.42,.12,length(fract(dq)-.5))*smoothstep(.03,.2,spray)*(1.-smoothstep(.45,1.1,spray));
+  float smoke=0.;float heat=0.;
+  for(int i=0;i<${NS};i++){
+    vec4 s=uSmk[i];vec4 sb=uSmkB[i];
+    if(sb.x<.002)continue;
+    float b=blob(p0,v,s.xyz,s.w,tCar)*sb.x;
+    smoke+=b;heat+=b*sb.y;
+  }
+  heat/=max(smoke,1e-4);
+  smoke*=.55+.6*fbm2(vb*.06+vec2(uTime*.25,-uTime*.4));
+  float mist=mistAt(vb);
+  // light on the portal walls and down the bores
+  float wall=0.;float bore=0.;float sodium=0.;
+  {
+    vec3 w0=onWallX(vb,uPortalX);
+    for(int k=0;k<2;k++){
+      vec4 o=k==0?uPortA:uPortB;
+      float dy=w0.y-o.x;
+      float top=o.w+sqrt(max(o.y*o.y-dy*dy,0.));
+      float soft=1.-smoothstep(-.7*px,.7*px,max(abs(dy)-o.y,max(w0.z-top,o.z-w0.z)));
+      sodium+=soft*(.5+.5*smoothstep(o.z,top,w0.z));
+    }
+    // the short tunnel through the rib, in its own face
+    vec3 w2=onWallX(vb,uPortCx);
+    float dy2=w2.y-uPortC.x;
+    float top2=uPortC.w+sqrt(max(uPortC.y*uPortC.y-dy2*dy2,0.));
+    float soft2=1.-smoothstep(-.7*px,.7*px,max(abs(dy2)-uPortC.y,max(w2.z-top2,uPortC.z-w2.z)));
+    sodium+=soft2*(.5+.5*smoothstep(uPortC.z,top2,w2.z));
+  }
+  if(uCarA.w>.5){
+    vec3 d0;vec3 d1;vec3 la=lampAt(1.,d0);vec3 lb=lampAt(-1.,d1);
+    vec3 w=onWallX(vb,uPortalX);
+    float onWall=window(w.z,uRoad,uRoad+46.,.7*px/uCam.w)*window(w.y,uBox.y,uBox.w,.7*px);
+    for(int k=0;k<2;k++){
+      vec4 o=k==0?uPortA:uPortB;
+      float dy=w.y-o.x;
+      float inArch=step(abs(dy),o.y)*step(w.z,o.w+sqrt(max(o.y*o.y-dy*dy,0.)))*step(o.z,w.z);
+      float soft=1.-smoothstep(-.7*px,.7*px,max(abs(dy)-o.y,w.z-(o.w+sqrt(max(o.y*o.y-dy*dy,0.)))));
+      onWall*=1.-soft*step(o.z,w.z);
+      if(soft>.001){
+        vec3 f=onFloor(vb,uRoad);
+        if(f.x<uPortalX){
+          float e=headOn(f,vec3(0.,0.,1.),la,d0)+headOn(f,vec3(0.,0.,1.),lb,d1);
+          bore+=e*soft;
+        }
+      }
+    }
+    float tw=dot(w-p0,v);
+    float hid=tCar>-1e8?smoothstep(-1.,1.,tCar-tw):0.;
+    // low beams: the wall takes most light near the road, little higher up
+    wall=(headOn(w,vec3(1.,0.,0.),la,d0)+headOn(w,vec3(1.,0.,0.),lb,d1))*onWall*(1.-hid)*step(uPortalX+1.,uCarA.x)*900.*exp(-max(0.,w.z-uRoad)/16.);
+    if(wall>.002)wall*=seenFx(w+vec3(1.5,0.,0.));
+    bore*=2600.;
+  }
+  // beams in the sea mist: soft volumes along each lamp's axis (dark theme only)
+  float beam=0.;
+  if(uBeams>.01&&uCarA.w>.5){
+    for(int k=0;k<2;k++){
+      vec3 dir;vec3 L=lampAt(k==0?1.:-1.,dir);
+      for(int j=0;j<8;j++){
+        float r=6.*pow(1.62,float(j));
+        vec3 c=L+dir*r;
+        float mist=.55+.45*fbm2(c.xy*.03+vec2(uTime*.05,0.));
+        float past=smoothstep(uPortalX+2.,uPortalX+8.,c.x)*smoothstep(uBox.x,uBox.x+20.,c.x)*smoothstep(uBox.z,uBox.z-20.,c.x)*smoothstep(uBox.y,uBox.y+20.,c.y)*smoothstep(uBox.w,uBox.w-20.,c.y);
+        beam+=blob(p0,v,c,1.6+r*.2,tCar)*mist*past*smoothstep(4.,20.,r)/(1.+r/30.);
+      }
+    }
+  }
+  if(uPale<.5){
+    vec3 c=vec3(.58,.64,.7)*(1.-exp(-spray*1.8))*.92+vec3(.7,.76,.82)*drops*.7+vec3(.62,.64,.67)*(1.-exp(-smoke*1.2))*.95+vec3(.95,.18,.1)*(1.-exp(-smoke*heat*1.6))*.6;
+    c+=vec3(1.,.9,.72)*(wall+bore)+vec3(.95,.9,.78)*beam*.16*uBeams+vec3(1.,.48,.12)*sodium*.11+vec3(.3,.36,.42)*mist*.5;
+    c=tonemap(c,1.2);
+    col=vec4(c,max(c.r,max(c.g,c.b)));
+  }else{
+    // spray on paper: a white body that hides the rock's lines, blue-grey where it is thick and low,
+    // and a stipple of droplets round its thin edge
+    float low=clamp(under/max(spray,1e-3),0.,1.);
+    float thick=smoothstep(.7,2.4,spray);
+    vec3 tone=mix(vec3(.985,.99,.995),vec3(.7,.78,.84),max(low*.85,thick*.5));
+    float sa=.95*(1.-exp(-spray*2.2));
+    tone=mix(tone,vec3(.6,.69,.75),drops);
+    sa=max(sa,.6*drops);
+    vec4 sp=inkFor(tone,sa);
+    sp*=sa/max(sp.a,1e-4);
+    float ma=.85*(1.-exp(-smoke*.9));
+    vec4 sm=inkFor(mix(vec3(.86,.87,.88),vec3(.93,.84,.8),heat*.5),ma);
+    sm*=ma/max(sm.a,1e-4);
+    float wa=.6*(1.-exp(-1.5*(wall+bore)));
+    vec4 wl=vec4(vec3(1.,.78,.34)*wa,wa);
+    float na=.16*sodium;
+    wl=over(wl,vec4(vec3(.95,.55,.12)*na,na));
+    float mi=.32*mist;
+    col=over(sm,over(sp,over(wl,inkFor(vec3(.9,.93,.95),mi)*(mi/max(inkFor(vec3(.9,.93,.95),mi).a,1e-4)))));
+  }
+  // nothing reaches the canvas's own border
+  vec2 rim=min(gl_FragCoord.xy,uCanvas-gl_FragCoord.xy);
+  col*=smoothstep(10.,18.,min(rim.x,rim.y));
+  gl_FragColor=dithered(col*uFade);
+}`;
+
+const realRatio = window.devicePixelRatio || 1;
+let slowGpu = false;
+try {
+  Object.defineProperty(window, "devicePixelRatio", { configurable: true, get: () => (slowGpu ? Math.min(realRatio, 0.7) : realRatio) });
+} catch (e) {}
+function gpuOf(D, stage, pale) {
+  const seaCanvas = stage.querySelector(".cr-sea-gl");
+  const lightCanvas = stage.querySelector(".cr-light-gl");
+  const fxCanvas = stage.querySelector(".cr-fx-gl");
+  const tex = D.coast;
+  const raw = Uint8Array.from(atob(tex.bytes), (c) => c.charCodeAt(0));
+  const box = D.box;
+  const common = {
+    uTexA: [tex.x0, tex.y0, tex.step, 0],
+    uTexB: [tex.nx, tex.ny],
+    uBox: box,
+    uPale: pale ? 1 : 0,
+  };
+  const moon = (() => {
+    const a = (D.P.azimuth * Math.PI) / 180;
+    const v = [-Math.cos(a), -Math.sin(a), 0];
+    const az = Math.atan2(v[1], v[0]) + 0.5;
+    const el = (56 * Math.PI) / 180;
+    return [Math.cos(az) * Math.cos(el), Math.sin(az) * Math.cos(el), Math.sin(el)];
+  })();
+  const sea = glLayer({ canvas: seaCanvas, fragment: SEA_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade", "uSplash"], fixed: { ...common, uSea: D.sea, uSwell: [SWELL_W, SWELL_K, SWELL_TIP, SWELL_SLANT], uMoon: moon, uX0: D.x0 } });
+  const light = sea ? glLayer({ canvas: lightCanvas, fragment: LIGHT_GLSL, view: [D.W, D.H], camera: D.camera, maxRatio: 1.25, uniforms: ["uFade", "uCarA", "uCarB", "uRoad", "uStud", "uTrail"], fixed: { ...common, uPortalX: D.portal } }) : null;
+  // particle counts sized to the GPU's uniform budget: older phones get fewer, not none
+  const budget = (() => {
+    try {
+      const probe = document.createElement("canvas").getContext("webgl");
+      return probe ? probe.getParameter(probe.MAX_FRAGMENT_UNIFORM_VECTORS) : 0;
+    } catch (e) {
+      return 0;
+    }
+  })();
+  const NS = budget >= 224 ? 32 : 12;
+  const NP = budget >= 224 ? 48 : 16;
+  const fx = light ? glLayer({ canvas: fxCanvas, fragment: fxGlsl(NS, NP), view: [D.W, D.H], camera: D.camera, maxRatio: 0.6, uniforms: ["uFade", "uCarA", "uCarB", "uSmk", "uSmkB", "uSpr", "uSprB", "uWind", "uRoad", "uBeams"], fixed: { ...common, uPortalX: D.portal, uPortA: [D.portals[0].yc, D.portals[0].half, D.portals[0].z, D.portals[0].spring], uPortB: [D.portals[1].yc, D.portals[1].half, D.portals[1].z, D.portals[1].spring], uPortC: [D.portals[2].yc, D.portals[2].half, D.portals[2].z, D.portals[2].spring], uPortCx: D.portals[2].face, uSea: D.sea } }) : null;
+  if (!fx) return null;
+  for (const layer of [sea, light, fx]) {
+    const gl = layer.gl;
+    const texture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, tex.nx, tex.ny, 0, gl.RGBA, gl.UNSIGNED_BYTE, raw);
+  }
+  // land height for the spray's line of sight
+  const heightAt = (x, y) => {
+    const i = Math.round((x - tex.x0) / tex.step);
+    const j = Math.round((y - tex.y0) / tex.step);
+    if (i < 0 || j < 0 || i >= tex.nx || j >= tex.ny) return 0;
+    return (raw[(j * tex.nx + i) * 4 + 2] / 255) * 512;
+  };
+  const V = G.viewOf(D.P);
+  const seen = (x, y, z) => {
+    for (let t = 3; t < 300; t += 5) {
+      const h = heightAt(x + V[0] * t, y + V[1] * t);
+      if (h > z + V[2] * t) return 0;
+    }
+    return 1;
+  };
+
+  // ---- particles ------------------------------------------------------------------------------------
+  // only the waterline we can see throws spray: the far side of the headland would spend the particles
+  const sprayVis = D.sprayAt.map(([x, y]) => seen(x, y, D.sea + 12) || seen(x, y, D.sea + 40));
+  const smoke = Array.from({ length: NS }, () => ({ a0: 0, age: 9, life: 1 }));
+  const spray = Array.from({ length: NP }, () => ({ a0: 0, age: 9, life: 1 }));
+  let smokeAt = 0;
+  let smokeSide = 1;
+  const crests = new Float64Array(D.sprayAt.length).fill(NaN);
+  let lastHit = null;
+  let lastSplash = null;
+  let splashAt = null;
+  const hashN = (n) => {
+    const x = Math.sin(n * 12.9898) * 43758.5453;
+    return x - Math.floor(x);
+  };
+  const oldest = (list) => list.reduce((best, p) => (p.age / p.life > best.age / best.life ? p : best), list[0]);
+  const smk = new Float32Array(NS * 4);
+  const smkB = new Float32Array(NS * 4);
+  const spr = new Float32Array(NP * 4);
+  const sprB = new Float32Array(NP * 4);
+  const windNow = (t) => {
+    const w = CARS.windOf(t);
+    // droplets and smoke ride at about 40% of the wind
+    return [Math.cos(w.heading) * w.speed * M.U * 0.4, Math.sin(w.heading) * w.speed * M.U * 0.4];
+  };
+  let WIND = windNow(0);
+
+  function step(dt, clock, car, calm) {
+    WIND = windNow(clock);
+    // tyre smoke from the rear wheels while the tail is out
+    const slip = Math.abs(car.beta);
+    smokeAt -= dt;
+    if (!calm && car.dark <= 0 && !car.air && slip > 0.13 && car.v > 4 && smokeAt <= 0) {
+      smokeAt = 0.065;
+      smokeSide = -smokeSide;
+      const yaw = car.psi + car.beta;
+      const c = Math.cos(yaw);
+      const s = Math.sin(yaw);
+      const p = oldest(smoke);
+      Object.assign(p, {
+        x: car.x - c * 6 - s * smokeSide * 3.55,
+        y: car.y - s * 6 + c * smokeSide * 3.55,
+        z: car.z + 1.2,
+        vx: Math.cos(car.psi) * car.v * 5 * 0.22 + WIND[0],
+        vy: Math.sin(car.psi) * car.v * 5 * 0.22 + WIND[1],
+        vz: 3.2,
+        age: 0,
+        life: 2.9,
+        a0: Math.min(1, (slip - 0.12) * 3.4) * 0.95,
+        // a car thrown fully sideways lays down a thicker cloud
+        r0: 2.2 + 3 * smooth(0.3, 0.9, slip),
+      });
+    }
+    for (const p of smoke) {
+      if (p.age > p.life) continue;
+      p.age += dt;
+      const drag = Math.exp(-dt * 1.4);
+      p.vx = WIND[0] + (p.vx - WIND[0]) * drag;
+      p.vy = WIND[1] + (p.vy - WIND[1]) * drag;
+      p.vz *= Math.exp(-dt * 0.6);
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.z += p.vz * dt;
+    }
+    // spray: each crest that reaches a point of the waterline throws a sheet up the rock
+    const omega = SWELL_W;
+    D.sprayAt.forEach(([x, y, nx, ny], j) => {
+      const th = omega * clock - SWELL_K * SWELL_SLANT * (SWELL_TIP - x);
+      const n = Math.floor((th - Math.PI / 2) / (Math.PI * 2));
+      const was = crests[j];
+      crests[j] = n;
+      if (calm || Number.isNaN(was) || n === was || !sprayVis[j]) return;
+      const an = 0.55 + 0.45 * hashN(n);
+      if (hashN(n * 7.1 + j * 1.37) > 0.8) return;
+      const p = oldest(spray);
+      // each point of the waterline throws its own jet: height from the crest's size and a little luck
+      const v0 = M.SPRAY.rise * M.U * (0.45 + 0.55 * an) * (0.6 + 0.7 * hashN(j + n * 3.3));
+      Object.assign(p, { x: x + nx * 1.5, y: y + ny * 1.5, z: D.sea + 2, vx: nx * 4 + WIND[0] * 0.6, vy: ny * 4 + WIND[1] * 0.6, vz: v0, age: 0, life: 1.5 + hashN(j * 2.1 + n) * 0.9, a0: 0.3 + 0.25 * an, r0: 1.7 });
+    });
+    for (const p of spray) {
+      if (p.age > p.life) continue;
+      p.age += dt;
+      p.vz -= 9.81 * M.U * dt * 0.55;
+      const drag = Math.exp(-dt * 0.8);
+      p.vx = WIND[0] + (p.vx - WIND[0]) * drag;
+      p.vy = WIND[1] + (p.vy - WIND[1]) * drag;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.z = Math.max(D.sea + 1, p.z + p.vz * dt);
+    }
+    // the crash: dust where the car strikes rock, and where it goes into the sea a burst of spray
+    if (car.air && car.air.hit && car.air.hit !== lastHit) {
+      lastHit = car.air.hit;
+      const h = car.air.hit;
+      for (let q = 0; q < 6; q++) {
+        const p = oldest(smoke);
+        const an = q * 1.047 + hashN(q + h.t * 7);
+        Object.assign(p, { x: h.x + Math.cos(an) * 2, y: h.y + Math.sin(an) * 2, z: h.z + 1, vx: Math.cos(an) * 6 + WIND[0], vy: Math.sin(an) * 6 + WIND[1], vz: 4, age: 0, life: 2.4, a0: 0.55, r0: 2.6 });
+      }
+    }
+    if (car.air && car.air.splash && car.air.splash !== lastSplash) {
+      lastSplash = car.air.splash;
+      const sp = car.air.splash;
+      splashAt = { x: sp.x, y: sp.y, clock, power: Math.min(1, sp.speed / 25) };
+      const count = Math.min(spray.length - 4, 30);
+      for (let q = 0; q < count; q++) {
+        const p = oldest(spray);
+        const an = (q / count) * Math.PI * 2 + hashN(q * 3.1) * 0.4;
+        const out = 1.5 + 4 * hashN(q * 5.7);
+        const up = (6 + 12 * hashN(q * 1.9)) * (0.6 + 0.4 * splashAt.power);
+        Object.assign(p, { x: sp.x + Math.cos(an) * 2, y: sp.y + Math.sin(an) * 2, z: D.sea + 2, vx: Math.cos(an) * out * M.U + WIND[0] * 0.4, vy: Math.sin(an) * out * M.U + WIND[1] * 0.4, vz: up * M.U, age: 0, life: 1.8 + hashN(q * 2.3) * 1.2, a0: 0.55 + 0.25 * hashN(q * 4.1), r0: 2.4 });
+      }
+    }
+    // everything that hangs in the air fades before it leaves the block
+    const inBlock = (x, y, r) => smooth(box[0] - r * 0.2, box[0] + r * 1.6 + 10, x) * smooth(box[2] + r * 0.2, box[2] - r * 1.6 - 10, x) * smooth(box[1] - r * 0.2, box[1] + r * 1.6 + 10, y) * smooth(box[3] + r * 0.2, box[3] - r * 1.6 - 10, y);
+    smoke.forEach((p, i) => {
+      const rr = (p.r0 || 1) + 7.5 * Math.sqrt(Math.max(0, p.age));
+      const a = p.age > p.life ? 0 : p.a0 * burst(p.age, 0.12, 0.85) * smooth(p.life, p.life * 0.7, p.age) * inBlock(p.x, p.y, rr) * (seen(p.x, p.y, p.z) * 0.85 + 0.15 * seen(p.x, p.y, p.z + rr));
+      p.shown = a;
+      p.rr = rr;
+      smk.set([p.x || 0, p.y || 0, p.z || 0, (p.r0 || 1) + 7.5 * Math.sqrt(Math.max(0, p.age))], i * 4);
+      smkB.set([a, Math.exp(-p.age * 1.2), 0, 0], i * 4);
+    });
+    spray.forEach((p, i) => {
+      const r = (p.r0 || 1) + 5.5 * Math.sqrt(Math.max(0, p.age));
+      const a = p.age > p.life ? 0 : p.a0 * burst(p.age, 0.1, 0.75) * smooth(p.life, p.life * 0.6, p.age) * inBlock(p.x, p.y, r);
+      // rising, the sheet is tall; as it falls back it spreads into round mist
+      const tall = 1 + 2.8 * smooth(-20, 30, p.vz || 0);
+      spr.set([p.x || 0, p.y || 0, (p.z || 0) - r * (tall - 1) * 0.35, r], i * 4);
+      sprB.set([a, a > 0.002 ? seen(p.x, p.y, p.z) : 0, tall, 0], i * 4);
+    });
+  }
+
+  let spent = 0;
+  let frames = 0;
+  function draw(fade, clock, car, time) {
+    const t0 = performance.now();
+    drawAll(fade, clock, car, time);
+    spent += performance.now() - t0;
+    if (++frames === 40) {
+      // 40 frames averaging over 28 ms of drawing: drop to a coarser canvas
+      if (!slowGpu && spent / frames > 28) slowGpu = true;
+      spent = 0;
+      frames = 0;
+    }
+  }
+  // the 24 road studs nearest the car, which are the only ones its lamps can reach
+  const studs = new Float32Array(72).fill(-9999);
+  // the tail lamps' last second and a bit, for the streaks (dark only)
+  const marks = [[], []];
+  let markAt = 0;
+  const trail = new Float32Array(96);
+  function drawAll(fade, clock, car, time) {
+    const pose = car.dark > 0 || car.air ? [0, 0, 0, 0] : [car.x, car.y, car.psi + car.beta, 1];
+    const carB = [car.brake || 0, car.v, 0, 0];
+    const near = D.studs.map((s) => [Math.hypot(s[0] - car.x, s[1] - car.y), s]).sort((a, b) => a[0] - b[0]).slice(0, 24);
+    studs.fill(-9999);
+    near.forEach(([, s], i) => studs.set(s, i * 3));
+    // the beams in the mist show only while the lamps themselves are in sight
+    const c = Math.cos(car.psi + car.beta);
+    const s = Math.sin(car.psi + car.beta);
+    const beams = pale || car.dark > 0 || car.air ? 0 : 0.5 * seen(car.x + c * 9, car.y + s * 9, car.z + 4.8) + 0.5 * seen(car.x + c * 30, car.y + s * 30, car.z + 6);
+    if (car.dark <= 0 && !(car.air && car.air.splash) && clock - markAt > 0.07) {
+      markAt = clock;
+      [1, -1].forEach((side, n) => {
+        marks[n].push([car.x - c * 10.6 - s * side * 3.4, car.y - s * 10.6 + c * side * 3.4, car.z + 3.1, clock]);
+        if (marks[n].length > 12) marks[n].shift();
+      });
+    }
+    trail.fill(0);
+    for (let n = 0; n < 2; n++) for (let k = 0; k < 12; k++) {
+      const m = marks[n][marks[n].length - 1 - k];
+      // newest first; the live end follows the car itself
+      const p = k === 0 && car.dark <= 0 ? [car.x - c * 10.6 - s * (n ? -1 : 1) * 3.4, car.y - s * 10.6 + c * (n ? -1 : 1) * 3.4, car.z + 3.1, clock] : m;
+      trail.set(p ? [p[0], p[1], p[2], clock - p[3]] : [0, 0, 0, 9], (n * 12 + k) * 4);
+    }
+    const splashU = splashAt && clock - splashAt.clock < 10 ? [splashAt.x, splashAt.y, clock - splashAt.clock, splashAt.power] : [0, 0, 0, 0];
+    sea.draw({ uFade: fade, uSplash: splashU }, time);
+    light.draw({ uFade: fade, uCarA: pose, uCarB: carB, uRoad: car.z, uStud: studs, uTrail: trail }, time);
+    fx.draw({ uFade: fade, uCarA: pose, uCarB: carB, uSmk: smk, uSmkB: smkB, uSpr: spr, uSprB: sprB, uWind: WIND, uRoad: car.z, uBeams: beams }, time);
+  }
+  // the smoke as it stands, for the detail view
+  const puffs = () => smoke.filter((p) => p.shown > 0.01).map((p) => ({ x: p.x, y: p.y, z: p.z, r: p.rr, a: p.shown }));
+  return { step, draw, puffs };
+}
